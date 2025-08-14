@@ -65,10 +65,10 @@ const Hero = () => {
               </Button>
             </a>
             <a href="#download" className="group">
-              <Button size="lg" variant="outline" className="border-2 border-white/40 text-white hover:bg-white hover:text-green-800 backdrop-blur-sm font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 hover-scale px-8 py-4 text-lg">
+              <Button size="lg" className="bg-green-700/90 hover:bg-green-600 text-white border-2 border-green-500/50 backdrop-blur-sm font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 hover-scale px-8 py-4 text-lg">
                 <Download className="mr-3 h-6 w-6 group-hover:animate-pulse" />
                 Download Data
-                <span className="ml-2 group-hover:text-green-600">→</span>
+                <span className="ml-2 text-green-100">→</span>
               </Button>
             </a>
           </div>
