@@ -3,31 +3,61 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Download, FileSpreadsheet, Database, Calendar, MapPin, Filter } from 'lucide-react';
+import { Download, FileSpreadsheet, Database, Calendar, MapPin, Filter, AlertCircle } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
+import { useState } from 'react';
+
+interface Location {
+  id: number;
+  name: string;
+  latitude: number;
+  longitude: number;
+  elevation?: number;
+  status?: string;
+}
 
 const DataDownload = () => {
+  const { toast } = useToast();
+  const [selectedLocations, setSelectedLocations] = useState<number[]>([]);
+  const [selectedDataTypes, setSelectedDataTypes] = useState<string[]>([]);
+  const [selectedFormats, setSelectedFormats] = useState<string[]>([]);
+  const [selectedSeason, setSelectedSeason] = useState<string>('');
+
+  // Fetch locations from MySQL database
+  const { data: locationsData, isLoading: locationsLoading, error: locationsError } = useQuery({
+    queryKey: ['locations'],
+    queryFn: async () => {
+      const response = await fetch('/functions/v1/get-locations', {
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch locations');
+      }
+      return response.json();
+    },
+  });
+
+  const locations: Location[] = locationsData?.locations || [];
+
   const seasons = [
     { value: 'spring-2024', label: 'Spring 2024' },
     { value: 'winter-2024', label: 'Winter 2023-2024' },
     { value: 'fall-2023', label: 'Fall 2023' },
-    { value: 'summer-2023', label: 'Summer 2023' }
+    { value: 'summer-2023', label: 'Summer 2023' },
+    { value: 'all-2024', label: 'All 2024 Data' },
+    { value: 'custom', label: 'Custom Date Range' }
   ];
 
-  const locations = [
-    'Mount Mansfield Summit', 'Burlington Lakefront', 'Green Mountain Forest',
-    'Champlain Valley', 'Northeast Kingdom', 'Connecticut River Valley',
-    'Stowe Valley', 'White River Junction', 'Brattleboro', 'St. Johnsbury'
-  ];
-
+  // Data types based on your actual MySQL tables
   const dataTypes = [
-    { id: 'temperature', label: 'Temperature (Air & Soil)' },
-    { id: 'precipitation', label: 'Precipitation Data' },
-    { id: 'wind', label: 'Wind Speed & Direction' },
-    { id: 'humidity', label: 'Relative Humidity' },
-    { id: 'pressure', label: 'Atmospheric Pressure' },
-    { id: 'solar', label: 'Solar Radiation' },
-    { id: 'soil', label: 'Soil Moisture' },
-    { id: 'air-quality', label: 'Air Quality Parameters' }
+    { id: 'precipitation', label: 'Precipitation Data (mm)', description: 'From precipitation table' },
+    { id: 'SnowpkTempProfile', label: 'Snow Pack Temperature Profile', description: 'Temperature data from snow pack sensors' },
+    { id: 'table1', label: 'General Environmental Data', description: 'Primary environmental measurements' },
+    { id: 'Wind', label: 'Wind Data (Speed & Direction)', description: 'Wind measurements in m/s and degrees' }
   ];
 
   const formats = [
@@ -67,7 +97,7 @@ const DataDownload = () => {
                 {/* Season Selection */}
                 <div>
                   <label className="data-label mb-3 block">Select Season/Time Period</label>
-                  <Select>
+                  <Select onValueChange={setSelectedSeason} value={selectedSeason}>
                     <SelectTrigger>
                       <SelectValue placeholder="Choose a time period" />
                     </SelectTrigger>
@@ -83,36 +113,73 @@ const DataDownload = () => {
 
                 {/* Location Selection */}
                 <div>
-                  <label className="data-label mb-3 block">Monitoring Locations</label>
-                  <div className="grid md:grid-cols-2 gap-3 max-h-48 overflow-y-auto">
-                    {locations.map((location, index) => (
-                      <div key={index} className="flex items-center space-x-2">
-                        <Checkbox id={`location-${index}`} />
-                        <label 
-                          htmlFor={`location-${index}`} 
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                        >
-                          {location}
-                        </label>
-                      </div>
-                    ))}
-                  </div>
+                  <label className="data-label mb-3 block">Monitoring Locations ({locations.length} sites)</label>
+                  {locationsLoading ? (
+                    <div className="text-center py-4">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
+                      <p className="text-sm text-muted-foreground mt-2">Loading locations...</p>
+                    </div>
+                  ) : locationsError ? (
+                    <div className="text-center py-4">
+                      <AlertCircle className="h-6 w-6 mx-auto mb-2 text-destructive" />
+                      <p className="text-sm text-destructive">Failed to load locations</p>
+                    </div>
+                  ) : (
+                    <div className="grid md:grid-cols-2 gap-3 max-h-48 overflow-y-auto">
+                      {locations.map((location) => (
+                        <div key={location.id} className="flex items-center space-x-2">
+                          <Checkbox 
+                            id={`location-${location.id}`}
+                            checked={selectedLocations.includes(location.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedLocations([...selectedLocations, location.id]);
+                              } else {
+                                setSelectedLocations(selectedLocations.filter(id => id !== location.id));
+                              }
+                            }}
+                          />
+                          <label 
+                            htmlFor={`location-${location.id}`} 
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
+                            {location.name}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Data Type Selection */}
                 <div>
-                  <label className="data-label mb-3 block">Environmental Parameters</label>
-                  <div className="grid md:grid-cols-2 gap-3">
+                  <label className="data-label mb-3 block">Environmental Parameters (Database Tables)</label>
+                  <div className="space-y-3">
                     {dataTypes.map((type) => (
-                      <div key={type.id} className="flex items-center space-x-2">
-                        <Checkbox id={type.id} />
-                        <label 
-                          htmlFor={type.id} 
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                        >
-                          {type.label}
-                        </label>
-                      </div>
+                      <Card key={type.id} className="cursor-pointer hover:bg-primary/5 transition-colors border-2 border-transparent hover:border-primary/20">
+                        <CardContent className="p-3">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <Checkbox 
+                              id={type.id}
+                              checked={selectedDataTypes.includes(type.id)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedDataTypes([...selectedDataTypes, type.id]);
+                                } else {
+                                  setSelectedDataTypes(selectedDataTypes.filter(id => id !== type.id));
+                                }
+                              }}
+                            />
+                            <label 
+                              htmlFor={type.id} 
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                            >
+                              {type.label}
+                            </label>
+                          </div>
+                          <p className="text-xs text-muted-foreground">{type.description}</p>
+                        </CardContent>
+                      </Card>
                     ))}
                   </div>
                 </div>
@@ -125,7 +192,17 @@ const DataDownload = () => {
                       <Card key={format.id} className="cursor-pointer hover:bg-primary/5 transition-colors border-2 border-transparent hover:border-primary/20">
                         <CardContent className="p-4">
                           <div className="flex items-center space-x-2 mb-2">
-                            <Checkbox id={format.id} />
+                            <Checkbox 
+                              id={format.id}
+                              checked={selectedFormats.includes(format.id)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedFormats([...selectedFormats, format.id]);
+                                } else {
+                                  setSelectedFormats(selectedFormats.filter(id => id !== format.id));
+                                }
+                              }}
+                            />
                             <label htmlFor={format.id} className="font-medium">
                               {format.label}
                             </label>
@@ -149,19 +226,27 @@ const DataDownload = () => {
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Selected Locations</span>
-                  <Badge variant="outline">0 sites</Badge>
+                  <Badge variant="outline">
+                    {selectedLocations.length} of {locations.length} sites
+                  </Badge>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Data Parameters</span>
-                  <Badge variant="outline">0 types</Badge>
+                  <span className="text-sm text-muted-foreground">Data Tables</span>
+                  <Badge variant="outline">
+                    {selectedDataTypes.length} of {dataTypes.length} tables
+                  </Badge>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Estimated Size</span>
-                  <Badge variant="outline">-- MB</Badge>
+                  <span className="text-sm text-muted-foreground">Time Period</span>
+                  <Badge variant="outline">
+                    {selectedSeason ? seasons.find(s => s.value === selectedSeason)?.label : 'Not selected'}
+                  </Badge>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">File Format</span>
-                  <Badge variant="outline">Not selected</Badge>
+                  <span className="text-sm text-muted-foreground">File Formats</span>
+                  <Badge variant="outline">
+                    {selectedFormats.length > 0 ? `${selectedFormats.length} selected` : 'Not selected'}
+                  </Badge>
                 </div>
               </CardContent>
             </Card>
