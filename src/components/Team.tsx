@@ -5,32 +5,32 @@ import { Mail, Linkedin, ExternalLink } from 'lucide-react';
 const Team = () => {
   const teamMembers = [
     {
-      name: "Dr. Sarah Johnson",
-      role: "Principal Investigator",
-      affiliation: "University of Vermont",
-      expertise: "Environmental Science, Climate Monitoring",
-      email: "sarah.johnson@uvm.edu"
+      name: "Anna Grunes",
+      role: "Lead Researcher",
+      affiliation: "UVM Civil & Environmental Engineering",
+      expertise: "Snowpack Dynamics, Hydrologic Modeling",
+      image: "/lovable-uploads/250350aa-abaa-4e6e-b886-bae339af81b9.png"
     },
     {
-      name: "Dr. Michael Chen",
-      role: "Data Science Lead",
-      affiliation: "Vermont EPSCoR",
-      expertise: "Data Analytics, Machine Learning",
-      email: "michael.chen@uvm.edu"
+      name: "Dr. Arne Bomblies",
+      role: "Principal Investigator", 
+      affiliation: "UVM Civil & Environmental Engineering",
+      expertise: "Computational Hydrology, Climate Modeling",
+      image: "/lovable-uploads/f0e8b972-8f4c-4294-98e6-d3ae431cbd24.png"
     },
     {
-      name: "Dr. Emily Rodriguez",
-      role: "Field Research Coordinator",
-      affiliation: "UVM Extension",
-      expertise: "Field Instrumentation, Sensor Networks",
-      email: "emily.rodriguez@uvm.edu"
+      name: "Katherine Hale",
+      role: "Research Associate",
+      affiliation: "UVM Civil & Environmental Engineering", 
+      expertise: "Field Instrumentation, Data Analysis",
+      image: "/lovable-uploads/b5c6fd03-eb65-45ac-b61a-268cd0dd5602.png"
     },
     {
-      name: "Alex Thompson",
-      role: "GIS Specialist",
-      affiliation: "Vermont Geological Survey",
-      expertise: "Spatial Analysis, Remote Sensing",
-      email: "alex.thompson@vermont.gov"
+      name: "Dr. Beverley Wemple",
+      role: "Co-Investigator",
+      affiliation: "UVM Geography & Geosciences",
+      expertise: "Geomorphology, Watershed Hydrology",
+      image: "/lovable-uploads/3953a891-e744-46ca-b6fa-0ebf0ce9835d.png"
     }
   ];
 
@@ -54,10 +54,12 @@ const Team = () => {
           {teamMembers.map((member, index) => (
             <Card key={index} className="data-card group hover:shadow-lg transition-all duration-300">
               <CardContent className="p-6 text-center">
-                <div className="w-16 h-16 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full mx-auto mb-4 flex items-center justify-center">
-                  <span className="text-lg font-semibold text-primary">
-                    {member.name.split(' ').map(n => n[0]).join('')}
-                  </span>
+                <div className="w-20 h-20 rounded-full mx-auto mb-4 overflow-hidden">
+                  <img 
+                    src={member.image} 
+                    alt={member.name}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <h3 className="font-semibold text-lg mb-2">{member.name}</h3>
                 <Badge variant="secondary" className="mb-3">
@@ -85,13 +87,13 @@ const Team = () => {
               <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground">
                 <span>University of Vermont</span>
                 <span>•</span>
-                <span>Vermont EPSCoR</span>
+                <span>CRREL (Cold Regions Research Lab)</span>
                 <span>•</span>
-                <span>Vermont Geological Survey</span>
+                <span>UVM Civil & Environmental Engineering</span>
                 <span>•</span>
-                <span>UVM Extension</span>
+                <span>UVM Geography & Geosciences</span>
                 <span>•</span>
-                <span>NOAA Climate Office</span>
+                <span>US Geological Survey</span>
               </div>
             </CardContent>
           </Card>

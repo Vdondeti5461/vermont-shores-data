@@ -5,34 +5,34 @@ import { Thermometer, Droplets, Wind, Sun, Zap, Mountain } from 'lucide-react';
 const AboutProject = () => {
   const features = [
     {
+      icon: Mountain,
+      title: 'Elevational Transect Monitoring',
+      description: 'High spatial and temporal resolution monitoring across Vermont elevational gradients from summit to shore'
+    },
+    {
       icon: Thermometer,
-      title: 'Temperature Monitoring',
-      description: 'Continuous air and soil temperature measurements across elevation gradients'
+      title: 'Snowpack Temperature',
+      description: 'Detailed snowpack temperature profiling to understand thermal dynamics and melt processes'
     },
     {
       icon: Droplets,
-      title: 'Precipitation Data',
-      description: 'Comprehensive rainfall and snowfall data collection with high temporal resolution'
+      title: 'Snow Depth & SWE',
+      description: 'Continuous snow depth and snow water equivalent measurements using ultrasonic sensors and snow pillows'
     },
     {
       icon: Wind,
-      title: 'Wind Patterns',
-      description: 'Wind speed and direction monitoring to understand local climate dynamics'
+      title: 'Meteorological Variables',
+      description: 'Comprehensive weather monitoring including wind, humidity, precipitation, and radiation'
     },
     {
       icon: Sun,
-      title: 'Solar Radiation',
-      description: 'Solar irradiance measurements for understanding energy balance'
+      title: 'Remote Sensing Integration',
+      description: 'UAV and LiDAR snow depth measurements for spatial snowpack characterization'
     },
     {
       icon: Zap,
-      title: 'Atmospheric Sensors',
-      description: 'Advanced sensors measuring humidity, pressure, and air quality parameters'
-    },
-    {
-      icon: Mountain,
-      title: 'Elevation Analysis',
-      description: 'Multi-elevation monitoring from mountain peaks to valley floors'
+      title: 'Model Validation Data',
+      description: 'High-resolution observational data for computational snowpack model forcing and validation'
     }
   ];
 
@@ -41,15 +41,16 @@ const AboutProject = () => {
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto text-center mb-16">
           <Badge variant="outline" className="mb-4">
-            Environmental Research Initiative
+            Snow Observatory Network • UVM x CRREL
           </Badge>
           <h2 className="scientific-heading text-4xl md:text-5xl mb-6">
-            About the <span className="text-primary">Summit 2 Shore</span> Project
+            <span className="text-primary">Summit-to-Shore</span> Snow Observatory Network
           </h2>
           <p className="text-lg text-muted-foreground leading-relaxed">
-            The Summit 2 Shore project is a comprehensive environmental monitoring initiative 
-            led by the University of Vermont, designed to understand climate and environmental 
-            patterns across Vermont's diverse landscapes.
+            A collaborative research initiative between the University of Vermont and CRREL, 
+            monitoring snowpack characteristics and meteorological variables at high spatial 
+            and temporal resolution across Vermont's elevational transects to understand 
+            snowpack dynamics in low-elevation montane environments.
           </p>
         </div>
 
@@ -60,22 +61,22 @@ const AboutProject = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground">
-                Our mission is to create a comprehensive understanding of Vermont's climate 
-                patterns by collecting high-resolution environmental data across diverse 
-                ecosystems - from mountain summits to lake shores.
+                The S2S observatory network provides high-resolution observational data as forcings 
+                and validation for computational snowpack models, combining traditional meteorological 
+                measurements with detailed snowpack analysis across Vermont's elevational gradients.
               </p>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li className="flex items-start">
                   <span className="inline-block w-2 h-2 bg-primary rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                  Climate change impact assessment across elevation gradients
+                  Understand major landscape determinants of snowpack distribution in Vermont
                 </li>
                 <li className="flex items-start">
                   <span className="inline-block w-2 h-2 bg-primary rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                  Ecosystem response to environmental variability
+                  Characterize snowpack ablation across elevational gradients and meteorological drivers
                 </li>
                 <li className="flex items-start">
                   <span className="inline-block w-2 h-2 bg-primary rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                  Long-term environmental monitoring and trend analysis
+                  Model anomalous mid-winter warming events and their effects on snowpack ablation
                 </li>
               </ul>
             </CardContent>
@@ -87,18 +88,18 @@ const AboutProject = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground">
-                Our network spans 22 strategically located sites across Vermont, equipped 
-                with state-of-the-art environmental sensors and data loggers providing 
-                real-time measurements.
+                The network spans from Potash Brook (45m) to Mansfield Summit (1169m), monitoring 
+                snowpack evolution in response to varying forest cover, topography, and meteorologic 
+                drivers using automated weather stations and snow monitoring equipment.
               </p>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="text-center p-3 bg-primary/5 rounded-lg">
-                  <div className="font-bold text-primary text-lg">24/7</div>
-                  <div className="text-muted-foreground">Continuous Monitoring</div>
+                  <div className="font-bold text-primary text-lg">12</div>
+                  <div className="text-muted-foreground">Monitoring Sites</div>
                 </div>
                 <div className="text-center p-3 bg-secondary/10 rounded-lg">
-                  <div className="font-bold text-secondary text-lg">15min</div>
-                  <div className="text-muted-foreground">Data Resolution</div>
+                  <div className="font-bold text-secondary text-lg">1124m</div>
+                  <div className="text-muted-foreground">Elevation Range</div>
                 </div>
               </div>
             </CardContent>
