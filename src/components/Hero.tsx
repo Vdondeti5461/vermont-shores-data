@@ -54,14 +54,18 @@ const Hero = () => {
           
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-            <Button size="lg" className="bg-white text-black hover:bg-white/90 font-semibold">
-              <BarChart3 className="mr-2 h-5 w-5" />
-              Explore Live Data
-            </Button>
-            <Button size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10 backdrop-blur-sm">
-              <Download className="mr-2 h-5 w-5" />
-              Download Data
-            </Button>
+            <a href="#analytics">
+              <Button size="lg" className="bg-white text-black hover:bg-white/90 font-semibold">
+                <BarChart3 className="mr-2 h-5 w-5" />
+                Explore Live Data
+              </Button>
+            </a>
+            <a href="#download">
+              <Button size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10 backdrop-blur-sm">
+                <Download className="mr-2 h-5 w-5" />
+                Download Data
+              </Button>
+            </a>
           </div>
 
           {/* Network Statistics */}

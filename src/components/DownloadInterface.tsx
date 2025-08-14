@@ -261,8 +261,8 @@ const DownloadInterface = () => {
                     key={table.id} 
                     className={`cursor-pointer transition-all duration-200 ${
                       downloadRequest.tables.includes(table.id) 
-                        ? 'border-primary bg-primary/5' 
-                        : 'hover:border-primary/50'
+                        ? 'border-green-600 bg-green-50' 
+                        : 'hover:border-green-400'
                     }`}
                     onClick={() => handleTableToggle(table.id)}
                   >
@@ -360,27 +360,29 @@ const DownloadInterface = () => {
           </CardContent>
         </Card>
 
-        <Card className="data-card bg-gradient-to-br from-primary/5 to-secondary/5 border-primary/20">
+        <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200 shadow-lg">
           <CardContent className="p-6 text-center">
-            <Download className="h-12 w-12 mx-auto mb-4 text-primary" />
-            <h3 className="font-semibold mb-2">Ready to Download?</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Generate your custom environmental dataset
+            <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Download className="h-8 w-8 text-white" />
+            </div>
+            <h3 className="font-semibold mb-2 text-green-800">Ready to Download?</h3>
+            <p className="text-sm text-green-700 mb-4">
+              Generate your custom <span className="font-semibold text-green-800">University of Vermont</span> environmental dataset
             </p>
             <Button 
-              className="w-full btn-research" 
+              className="w-full bg-green-700 hover:bg-green-800 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200" 
               onClick={handleDownload}
               disabled={isDownloading || downloadRequest.locations.length === 0 || downloadRequest.tables.length === 0}
             >
               {isDownloading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Preparing...
+                  Preparing Dataset...
                 </>
               ) : (
                 <>
                   <Download className="mr-2 h-4 w-4" />
-                  Generate Dataset
+                  Generate UVM Dataset
                 </>
               )}
             </Button>
@@ -409,17 +411,17 @@ const DownloadInterface = () => {
         </Card>
 
         {/* Data Guidelines */}
-        <Card className="data-card bg-muted/50">
+        <Card className="bg-green-50 border-green-200">
           <CardContent className="p-4">
-            <h4 className="font-medium mb-2 text-sm flex items-center">
-              <CheckCircle2 className="h-4 w-4 mr-2 text-primary" />
-              Usage Guidelines
+            <h4 className="font-medium mb-2 text-sm flex items-center text-green-800">
+              <CheckCircle2 className="h-4 w-4 mr-2 text-green-600" />
+              <span className="text-green-700">University of Vermont</span> Usage Guidelines
             </h4>
-            <ul className="text-xs text-muted-foreground space-y-1">
+            <ul className="text-xs text-green-700 space-y-1">
               <li>• Data is freely available under CC BY 4.0 license</li>
-              <li>• Please cite Summit 2 Shore in publications</li>
+              <li>• Please cite <span className="font-semibold">University of Vermont</span> Summit 2 Shore in publications</li>
               <li>• Check metadata for data quality flags</li>
-              <li>• Contact team for large-scale research requests</li>
+              <li>• Contact <span className="text-green-800 font-semibold">UVM</span> team for large-scale research requests</li>
             </ul>
           </CardContent>
         </Card>

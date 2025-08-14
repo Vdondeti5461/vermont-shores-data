@@ -19,19 +19,26 @@ const Header = () => {
         <div className="flex items-center justify-between h-16">
           
           {/* Logo */}
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center">
+          <a 
+            href="https://www.uvm.edu" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center space-x-3 hover:opacity-80 transition-opacity"
+          >
+            <div className="w-10 h-10 bg-gradient-to-br from-green-700 to-green-600 rounded-lg flex items-center justify-center">
               <img 
-                src="/src/assets/summit2shore-logo.png" 
-                alt="Summit 2 Shore" 
+                src="/lovable-uploads/d19c9c85-6a6b-4115-bc8e-2ed5fd432891.png" 
+                alt="University of Vermont" 
                 className="w-8 h-8 object-contain filter brightness-0 invert"
               />
             </div>
             <div className="text-xl font-bold text-gray-900">
               Summit-to-Shore
-              <div className="text-xs text-gray-600 font-normal">Snow Observatory Network</div>
+              <div className="text-xs font-normal">
+                <span className="text-green-700">University of Vermont</span> × CRREL
+              </div>
             </div>
-          </div>
+          </a>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
