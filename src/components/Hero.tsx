@@ -38,14 +38,14 @@ const Hero = () => {
           
           {/* Subtitle */}
           <p className="text-xl md:text-2xl text-white/90 mb-8 max-w-4xl mx-auto leading-relaxed animate-fade-in">
-            A world-class network of environmental monitoring stations across <span className="text-green-200 font-semibold">Vermont's</span> elevational gradients
+            Monitoring snowpack characteristics and meteorological variables across <span className="text-green-200 font-semibold">Vermont's</span> elevational gradients from valley floors to mountain peaks
           </p>
           
           {/* Description */}
           <p className="text-lg text-white/80 mb-12 max-w-3xl mx-auto animate-fade-in">
-            Monitoring snowpack characteristics and meteorological variables at high spatial and temporal 
-            resolution to understand snowpack dynamics in low-elevation montane environments. 
-            <span className="text-green-200 font-medium">Powered by University of Vermont research excellence.</span>
+            22 monitoring stations from 45m (Potash Brook) to 1170m (Ranch Brook) elevation, including 12 dedicated sites 
+            on Mount Mansfield. High-resolution data supports computational snowpack models in understudied 
+            low-elevation montane environments. <span className="text-green-200 font-medium">Powered by University of Vermont research excellence.</span>
           </p>
           
           {/* Action Buttons */}
