@@ -66,8 +66,8 @@ const AboutProject = () => {
             </Card>
             <Card className="data-card text-center bg-gradient-to-br from-blue-500/5 to-blue-500/10 border-blue-500/20">
               <CardContent className="p-6">
-                <div className="text-3xl font-bold text-blue-600 mb-2">1124m</div>
-                <div className="text-sm text-muted-foreground">Elevation Range</div>
+                <div className="text-3xl font-bold text-blue-600 mb-2">1170m</div>
+                <div className="text-sm text-muted-foreground">Max Elevation</div>
               </CardContent>
             </Card>
             <Card className="data-card text-center bg-gradient-to-br from-green-500/5 to-green-500/10 border-green-500/20">
@@ -81,6 +81,63 @@ const AboutProject = () => {
                 <div className="text-3xl font-bold text-purple-600 mb-2">10min</div>
                 <div className="text-sm text-muted-foreground">Data Resolution</div>
               </CardContent>
+            </Card>
+          </div>
+
+          {/* Field Research Showcase */}
+          <div className="mb-16">
+            <Card className="data-card overflow-hidden border-2 hover:border-primary/30 transition-all duration-300">
+              <div className="relative">
+                <div 
+                  className="h-80 bg-cover bg-center relative"
+                  style={{
+                    backgroundImage: `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('/lovable-uploads/5d861d7c-499d-4cd9-8407-96f99934b2b1.png')`
+                  }}
+                >
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center text-white">
+                      <h3 className="text-3xl font-bold mb-2">Field Research in Action</h3>
+                      <p className="text-lg opacity-90">Vermont's Elevational Gradients</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-8">
+                  <div className="grid md:grid-cols-2 gap-8 items-center">
+                    <div>
+                      <h4 className="text-xl font-semibold text-primary mb-4">Collaborative Field Work</h4>
+                      <p className="text-muted-foreground mb-4">
+                        Our interdisciplinary research team conducts regular field visits to monitor and maintain 
+                        the 22 monitoring stations across Vermont's diverse elevational zones, from valley floors 
+                        to mountain peaks including 12 dedicated sites on Mount Mansfield.
+                      </p>
+                      <ul className="space-y-2 text-sm text-muted-foreground">
+                        <li className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 bg-primary rounded-full"></div>
+                          UVM Civil & Environmental Engineering
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 bg-primary rounded-full"></div>
+                          CRREL Research Partnership
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 bg-primary rounded-full"></div>
+                          USGS Collaboration
+                        </li>
+                      </ul>
+                    </div>
+                    <div className="bg-gradient-to-br from-background to-muted/20 p-6 rounded-lg border">
+                      <img 
+                        src="/lovable-uploads/d237cd6e-cadf-4b6d-9006-bd432196c042.png" 
+                        alt="Research team conducting field work at a Summit-to-Shore monitoring station"
+                        className="w-full h-64 object-cover rounded-lg shadow-lg"
+                      />
+                      <p className="text-xs text-muted-foreground mt-3 text-center">
+                        Research team demonstrating meteorological monitoring equipment at one of our S2S observatory sites
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </Card>
           </div>
 
