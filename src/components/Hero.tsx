@@ -5,9 +5,9 @@ import { MapPin, Thermometer, Cloud, Mountain, Download, BarChart3 } from 'lucid
 
 const Hero = () => {
   const networkStats = [
-    { icon: MapPin, value: '22+', label: 'Monitoring Sites', color: 'text-blue-400' },
+    { icon: MapPin, value: '22', label: 'Monitoring Sites', color: 'text-blue-400' },
     { icon: Mountain, value: '1124m', label: 'Elevation Range', color: 'text-green-400' },
-    { icon: Thermometer, value: '5min', label: 'Data Resolution', color: 'text-orange-400' },
+    { icon: Thermometer, value: '10min', label: 'Data Resolution', color: 'text-orange-400' },
     { icon: Cloud, value: '24/7', label: 'Real-time Data', color: 'text-purple-400' }
   ];
 
