@@ -2,95 +2,137 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* University of Vermont Summit 2 Shore Research Portal Design System
+All colors MUST be HSL. Scientific, professional theme with UVM branding.
 */
 
 @layer base {
   :root {
+    /* Base colors - Clean scientific whites and grays */
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 147 25% 15%;
 
+    /* Card system - Subtle elevation for data presentation */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 147 25% 15%;
 
+    /* Popover system */
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 147 25% 15%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* UVM Primary - Deep Vermont Forest Green */
+    --primary: 147 60% 20%;
+    --primary-foreground: 0 0% 98%;
+    --primary-hover: 147 60% 16%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* UVM Secondary - Warm gold accent */
+    --secondary: 45 85% 55%;
+    --secondary-foreground: 147 25% 15%;
+    --secondary-hover: 45 85% 50%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Muted tones for scientific data */
+    --muted: 210 20% 96%;
+    --muted-foreground: 147 15% 45%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Accent - Research blue for data visualization */
+    --accent: 210 75% 50%;
+    --accent-foreground: 0 0% 98%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Alert colors for environmental data */
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 0 0% 98%;
+    --warning: 35 85% 55%;
+    --warning-foreground: 147 25% 15%;
+    --success: 147 60% 40%;
+    --success-foreground: 0 0% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* Interface elements */
+    --border: 147 20% 88%;
+    --input: 147 20% 94%;
+    --ring: 147 60% 20%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    --sidebar-background: 0 0% 98%;
+    /* Gradient system for beautiful backgrounds */
+    --gradient-hero: linear-gradient(135deg, hsl(147 60% 20%), hsl(147 70% 35%));
+    --gradient-data: linear-gradient(180deg, hsl(210 75% 50% / 0.1), hsl(210 75% 50% / 0.05));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(147 20% 98%));
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    /* Shadow system for depth */
+    --shadow-soft: 0 2px 20px hsl(147 60% 20% / 0.08);
+    --shadow-medium: 0 8px 30px hsl(147 60% 20% / 0.12);
+    --shadow-strong: 0 20px 40px hsl(147 60% 20% / 0.15);
 
-    --sidebar-primary: 240 5.9% 10%;
+    /* Animation variables */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 
+    /* Sidebar system for navigation */
+    --sidebar-background: 147 30% 97%;
+    --sidebar-foreground: 147 25% 25%;
+    --sidebar-primary: 147 60% 20%;
     --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 147 20% 92%;
+    --sidebar-accent-foreground: 147 25% 15%;
+    --sidebar-border: 147 20% 88%;
+    --sidebar-ring: 147 60% 20%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    /* Dark mode for research portal - Deep professional tones */
+    --background: 147 25% 8%;
+    --foreground: 147 20% 90%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 147 25% 10%;
+    --card-foreground: 147 20% 90%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 147 25% 10%;
+    --popover-foreground: 147 20% 90%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 147 60% 45%;
+    --primary-foreground: 147 25% 8%;
+    --primary-hover: 147 60% 50%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 45 85% 65%;
+    --secondary-foreground: 147 25% 8%;
+    --secondary-hover: 45 85% 70%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 147 15% 15%;
+    --muted-foreground: 147 15% 65%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 210 75% 60%;
+    --accent-foreground: 147 25% 8%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 75% 65%;
+    --destructive-foreground: 147 25% 8%;
+    --warning: 35 85% 65%;
+    --warning-foreground: 147 25% 8%;
+    --success: 147 60% 55%;
+    --success-foreground: 147 25% 8%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --border: 147 15% 20%;
+    --input: 147 15% 18%;
+    --ring: 147 60% 45%;
+
+    /* Dark mode gradients */
+    --gradient-hero: linear-gradient(135deg, hsl(147 50% 12%), hsl(147 60% 25%));
+    --gradient-data: linear-gradient(180deg, hsl(210 75% 60% / 0.1), hsl(210 75% 60% / 0.05));
+    --gradient-card: linear-gradient(145deg, hsl(147 25% 10%), hsl(147 20% 12%));
+
+    /* Dark shadows */
+    --shadow-soft: 0 2px 20px hsl(0 0% 0% / 0.3);
+    --shadow-medium: 0 8px 30px hsl(0 0% 0% / 0.4);
+    --shadow-strong: 0 20px 40px hsl(0 0% 0% / 0.5);
+
+    /* Dark sidebar */
+    --sidebar-background: 147 25% 6%;
+    --sidebar-foreground: 147 20% 85%;
+    --sidebar-primary: 147 60% 45%;
+    --sidebar-primary-foreground: 147 25% 8%;
+    --sidebar-accent: 147 15% 12%;
+    --sidebar-accent-foreground: 147 20% 85%;
+    --sidebar-border: 147 15% 15%;
+    --sidebar-ring: 147 60% 45%;
   }
 }
 
@@ -100,6 +142,91 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  /* Custom scrollbar for scientific data tables */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-muted;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/50;
+  }
+}
+
+@layer components {
+  /* Hero section styling */
+  .hero-gradient {
+    background: var(--gradient-hero);
+  }
+
+  /* Data card styling */
+  .data-card {
+    background: var(--gradient-card);
+    box-shadow: var(--shadow-soft);
+    transition: var(--transition-smooth);
+  }
+
+  .data-card:hover {
+    box-shadow: var(--shadow-medium);
+    transform: translateY(-2px);
+  }
+
+  /* Scientific typography */
+  .scientific-heading {
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    line-height: 1.1;
+  }
+
+  .data-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: hsl(var(--muted-foreground));
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* Interactive map container */
+  .map-container {
+    background: var(--gradient-data);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-medium);
+  }
+
+  /* Research portal button variants */
+  .btn-research {
+    background: var(--gradient-hero);
+    color: hsl(var(--primary-foreground));
+    border: none;
+    transition: var(--transition-smooth);
+  }
+
+  .btn-research:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-soft);
+  }
+
+  .btn-data {
+    background: hsl(var(--accent));
+    color: hsl(var(--accent-foreground));
+    border: 1px solid hsl(var(--accent));
+    transition: var(--transition-smooth);
+  }
+
+  .btn-data:hover {
+    background: hsl(var(--accent) / 0.9);
+    transform: translateY(-1px);
   }
 }
