@@ -1,89 +1,83 @@
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Database, TrendingUp, Download } from 'lucide-react';
-import heroImage from '@/assets/vermont-hero.jpg';
+import { Card, CardContent } from '@/components/ui/card';
+import { MapPin, Thermometer, Cloud, Mountain, Download, BarChart3 } from 'lucide-react';
 
 const Hero = () => {
-  const stats = [
-    { label: 'Data Collection Sites', value: '22', icon: MapPin },
-    { label: 'Environmental Parameters', value: '15+', icon: Database },
-    { label: 'Years of Data', value: '5+', icon: TrendingUp },
-    { label: 'Data Points Collected', value: '2.4M+', icon: Database },
+  const networkStats = [
+    { icon: MapPin, value: '22+', label: 'Monitoring Sites', color: 'text-blue-600' },
+    { icon: Mountain, value: '1124m', label: 'Elevation Range', color: 'text-green-600' },
+    { icon: Thermometer, value: '5min', label: 'Data Resolution', color: 'text-orange-600' },
+    { icon: Cloud, value: '24/7', label: 'Real-time Data', color: 'text-purple-600' }
   ];
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background Image with Overlay */}
       <div 
-        className="absolute inset-0 z-0"
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.6)), url(${heroImage})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundAttachment: 'fixed'
+          backgroundImage: `url('/lovable-uploads/9d5d35d8-43d8-4c2d-a89e-7522213fc836.png')`
         }}
-      />
-      
-      {/* Content */}
-      <div className="relative z-10 container mx-auto px-4 text-center text-white">
-        <div className="max-w-4xl mx-auto">
-          {/* Badge */}
-          <Badge variant="secondary" className="mb-6 bg-secondary/90 text-secondary-foreground">
-            Environmental Research • University of Vermont
-          </Badge>
+      >
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/60"></div>
+      </div>
 
-          {/* Main Heading */}
-          <h1 className="scientific-heading text-5xl md:text-7xl mb-6">
-            Summit <span className="text-secondary">2</span> Shore
+      {/* Content */}
+      <div className="relative z-10 container mx-auto px-4 py-20">
+        <div className="max-w-6xl mx-auto text-center">
+          
+          {/* Badge */}
+          <Badge variant="outline" className="mb-6 bg-white/10 border-white/20 text-white backdrop-blur-sm">
+            University of Vermont × CRREL Research Initiative
+          </Badge>
+          
+          {/* Main Title */}
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold text-white mb-6 leading-tight">
+            SUMMIT-TO-SHORE
+            <br />
+            <span className="text-3xl md:text-4xl lg:text-5xl font-normal text-white/90">
+              Snow Observatory Network
+            </span>
           </h1>
-          <h2 className="text-xl md:text-2xl font-medium mb-6 text-gray-200">
-            Vermont Environmental & Climate Data Research Portal
-          </h2>
+          
+          {/* Subtitle */}
+          <p className="text-xl md:text-2xl text-white/90 mb-8 max-w-4xl mx-auto leading-relaxed">
+            A world-class network of environmental monitoring stations across Vermont's elevational gradients
+          </p>
           
           {/* Description */}
-          <p className="text-lg md:text-xl leading-relaxed mb-8 max-w-3xl mx-auto text-gray-300">
-            Comprehensive environmental and climatic data collection across 22 strategic locations throughout Vermont. 
-            From mountain summits to lake shores, advancing climate research and environmental understanding.
+          <p className="text-lg text-white/80 mb-12 max-w-3xl mx-auto">
+            Monitoring snowpack characteristics and meteorological variables at high spatial and temporal 
+            resolution to understand snowpack dynamics in low-elevation montane environments.
           </p>
-
+          
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <Button size="lg" className="btn-research px-8 py-3 text-lg">
-              <MapPin className="mr-2 h-5 w-5" />
-              Explore Data Map
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+            <Button size="lg" className="bg-white text-black hover:bg-white/90 font-semibold">
+              <BarChart3 className="mr-2 h-5 w-5" />
+              Explore Live Data
             </Button>
-            <Button 
-              size="lg" 
-              variant="outline" 
-              className="btn-data border-white/30 hover:bg-white/10 text-white hover:text-white px-8 py-3 text-lg"
-            >
+            <Button size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10 backdrop-blur-sm">
               <Download className="mr-2 h-5 w-5" />
-              Download Dataset
+              Download Data
             </Button>
           </div>
 
-          {/* Stats Grid */}
+          {/* Network Statistics */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
-            {stats.map((stat, index) => {
+            {networkStats.map((stat, index) => {
               const Icon = stat.icon;
               return (
-                <Card key={index} className="data-card p-6 text-center bg-white/10 backdrop-blur-sm border-white/20">
-                  <Icon className="h-8 w-8 mx-auto mb-3 text-secondary" />
-                  <div className="text-2xl font-bold text-white mb-1">{stat.value}</div>
-                  <div className="text-sm text-gray-300">{stat.label}</div>
+                <Card key={index} className="bg-white/10 border-white/20 backdrop-blur-sm hover:bg-white/15 transition-all duration-300">
+                  <CardContent className="p-6 text-center">
+                    <Icon className={`h-8 w-8 mx-auto mb-2 ${stat.color}`} />
+                    <div className="text-2xl font-bold text-white mb-1">{stat.value}</div>
+                    <div className="text-sm text-white/80">{stat.label}</div>
+                  </CardContent>
                 </Card>
               );
             })}
-          </div>
-        </div>
-      </div>
-
-      {/* Scroll Indicator */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10">
-        <div className="animate-bounce">
-          <div className="w-6 h-10 border-2 border-white/50 rounded-full flex justify-center">
-            <div className="w-1 h-3 bg-white/70 rounded-full mt-2 animate-pulse"></div>
           </div>
         </div>
       </div>

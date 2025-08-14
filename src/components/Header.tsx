@@ -1,85 +1,94 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Menu, X, Download, BarChart3, MapPin, Users } from 'lucide-react';
-import logo from '@/assets/summit2shore-logo.png';
+import { Menu, X, MapPin, BarChart3, Download, Users, Info } from 'lucide-react';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const navigationItems = [
-    { name: 'About Project', href: '#about', icon: Users },
-    { name: 'Data Map', href: '#map', icon: MapPin },
-    { name: 'Analytics', href: '#analytics', icon: BarChart3 },
-    { name: 'Download Data', href: '#download', icon: Download },
+  const navItems = [
+    { label: 'About', href: '#about', icon: Info },
+    { label: 'Network', href: '#map', icon: MapPin },
+    { label: 'Analytics', href: '#analytics', icon: BarChart3 },
+    { label: 'Data Download', href: '#download', icon: Download },
+    { label: 'Team', href: '#team', icon: Users }
   ];
 
   return (
-    <header className="fixed top-0 w-full bg-background/80 backdrop-blur-md border-b border-border z-50">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200/50 shadow-sm">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          {/* Logo and title */}
+          
+          {/* Logo */}
           <div className="flex items-center space-x-3">
-            <img src={logo} alt="Summit 2 Shore" className="h-10 w-10" />
-            <div>
-              <h1 className="text-lg font-bold text-primary">Summit 2 Shore</h1>
-              <p className="text-xs text-muted-foreground">University of Vermont Research Portal</p>
+            <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center">
+              <img 
+                src="/src/assets/summit2shore-logo.png" 
+                alt="Summit 2 Shore" 
+                className="w-8 h-8 object-contain filter brightness-0 invert"
+              />
+            </div>
+            <div className="text-xl font-bold text-gray-900">
+              Summit-to-Shore
+              <div className="text-xs text-gray-600 font-normal">Snow Observatory Network</div>
             </div>
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-1">
-            {navigationItems.map((item) => {
+          <nav className="hidden md:flex items-center space-x-8">
+            {navItems.map((item) => {
               const Icon = item.icon;
               return (
-                <Button
-                  key={item.name}
-                  variant="ghost"
-                  size="sm"
-                  className="text-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                  asChild
+                <a
+                  key={item.label}
+                  href={item.href}
+                  className="flex items-center space-x-1 text-gray-700 hover:text-primary transition-colors duration-200 font-medium"
                 >
-                  <a href={item.href} className="flex items-center space-x-2">
-                    <Icon className="h-4 w-4" />
-                    <span>{item.name}</span>
-                  </a>
-                </Button>
+                  <Icon className="h-4 w-4" />
+                  <span>{item.label}</span>
+                </a>
               );
             })}
           </nav>
 
-          {/* Mobile menu button */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="md:hidden"
+          {/* CTA Button */}
+          <div className="hidden md:block">
+            <Button className="bg-primary hover:bg-primary/90 text-white">
+              Access Live Data
+            </Button>
+          </div>
+
+          {/* Mobile Menu Button */}
+          <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
           >
-            {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </Button>
+            {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
         </div>
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden py-4 border-t border-border">
-            <nav className="flex flex-col space-y-2">
-              {navigationItems.map((item) => {
+          <div className="md:hidden border-t border-gray-200/50 bg-white/95 backdrop-blur-sm">
+            <nav className="py-4 space-y-2">
+              {navItems.map((item) => {
                 const Icon = item.icon;
                 return (
-                  <Button
-                    key={item.name}
-                    variant="ghost"
-                    size="sm"
-                    className="justify-start text-foreground hover:text-primary hover:bg-primary/10"
-                    asChild
+                  <a
+                    key={item.label}
+                    href={item.href}
                     onClick={() => setIsMenuOpen(false)}
+                    className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-primary hover:bg-primary/5 transition-colors rounded-lg mx-2"
                   >
-                    <a href={item.href} className="flex items-center space-x-2">
-                      <Icon className="h-4 w-4" />
-                      <span>{item.name}</span>
-                    </a>
-                  </Button>
+                    <Icon className="h-5 w-5" />
+                    <span className="font-medium">{item.label}</span>
+                  </a>
                 );
               })}
+              <div className="px-6 pt-4">
+                <Button className="w-full bg-primary hover:bg-primary/90 text-white">
+                  Access Live Data
+                </Button>
+              </div>
             </nav>
           </div>
         )}
