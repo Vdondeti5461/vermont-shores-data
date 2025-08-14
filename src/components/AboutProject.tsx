@@ -78,7 +78,7 @@ const AboutProject = () => {
             </Card>
             <Card className="data-card text-center bg-gradient-to-br from-purple-500/5 to-purple-500/10 border-purple-500/20">
               <CardContent className="p-6">
-                <div className="text-3xl font-bold text-purple-600 mb-2">15min</div>
+                <div className="text-3xl font-bold text-purple-600 mb-2">10min</div>
                 <div className="text-sm text-muted-foreground">Data Resolution</div>
               </CardContent>
             </Card>
