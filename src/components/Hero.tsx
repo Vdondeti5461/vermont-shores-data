@@ -5,10 +5,10 @@ import { MapPin, Thermometer, Cloud, Mountain, Download, BarChart3 } from 'lucid
 
 const Hero = () => {
   const networkStats = [
-    { icon: MapPin, value: '22+', label: 'Monitoring Sites', color: 'text-blue-600' },
-    { icon: Mountain, value: '1124m', label: 'Elevation Range', color: 'text-green-600' },
-    { icon: Thermometer, value: '5min', label: 'Data Resolution', color: 'text-orange-600' },
-    { icon: Cloud, value: '24/7', label: 'Real-time Data', color: 'text-purple-600' }
+    { icon: MapPin, value: '22+', label: 'Monitoring Sites', color: 'text-blue-400' },
+    { icon: Mountain, value: '1124m', label: 'Elevation Range', color: 'text-green-400' },
+    { icon: Thermometer, value: '5min', label: 'Data Resolution', color: 'text-orange-400' },
+    { icon: Cloud, value: '24/7', label: 'Real-time Data', color: 'text-purple-400' }
   ];
 
   return (
@@ -28,56 +28,63 @@ const Hero = () => {
         <div className="max-w-6xl mx-auto text-center">
           
           {/* Badge */}
-          <Badge variant="outline" className="mb-6 bg-white/10 border-white/20 text-white backdrop-blur-sm">
-            University of Vermont × CRREL Research Initiative
-          </Badge>
+          <div className="mb-6 animate-fade-in">
+            <Badge variant="outline" className="mb-4 bg-white/10 border-white/20 text-white backdrop-blur-sm hover-scale">
+              <span className="text-green-200">University of Vermont</span> × CRREL Research Initiative
+            </Badge>
+          </div>
           
           {/* Main Title */}
-          <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold text-white mb-6 leading-tight">
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold text-white mb-6 leading-tight animate-fade-in">
             SUMMIT-TO-SHORE
             <br />
-            <span className="text-3xl md:text-4xl lg:text-5xl font-normal text-white/90">
+            <span className="text-3xl md:text-4xl lg:text-5xl font-normal text-green-100">
               Snow Observatory Network
             </span>
           </h1>
           
           {/* Subtitle */}
-          <p className="text-xl md:text-2xl text-white/90 mb-8 max-w-4xl mx-auto leading-relaxed">
-            A world-class network of environmental monitoring stations across Vermont's elevational gradients
+          <p className="text-xl md:text-2xl text-white/90 mb-8 max-w-4xl mx-auto leading-relaxed animate-fade-in">
+            A world-class network of environmental monitoring stations across <span className="text-green-200 font-semibold">Vermont's</span> elevational gradients
           </p>
           
           {/* Description */}
-          <p className="text-lg text-white/80 mb-12 max-w-3xl mx-auto">
+          <p className="text-lg text-white/80 mb-12 max-w-3xl mx-auto animate-fade-in">
             Monitoring snowpack characteristics and meteorological variables at high spatial and temporal 
-            resolution to understand snowpack dynamics in low-elevation montane environments.
+            resolution to understand snowpack dynamics in low-elevation montane environments. 
+            <span className="text-green-200 font-medium">Powered by University of Vermont research excellence.</span>
           </p>
           
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-            <a href="#analytics">
-              <Button size="lg" className="bg-white text-black hover:bg-white/90 font-semibold">
-                <BarChart3 className="mr-2 h-5 w-5" />
+          <div className="flex flex-col sm:flex-row gap-6 justify-center mb-16 animate-fade-in">
+            <a href="#analytics" className="group">
+              <Button size="lg" className="bg-green-600 hover:bg-green-700 text-white font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 hover-scale px-8 py-4 text-lg">
+                <BarChart3 className="mr-3 h-6 w-6 group-hover:animate-pulse" />
                 Explore Live Data
+                <span className="ml-2 text-green-100">→</span>
               </Button>
             </a>
-            <a href="#download">
-              <Button size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10 backdrop-blur-sm">
-                <Download className="mr-2 h-5 w-5" />
+            <a href="#download" className="group">
+              <Button size="lg" variant="outline" className="border-2 border-white/40 text-white hover:bg-white hover:text-green-800 backdrop-blur-sm font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 hover-scale px-8 py-4 text-lg">
+                <Download className="mr-3 h-6 w-6 group-hover:animate-pulse" />
                 Download Data
+                <span className="ml-2 group-hover:text-green-600">→</span>
               </Button>
             </a>
           </div>
 
           {/* Network Statistics */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-5xl mx-auto animate-fade-in">
             {networkStats.map((stat, index) => {
               const Icon = stat.icon;
               return (
-                <Card key={index} className="bg-white/10 border-white/20 backdrop-blur-sm hover:bg-white/15 transition-all duration-300">
+                <Card key={index} className="bg-white/10 border-white/20 backdrop-blur-sm hover:bg-white/15 transition-all duration-300 hover-scale group">
                   <CardContent className="p-6 text-center">
-                    <Icon className={`h-8 w-8 mx-auto mb-2 ${stat.color}`} />
-                    <div className="text-2xl font-bold text-white mb-1">{stat.value}</div>
-                    <div className="text-sm text-white/80">{stat.label}</div>
+                    <div className="w-12 h-12 mx-auto mb-3 bg-green-600/20 rounded-full flex items-center justify-center group-hover:bg-green-500/30 transition-colors">
+                      <Icon className={`h-6 w-6 ${stat.color} group-hover:scale-110 transition-transform`} />
+                    </div>
+                    <div className="text-2xl font-bold text-white mb-1 group-hover:text-green-100">{stat.value}</div>
+                    <div className="text-sm text-white/80 group-hover:text-white">{stat.label}</div>
                   </CardContent>
                 </Card>
               );
