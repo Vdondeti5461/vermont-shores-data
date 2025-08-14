@@ -82,8 +82,9 @@ const DataMap = () => {
             <span className="text-primary">Vermont</span> Monitoring Network
           </h2>
           <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-            Explore real-time environmental data from our 22 monitoring stations across Vermont. 
-            Click on any location to view detailed measurements and historical trends.
+            Explore real-time environmental data from our 22 monitoring stations spanning Vermont's elevational gradients 
+            from 325m to 1124m elevation. Data collected every 10 minutes provides high-resolution insights into 
+            snowpack dynamics and meteorological conditions across diverse montane environments.
           </p>
         </div>
 
@@ -94,8 +95,11 @@ const DataMap = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <MapPin className="h-5 w-5 text-primary" />
-                  Vermont Monitoring Sites
+                  Vermont S2S Network - Elevational Gradient
                 </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Monitoring sites distributed across 325m - 1124m elevation range
+                </p>
               </CardHeader>
               <CardContent>
                 <div className="map-container h-full bg-gradient-to-br from-primary/10 to-secondary/10 rounded-lg flex items-center justify-center relative overflow-hidden">
@@ -109,19 +113,62 @@ const DataMap = () => {
                       />
                     </svg>
                     
-                    {/* Real monitoring points */}
-                    {locations.slice(0, 8).map((site, index) => (
-                      <div
-                        key={site.id}
-                        className="absolute w-4 h-4 rounded-full border-2 border-white shadow-lg cursor-pointer transform hover:scale-125 transition-transform"
-                        style={{
-                          backgroundColor: site.status === 'active' ? '#22c55e' : site.status === 'maintenance' ? '#f59e0b' : '#ef4444',
-                          left: `${15 + (index % 4) * 20}%`,
-                          top: `${15 + Math.floor(index / 4) * 25}%`
-                        }}
-                        title={site.name}
-                      />
-                    ))}
+                    {/* Enhanced monitoring points with elevation visualization */}
+                    {locations.slice(0, 12).map((site, index) => {
+                      // Simulate elevation-based positioning and styling
+                      const elevationLevel = site.elevation ? 
+                        site.elevation < 500 ? 'low' : 
+                        site.elevation < 800 ? 'mid' : 'high' : 'mid';
+                      
+                      const getElevationStyle = (level: string) => {
+                        switch (level) {
+                          case 'low': return { size: 'w-3 h-3', color: '#22c55e', opacity: 0.8 };
+                          case 'mid': return { size: 'w-4 h-4', color: '#f59e0b', opacity: 0.9 };
+                          case 'high': return { size: 'w-5 h-5', color: '#ef4444', opacity: 1.0 };
+                          default: return { size: 'w-4 h-4', color: '#6b7280', opacity: 0.8 };
+                        }
+                      };
+                      
+                      const style = getElevationStyle(elevationLevel);
+                      
+                      return (
+                        <div
+                          key={site.id}
+                          className={`absolute ${style.size} rounded-full border-2 border-white shadow-lg cursor-pointer transform hover:scale-125 transition-all duration-300 hover:z-10`}
+                          style={{
+                            backgroundColor: site.status === 'active' ? style.color : '#6b7280',
+                            opacity: style.opacity,
+                            left: `${20 + (index % 6) * 12}%`,
+                            top: `${15 + Math.floor(index / 6) * 20}%`,
+                            boxShadow: `0 0 0 2px rgba(255,255,255,0.8), 0 2px 8px rgba(0,0,0,0.3)`
+                          }}
+                          title={`${site.name} - ${site.elevation || 'Unknown'}m elevation`}
+                        >
+                          <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-medium text-white bg-black/70 px-1 py-0.5 rounded opacity-0 hover:opacity-100 transition-opacity whitespace-nowrap">
+                            {site.elevation || 'N/A'}m
+                          </div>
+                        </div>
+                      );
+                    })}
+                    
+                    {/* Elevation Legend */}
+                    <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg p-3 border border-white/20">
+                      <h4 className="text-xs font-semibold mb-2 text-gray-800">Elevation Levels</h4>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-xs">
+                          <div className="w-3 h-3 rounded-full bg-green-500 border border-white"></div>
+                          <span className="text-gray-700">Low (&lt;500m)</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs">
+                          <div className="w-4 h-4 rounded-full bg-amber-500 border border-white"></div>
+                          <span className="text-gray-700">Mid (500-800m)</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs">
+                          <div className="w-5 h-5 rounded-full bg-red-500 border border-white"></div>
+                          <span className="text-gray-700">High (&gt;800m)</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   
                   {/* Interactive Map Notice */}
@@ -129,12 +176,14 @@ const DataMap = () => {
                     <Card className="bg-background/80 backdrop-blur-sm border-primary/20">
                       <CardContent className="p-6 text-center">
                         <MapPin className="h-12 w-12 mx-auto mb-4 text-primary" />
-                        <h3 className="font-semibold mb-2">Interactive Map Coming Soon</h3>
+                        <h3 className="font-semibold mb-2">Interactive Elevation Map</h3>
                         <p className="text-sm text-muted-foreground mb-4">
-                          Full interactive mapping with real-time data visualization
+                          Full interactive mapping with real-time data visualization across Vermont's elevational gradients. 
+                          Each site represents unique elevation zones from valley floors to mountain peaks.
                         </p>
                         <Button size="sm" className="btn-research">
-                          View Site Details
+                          <Eye className="h-4 w-4 mr-2" />
+                          Explore Sites
                         </Button>
                       </CardContent>
                     </Card>
@@ -148,10 +197,15 @@ const DataMap = () => {
           <div className="space-y-6">
             <Card className="data-card">
               <CardHeader>
-                <CardTitle className="text-xl">Network Status</CardTitle>
+                <CardTitle className="text-xl">Network Overview</CardTitle>
+                <p className="text-sm text-muted-foreground">10-minute resolution monitoring</p>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Elevation Range</span>
+                    <Badge className="bg-primary text-primary-foreground">325m - 1124m</Badge>
+                  </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm">Total Sites</span>
                     <Badge className="bg-primary text-primary-foreground">{locations.length}/22</Badge>
@@ -202,8 +256,9 @@ const DataMap = () => {
                           {site.status || 'active'}
                         </Badge>
                       </div>
-                      <div className="text-xs text-muted-foreground mb-3">
-                        Elevation: {site.elevation ? `${site.elevation}ft` : 'N/A'}
+                      <div className="text-xs text-muted-foreground mb-3 space-y-1">
+                        <div>Elevation: {site.elevation ? `${site.elevation}m` : 'N/A'}</div>
+                        <div className="text-green-600 font-medium">Data: 10min resolution</div>
                       </div>
                       <div className="grid grid-cols-2 gap-3 text-xs">
                         <div className="flex items-center gap-1">
