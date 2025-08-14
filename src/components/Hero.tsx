@@ -1,16 +1,9 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { MapPin, Thermometer, Cloud, Mountain, Download, BarChart3 } from 'lucide-react';
+import { Download, BarChart3 } from 'lucide-react';
+
 
 const Hero = () => {
-  const networkStats = [
-    { icon: MapPin, value: '22', label: 'Monitoring Sites', color: 'text-blue-400' },
-    { icon: Mountain, value: '1124m', label: 'Elevation Range', color: 'text-green-400' },
-    { icon: Thermometer, value: '10min', label: 'Data Resolution', color: 'text-orange-400' },
-    { icon: Cloud, value: '24/7', label: 'Real-time Data', color: 'text-purple-400' }
-  ];
-
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background Image with Overlay */}
@@ -73,23 +66,6 @@ const Hero = () => {
             </a>
           </div>
 
-          {/* Network Statistics */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-5xl mx-auto animate-fade-in">
-            {networkStats.map((stat, index) => {
-              const Icon = stat.icon;
-              return (
-                <Card key={index} className="bg-white/10 border-white/20 backdrop-blur-sm hover:bg-white/15 transition-all duration-300 hover-scale group">
-                  <CardContent className="p-6 text-center">
-                    <div className="w-12 h-12 mx-auto mb-3 bg-green-600/20 rounded-full flex items-center justify-center group-hover:bg-green-500/30 transition-colors">
-                      <Icon className={`h-6 w-6 ${stat.color} group-hover:scale-110 transition-transform`} />
-                    </div>
-                    <div className="text-2xl font-bold text-white mb-1 group-hover:text-green-100">{stat.value}</div>
-                    <div className="text-sm text-white/80 group-hover:text-white">{stat.label}</div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
         </div>
       </div>
     </section>
