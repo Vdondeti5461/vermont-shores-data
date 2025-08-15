@@ -413,7 +413,7 @@ const Analytics = () => {
                   size="lg" 
                   variant="outline"
                   className="w-full sm:w-auto text-sm sm:text-base px-4 sm:px-6 py-2 sm:py-3"
-                  onClick={() => window.open('https://www.uvm.edu/ovpr/news/uvm-researchers-unpack-complexity-snow-vermont', '_blank')}
+                  onClick={() => window.open('/documentation', '_blank')}
                 >
                   <span className="hidden sm:inline">View Documentation</span>
                   <span className="sm:hidden">Documentation</span>
