@@ -2,10 +2,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MapPin, Eye, Activity, Mountain, Database, Filter } from 'lucide-react';
+import { MapPin, Eye, Activity, Mountain } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
-import DatabaseFilter from './DatabaseFilter';
 import InteractiveMap from './InteractiveMap';
 
 interface Location {
@@ -143,14 +142,10 @@ const DataMap = () => {
         </div>
 
         <Tabs defaultValue="map" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-8">
+          <TabsList className="grid w-full grid-cols-2 mb-8">
             <TabsTrigger value="map" className="flex items-center gap-2">
               <MapPin className="h-4 w-4" />
               Interactive Map
-            </TabsTrigger>
-            <TabsTrigger value="database" className="flex items-center gap-2">
-              <Database className="h-4 w-4" />
-              Database Filter
             </TabsTrigger>
             <TabsTrigger value="network" className="flex items-center gap-2">
               <Activity className="h-4 w-4" />
@@ -162,9 +157,6 @@ const DataMap = () => {
             <InteractiveMap sites={networkSites} onSiteClick={(site) => console.log('Site clicked:', site)} />
           </TabsContent>
 
-          <TabsContent value="database" className="space-y-6">
-            <DatabaseFilter />
-          </TabsContent>
 
           <TabsContent value="network" className="space-y-6">
             {/* Network Overview */}
