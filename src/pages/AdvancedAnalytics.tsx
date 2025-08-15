@@ -122,60 +122,63 @@ const AdvancedAnalytics = () => {
     <div className="min-h-screen bg-muted/30">
       {/* Header */}
       <div className="bg-white border-b sticky top-0 z-40">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
               <Button 
                 variant="ghost" 
                 size="sm" 
                 onClick={() => navigate('/')}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 self-start"
               >
                 <ArrowLeft className="h-4 w-4" />
-                Back to Main
+                <span className="hidden sm:inline">Back to Main</span>
+                <span className="sm:hidden">Back</span>
               </Button>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Advanced Snow Depth Analytics</h1>
-                <p className="text-sm text-muted-foreground">Comprehensive time series analysis and seasonal comparisons</p>
+              <div className="w-full sm:w-auto">
+                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">Advanced Snow Depth Analytics</h1>
+                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">Comprehensive time series analysis and seasonal comparisons</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="flex items-center gap-1">
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+              <Badge variant="outline" className="flex items-center gap-1 text-xs">
                 <Database className="h-3 w-3" />
-                {dataType === 'clean' ? 'Clean Data' : 'Raw Data'}
+                <span className="hidden sm:inline">{dataType === 'clean' ? 'Clean Data' : 'Raw Data'}</span>
+                <span className="sm:hidden">{dataType === 'clean' ? 'Clean' : 'Raw'}</span>
               </Badge>
-              <Button size="sm" variant="outline">
-                <Download className="h-4 w-4 mr-2" />
-                Export Data
+              <Button size="sm" variant="outline" className="text-xs">
+                <Download className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Export Data</span>
+                <span className="sm:hidden">Export</span>
               </Button>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 lg:py-8">
         {/* Controls Panel */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Filter className="h-5 w-5" />
+        <Card className="mb-6 sm:mb-8">
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Filter className="h-4 w-4 sm:h-5 sm:w-5" />
               Analysis Controls
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-6">
               <div className="space-y-2">
-                <Label>Location</Label>
+                <Label className="text-sm font-medium">Location</Label>
                 <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {locations.map(location => (
                       <SelectItem key={location.id} value={location.id}>
                         <div className="flex items-center justify-between w-full">
-                          <span>{location.name}</span>
-                          <span className="text-xs text-muted-foreground ml-2">{location.elevation}</span>
+                          <span className="text-sm">{location.name}</span>
+                          <span className="text-xs text-muted-foreground ml-2 hidden sm:inline">{location.elevation}</span>
                         </div>
                       </SelectItem>
                     ))}
@@ -184,17 +187,17 @@ const AdvancedAnalytics = () => {
               </div>
 
               <div className="space-y-2">
-                <Label>Season</Label>
+                <Label className="text-sm font-medium">Season</Label>
                 <Select value={selectedSeason} onValueChange={setSelectedSeason}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {seasons.map(season => (
                       <SelectItem key={season.id} value={season.id}>
                         <div className="flex items-center justify-between w-full">
-                          <span>{season.name}</span>
-                          <Badge variant={season.status === 'current' ? 'default' : 'secondary'} className="ml-2">
+                          <span className="text-sm">{season.name}</span>
+                          <Badge variant={season.status === 'current' ? 'default' : 'secondary'} className="ml-2 text-xs hidden sm:inline-flex">
                             {season.status}
                           </Badge>
                         </div>
@@ -205,26 +208,26 @@ const AdvancedAnalytics = () => {
               </div>
 
               <div className="space-y-2">
-                <Label>Data Type</Label>
+                <Label className="text-sm font-medium">Data Type</Label>
                 <Select value={dataType} onValueChange={setDataType}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="clean">Clean Data</SelectItem>
-                    <SelectItem value="raw">Raw Data</SelectItem>
+                    <SelectItem value="clean" className="text-sm">Clean Data</SelectItem>
+                    <SelectItem value="raw" className="text-sm">Raw Data</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 <div className="flex items-center space-x-2">
                   <Switch 
                     id="realtime" 
                     checked={showRealTime}
                     onCheckedChange={setShowRealTime}
                   />
-                  <Label htmlFor="realtime" className="text-sm">Real-time Updates</Label>
+                  <Label htmlFor="realtime" className="text-xs sm:text-sm">Real-time Updates</Label>
                 </div>
                 {showRealTime && (
                   <div className="flex items-center gap-1 text-green-600">
@@ -234,9 +237,9 @@ const AdvancedAnalytics = () => {
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label>Quick Stats</Label>
-                <div className="text-sm space-y-1">
+              <div className="space-y-2 sm:col-span-2 xl:col-span-1">
+                <Label className="text-sm font-medium">Quick Stats</Label>
+                <div className="text-xs sm:text-sm space-y-1">
                   <div className="flex justify-between">
                     <span>Max Depth:</span>
                     <span className="font-medium">{stats.max}cm</span>
@@ -256,38 +259,42 @@ const AdvancedAnalytics = () => {
         </Card>
 
         {/* Main Analytics */}
-        <Tabs defaultValue="timeseries" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="timeseries" className="flex items-center gap-2">
-              <LineChart className="h-4 w-4" />
-              Time Series
+        <Tabs defaultValue="timeseries" className="space-y-4 sm:space-y-6">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto">
+            <TabsTrigger value="timeseries" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm p-2 sm:p-3">
+              <LineChart className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Time Series</span>
+              <span className="sm:hidden">Time</span>
             </TabsTrigger>
-            <TabsTrigger value="seasonal" className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Seasonal Compare
+            <TabsTrigger value="seasonal" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm p-2 sm:p-3">
+              <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Seasonal Compare</span>
+              <span className="sm:hidden">Seasonal</span>
             </TabsTrigger>
-            <TabsTrigger value="correlation" className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Correlation
+            <TabsTrigger value="correlation" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm p-2 sm:p-3">
+              <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Correlation</span>
+              <span className="sm:hidden">Corr</span>
             </TabsTrigger>
-            <TabsTrigger value="forecasting" className="flex items-center gap-2">
-              <Zap className="h-4 w-4" />
-              Forecasting
+            <TabsTrigger value="forecasting" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm p-2 sm:p-3">
+              <Zap className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Forecasting</span>
+              <span className="sm:hidden">Forecast</span>
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="timeseries" className="space-y-6">
-            <div className="grid lg:grid-cols-3 gap-6">
+          <TabsContent value="timeseries" className="space-y-4 sm:space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
               {/* Main Time Series Chart */}
               <Card className="lg:col-span-2">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Snowflake className="h-5 w-5 text-blue-500" />
-                    Snow Depth Time Series - {selectedSeason}
+                <CardHeader className="pb-3 sm:pb-6">
+                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                    <Snowflake className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
+                    <span className="truncate">Snow Depth Time Series - {selectedSeason}</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={400}>
+                  <ResponsiveContainer width="100%" height={300} className="sm:h-[400px]">
                     <RechartsLineChart data={snowDepthData || []}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis 
@@ -336,32 +343,32 @@ const AdvancedAnalytics = () => {
 
               {/* Statistics Panel */}
               <Card>
-                <CardHeader>
-                  <CardTitle>Analysis Summary</CardTitle>
+                <CardHeader className="pb-3 sm:pb-6">
+                  <CardTitle className="text-base sm:text-lg">Analysis Summary</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center p-3 bg-blue-50 rounded-lg">
-                      <div className="text-2xl font-bold text-blue-600">{stats.max}</div>
-                      <div className="text-xs text-blue-600">Max Depth (cm)</div>
+                <CardContent className="space-y-3 sm:space-y-4">
+                  <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                    <div className="text-center p-2 sm:p-3 bg-blue-50 rounded-lg">
+                      <div className="text-lg sm:text-2xl font-bold text-blue-600">{stats.max}</div>
+                      <div className="text-[10px] sm:text-xs text-blue-600">Max Depth (cm)</div>
                     </div>
-                    <div className="text-center p-3 bg-green-50 rounded-lg">
-                      <div className="text-2xl font-bold text-green-600">{stats.average}</div>
-                      <div className="text-xs text-green-600">Season Avg (cm)</div>
+                    <div className="text-center p-2 sm:p-3 bg-green-50 rounded-lg">
+                      <div className="text-lg sm:text-2xl font-bold text-green-600">{stats.average}</div>
+                      <div className="text-[10px] sm:text-xs text-green-600">Season Avg (cm)</div>
                     </div>
-                    <div className="text-center p-3 bg-orange-50 rounded-lg">
-                      <div className="text-2xl font-bold text-orange-600">{stats.current}</div>
-                      <div className="text-xs text-orange-600">Current (cm)</div>
+                    <div className="text-center p-2 sm:p-3 bg-orange-50 rounded-lg">
+                      <div className="text-lg sm:text-2xl font-bold text-orange-600">{stats.current}</div>
+                      <div className="text-[10px] sm:text-xs text-orange-600">Current (cm)</div>
                     </div>
-                    <div className="text-center p-3 bg-purple-50 rounded-lg">
-                      <div className="text-2xl font-bold text-purple-600">{stats.dataPoints}</div>
-                      <div className="text-xs text-purple-600">Data Points</div>
+                    <div className="text-center p-2 sm:p-3 bg-purple-50 rounded-lg">
+                      <div className="text-lg sm:text-2xl font-bold text-purple-600">{stats.dataPoints}</div>
+                      <div className="text-[10px] sm:text-xs text-purple-600">Data Points</div>
                     </div>
                   </div>
 
-                  <div className="space-y-3 pt-4 border-t">
-                    <h4 className="font-medium">Location Details</h4>
-                    <div className="text-sm space-y-2">
+                  <div className="space-y-2 sm:space-y-3 pt-3 sm:pt-4 border-t">
+                    <h4 className="text-sm sm:text-base font-medium">Location Details</h4>
+                    <div className="text-xs sm:text-sm space-y-1 sm:space-y-2">
                       {locations.filter(l => l.id === selectedLocation).map(location => (
                         <div key={location.id}>
                           <div className="font-medium">{location.name}</div>
@@ -371,7 +378,7 @@ const AdvancedAnalytics = () => {
                     </div>
                   </div>
 
-                  <Button className="w-full" size="sm">
+                  <Button className="w-full text-xs sm:text-sm" size="sm">
                     Generate Report
                   </Button>
                 </CardContent>
@@ -379,13 +386,13 @@ const AdvancedAnalytics = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="seasonal" className="space-y-6">
+          <TabsContent value="seasonal" className="space-y-4 sm:space-y-6">
             <Card>
-              <CardHeader>
-                <CardTitle>Multi-Season Comparison</CardTitle>
+              <CardHeader className="pb-3 sm:pb-6">
+                <CardTitle className="text-base sm:text-lg">Multi-Season Comparison</CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={400}>
+                <ResponsiveContainer width="100%" height={300} className="sm:h-[400px]">
                   <BarChart data={seasonComparison}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="season" />
@@ -400,13 +407,13 @@ const AdvancedAnalytics = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="correlation" className="space-y-6">
+          <TabsContent value="correlation" className="space-y-4 sm:space-y-6">
             <Card>
-              <CardHeader>
-                <CardTitle>Snow Depth vs Temperature Correlation</CardTitle>
+              <CardHeader className="pb-3 sm:pb-6">
+                <CardTitle className="text-base sm:text-lg">Snow Depth vs Temperature Correlation</CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={400}>
+                <ResponsiveContainer width="100%" height={300} className="sm:h-[400px]">
                   <ScatterChart data={timeSeriesData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="temperature" name="Temperature (°C)" />
@@ -422,10 +429,10 @@ const AdvancedAnalytics = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="forecasting" className="space-y-6">
+          <TabsContent value="forecasting" className="space-y-4 sm:space-y-6">
             <Card>
-              <CardHeader>
-                <CardTitle>Snow Depth Forecasting Model</CardTitle>
+              <CardHeader className="pb-3 sm:pb-6">
+                <CardTitle className="text-base sm:text-lg">Snow Depth Forecasting Model</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-center py-20">
