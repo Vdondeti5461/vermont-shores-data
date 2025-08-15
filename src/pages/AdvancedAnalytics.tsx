@@ -435,9 +435,23 @@ const AdvancedAnalytics = () => {
                     Machine learning models for snow depth prediction based on historical patterns,
                     weather forecasts, and elevation data.
                   </p>
-                  <Button>
-                    Run Forecasting Model
-                  </Button>
+                  <div className="flex gap-4 justify-center flex-wrap">
+                    <Button>
+                      Run Forecasting Model
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => window.open('https://www.uvm.edu/femc/data/archive/project/mount-mansfield-summit-meteorology', '_blank')}
+                    >
+                      Mount Mansfield Research
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => window.open('https://www.uvm.edu/water/news/university-vermont-begin-developing-statewide-weather-monitoring-network', '_blank')}
+                    >
+                      Weather Network Project
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>

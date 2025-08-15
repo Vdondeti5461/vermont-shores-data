@@ -402,11 +402,15 @@ const Analytics = () => {
                 <Button 
                   size="lg" 
                   className="btn-research"
-                  onClick={() => navigate('/advanced-analytics')}
+                  onClick={() => window.open('/advanced-analytics', '_blank')}
                 >
                   Launch Advanced Analytics
                 </Button>
-                <Button size="lg" variant="outline">
+                <Button 
+                  size="lg" 
+                  variant="outline"
+                  onClick={() => window.open('https://www.uvm.edu/ovpr/news/uvm-researchers-unpack-complexity-snow-vermont', '_blank')}
+                >
                   View Documentation
                 </Button>
               </div>
