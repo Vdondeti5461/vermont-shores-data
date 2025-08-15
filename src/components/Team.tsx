@@ -37,20 +37,20 @@ const Team = () => {
   return (
     <section id="team" className="py-20 bg-muted/30">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-16">
-          <Badge variant="outline" className="mb-4">
+        <div className="text-center mb-12 sm:mb-16">
+          <Badge variant="outline" className="mb-4 text-xs sm:text-sm">
             Research Team
           </Badge>
-          <h2 className="scientific-heading text-4xl md:text-5xl mb-6">
+          <h2 className="scientific-heading text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-4 sm:mb-6 px-2">
             <span className="text-primary">Meet</span> Our Team
           </h2>
-          <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+          <p className="text-sm sm:text-base lg:text-lg text-muted-foreground max-w-3xl mx-auto px-4">
             The Summit 2 Shore project brings together experts from multiple disciplines 
             to monitor and understand Vermont's changing environmental conditions.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {teamMembers.map((member, index) => (
             <Card key={index} className="data-card group hover:shadow-lg transition-all duration-300">
               <CardContent className="p-6 text-center">

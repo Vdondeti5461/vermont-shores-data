@@ -229,4 +229,51 @@ All colors MUST be HSL. Scientific, professional theme with UVM branding.
     background: hsl(var(--accent) / 0.9);
     transform: translateY(-1px);
   }
+
+  /* Mobile-specific improvements */
+  @media (max-width: 640px) {
+    .container {
+      padding-left: 0.75rem;
+      padding-right: 0.75rem;
+    }
+    
+    .scientific-heading {
+      font-size: 1.5rem;
+      line-height: 1.25;
+    }
+    
+    .btn-research {
+      font-size: 0.875rem;
+      padding-left: 1rem;
+      padding-right: 1rem;
+      padding-top: 0.5rem;
+      padding-bottom: 0.5rem;
+    }
+    
+    .data-card {
+      padding: 1rem;
+    }
+  }
+
+  /* Touch targets for mobile */
+  @media (hover: none) {
+    .hover-scale:hover {
+      transform: none;
+    }
+    
+    .hover-scale:active {
+      transform: scale(0.98);
+    }
+  }
+
+  /* Ensure proper text scaling on mobile */
+  @media (max-width: 480px) {
+    html {
+      -webkit-text-size-adjust: 100%;
+    }
+    
+    .scientific-heading {
+      font-size: 1.25rem;
+    }
+  }
 }

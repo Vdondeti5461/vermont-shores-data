@@ -128,27 +128,27 @@ const Analytics = () => {
   ];
 
   return (
-    <section id="analytics" className="py-20 bg-muted/30">
+    <section id="analytics" className="py-12 sm:py-16 md:py-20 bg-muted/30">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-16">
-          <Badge variant="outline" className="mb-4">
+        <div className="text-center mb-12 sm:mb-16">
+          <Badge variant="outline" className="mb-4 text-xs sm:text-sm">
             Advanced Time Series Analytics
           </Badge>
-          <h2 className="scientific-heading text-4xl md:text-5xl mb-6">
+          <h2 className="scientific-heading text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-4 sm:mb-6 px-2">
             <span className="text-primary">Seasonal</span> Environmental Analytics
           </h2>
-          <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+          <p className="text-sm sm:text-base lg:text-lg text-muted-foreground max-w-3xl mx-auto px-4">
             Comprehensive time series analysis revealing seasonal patterns, climate trends, and environmental 
             variations across Vermont's monitoring network. Explore multi-year datasets with advanced filtering.
           </p>
         </div>
 
         {/* Controls */}
-        <div className="flex flex-wrap gap-4 mb-8 justify-center">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Location</label>
+        <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 mb-6 sm:mb-8 justify-center px-4">
+          <div className="space-y-2 w-full sm:w-auto">
+            <label className="text-xs sm:text-sm font-medium">Location</label>
             <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-full sm:w-48">
                 <SelectValue placeholder="Select location" />
               </SelectTrigger>
               <SelectContent>
@@ -160,10 +160,10 @@ const Analytics = () => {
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Metric</label>
+          <div className="space-y-2 w-full sm:w-auto">
+            <label className="text-xs sm:text-sm font-medium">Metric</label>
             <Select value={selectedMetric} onValueChange={setSelectedMetric}>
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-full sm:w-48">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -177,7 +177,7 @@ const Analytics = () => {
         </div>
 
         {/* Current Metrics with Seasonal Context */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8 sm:mb-12 px-4 sm:px-0">
           {currentMetrics.map((metric, index) => {
             const Icon = metric.icon;
             return (
@@ -211,22 +211,24 @@ const Analytics = () => {
         </div>
 
         {/* Main Analytics Tabs */}
-        <Tabs defaultValue="seasonal" className="space-y-8">
-          <TabsList className="grid w-full grid-cols-4 lg:w-2/3 mx-auto">
-            <TabsTrigger value="seasonal" className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Seasonal
+        <Tabs defaultValue="seasonal" className="space-y-6 sm:space-y-8">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:w-2/3 mx-auto h-auto p-1 text-xs sm:text-sm">
+            <TabsTrigger value="seasonal" className="flex items-center gap-1 sm:gap-2 p-2 sm:p-3">
+              <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Seasonal</span>
+              <span className="sm:hidden">Season</span>
             </TabsTrigger>
-            <TabsTrigger value="trends" className="flex items-center gap-2">
-              <LineChart className="h-4 w-4" />
+            <TabsTrigger value="trends" className="flex items-center gap-1 sm:gap-2 p-2 sm:p-3">
+              <LineChart className="h-3 w-3 sm:h-4 sm:w-4" />
               Trends
             </TabsTrigger>
-            <TabsTrigger value="comparison" className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Compare
+            <TabsTrigger value="comparison" className="flex items-center gap-1 sm:gap-2 p-2 sm:p-3">
+              <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Compare</span>
+              <span className="sm:hidden">Comp</span>
             </TabsTrigger>
-            <TabsTrigger value="anomalies" className="flex items-center gap-2">
-              <Activity className="h-4 w-4" />
+            <TabsTrigger value="anomalies" className="flex items-center gap-1 sm:gap-2 p-2 sm:p-3">
+              <Activity className="h-3 w-3 sm:h-4 sm:w-4" />
               Events
             </TabsTrigger>
           </TabsList>
@@ -390,28 +392,31 @@ const Analytics = () => {
         </Tabs>
 
         {/* CTA Section */}
-        <div className="text-center mt-16">
+        <div className="text-center mt-12 sm:mt-16">
           <Card className="max-w-2xl mx-auto">
-            <CardContent className="p-8">
-              <h3 className="text-2xl font-bold mb-4">Advanced Analytics Dashboard</h3>
-              <p className="text-muted-foreground mb-6">
+            <CardContent className="p-4 sm:p-6 md:p-8">
+              <h3 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">Advanced Analytics Dashboard</h3>
+              <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6">
                 Access the full-featured analytics dashboard with advanced time series analysis, 
                 seasonal comparisons, snow depth forecasting, and sophisticated data modeling capabilities.
               </p>
-              <div className="flex gap-4 justify-center">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
                 <Button 
                   size="lg" 
-                  className="btn-research"
+                  className="btn-research w-full sm:w-auto text-sm sm:text-base px-4 sm:px-6 py-2 sm:py-3"
                   onClick={() => window.open('/advanced-analytics', '_blank')}
                 >
-                  Launch Advanced Analytics
+                  <span className="hidden sm:inline">Launch Advanced Analytics</span>
+                  <span className="sm:hidden">Advanced Analytics</span>
                 </Button>
                 <Button 
                   size="lg" 
                   variant="outline"
+                  className="w-full sm:w-auto text-sm sm:text-base px-4 sm:px-6 py-2 sm:py-3"
                   onClick={() => window.open('https://www.uvm.edu/ovpr/news/uvm-researchers-unpack-complexity-snow-vermont', '_blank')}
                 >
-                  View Documentation
+                  <span className="hidden sm:inline">View Documentation</span>
+                  <span className="sm:hidden">Documentation</span>
                 </Button>
               </div>
             </CardContent>
