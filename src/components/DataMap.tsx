@@ -1,9 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MapPin, Eye, Activity, Mountain } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { MapPin, Eye, Activity, Mountain, Database, Filter } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
+import DatabaseFilter from './DatabaseFilter';
+import InteractiveMap from './InteractiveMap';
 
 interface Location {
   id: number;
@@ -139,219 +142,135 @@ const DataMap = () => {
           </p>
         </div>
 
-        {/* Network Overview Header */}
-        <div className="mb-8 text-center">
-          <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-            <Card className="bg-red-50 border-red-200">
-              <CardContent className="p-4">
-                <div className="text-2xl font-bold text-red-700">{networkSites.filter(s => s.type === 'ranch_brook').length}</div>
-                <div className="text-sm text-red-600">Ranch Brook Sites</div>
-                <div className="text-xs text-muted-foreground">Mount Mansfield Transect</div>
-              </CardContent>
-            </Card>
-            <Card className="bg-blue-50 border-blue-200">
-              <CardContent className="p-4">
-                <div className="text-2xl font-bold text-blue-700">{networkSites.filter(s => s.type === 'distributed').length}</div>
-                <div className="text-sm text-blue-600">Distributed Sites</div>
-                <div className="text-xs text-muted-foreground">Regional Network</div>
-              </CardContent>
-            </Card>
-            <Card className="bg-green-50 border-green-200">
-              <CardContent className="p-4">
-                <div className="text-2xl font-bold text-green-700">{networkSites.length}</div>
-                <div className="text-sm text-green-600">Total Sites</div>
-                <div className="text-xs text-muted-foreground">47m - 1163m elevation</div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-          
-        {/* Interactive Network Map */}
-        <Card className="data-card mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5 text-primary" />
-              Summit 2 Shore Observatory Network
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              22 monitoring sites across Vermont's elevational gradients - Click sites for details
-            </p>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[700px] bg-gradient-to-br from-green-50 to-blue-50 rounded-lg relative overflow-hidden border">
-              
-              {/* Vermont State Outline */}
-              <svg viewBox="0 0 400 500" className="absolute inset-0 w-full h-full opacity-30">
-                <path 
-                  d="M50 60 L350 60 L340 140 L320 220 L300 300 L280 380 L260 460 L80 470 L60 390 L40 310 L30 230 L20 150 Z" 
-                  fill="currentColor" 
-                  className="text-green-200"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                />
-              </svg>
+        <Tabs defaultValue="map" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 mb-8">
+            <TabsTrigger value="map" className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              Interactive Map
+            </TabsTrigger>
+            <TabsTrigger value="database" className="flex items-center gap-2">
+              <Database className="h-4 w-4" />
+              Database Filter
+            </TabsTrigger>
+            <TabsTrigger value="network" className="flex items-center gap-2">
+              <Activity className="h-4 w-4" />
+              Network Overview
+            </TabsTrigger>
+          </TabsList>
 
-              {/* Site Markers */}
-              {networkSites.map((site) => {
-                // Convert coordinates to map position (rough approximation for Vermont)
-                const mapX = ((site.longitude + 73.5) * 800) + 50; // Adjust longitude scaling
-                const mapY = ((44.8 - site.latitude) * 900) + 50; // Adjust latitude scaling
-                
-                return (
-                  <div
-                    key={site.id}
-                    className={`absolute ${getElevationSize(site.elevation)} rounded-full border-2 border-white shadow-lg cursor-pointer transform hover:scale-150 transition-all duration-300 hover:z-50 group`}
-                    style={{
-                      backgroundColor: getElevationColor(site.elevation, site.type),
-                      left: `${Math.max(5, Math.min(95, (mapX / 400) * 100))}%`,
-                      top: `${Math.max(5, Math.min(95, (mapY / 500) * 100))}%`,
-                      boxShadow: `0 0 0 2px rgba(255,255,255,0.9), 0 2px 8px rgba(0,0,0,0.3)`
-                    }}
-                  >
-                    {/* Site Info Tooltip */}
-                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity z-50">
-                      <div className="bg-white/95 backdrop-blur-sm rounded-lg p-3 border shadow-lg whitespace-nowrap">
-                        <div className="font-bold text-sm">{site.shortName}</div>
-                        <div className="text-xs text-muted-foreground">{site.name}</div>
-                        <div className="text-xs mt-1">
-                          <div>Elevation: {site.elevation}m</div>
-                          <div>Lat: {site.latitude.toFixed(4)}°N</div>
-                          <div>Lng: {site.longitude.toFixed(4)}°W</div>
-                        </div>
-                        <div className="text-xs mt-1">
-                          <Badge 
-                            variant="outline" 
-                            className={site.type === 'ranch_brook' ? 'text-red-700 border-red-300' : 'text-blue-700 border-blue-300'}
-                          >
-                            {site.type === 'ranch_brook' ? 'Ranch Brook' : 'Distributed'}
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+          <TabsContent value="map" className="space-y-6">
+            <InteractiveMap sites={networkSites} onSiteClick={(site) => console.log('Site clicked:', site)} />
+          </TabsContent>
 
-              {/* Legend */}
-              <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg p-4 border shadow-lg">
-                <h4 className="font-semibold mb-3 text-gray-800">Network Legend</h4>
-                
-                {/* Site Types */}
-                <div className="space-y-3 mb-4">
-                  <div className="text-sm font-medium text-gray-700">Site Types:</div>
-                  <div className="flex items-center gap-2 text-xs">
-                    <div className="w-4 h-4 rounded-full bg-red-600 border border-white"></div>
-                    <span>Ranch Brook (Mount Mansfield)</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs">
-                    <div className="w-4 h-4 rounded-full bg-blue-600 border border-white"></div>
-                    <span>Distributed Sites</span>
-                  </div>
-                </div>
-                
-                {/* Elevation Scale */}
-                <div className="space-y-2">
-                  <div className="text-sm font-medium text-gray-700">Elevation:</div>
-                  <div className="flex items-center gap-2 text-xs">
-                    <div className="w-3 h-3 rounded-full bg-green-500 border border-white"></div>
-                    <span>&lt; 200m (Valley)</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs">
-                    <div className="w-4 h-4 rounded-full bg-blue-500 border border-white"></div>
-                    <span>200-500m (Mid)</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs">
-                    <div className="w-5 h-5 rounded-full bg-purple-500 border border-white"></div>
-                    <span>&gt; 500m (High)</span>
-                  </div>
-                </div>
-              </div>
+          <TabsContent value="database" className="space-y-6">
+            <DatabaseFilter />
+          </TabsContent>
 
-              {/* Mount Mansfield Highlight */}
-              <div className="absolute top-1/3 right-1/4 bg-red-100/80 border border-red-300 rounded-lg p-2 text-xs">
-                <div className="font-semibold text-red-800">Mount Mansfield</div>
-                <div className="text-red-600">13 Ranch Brook Sites</div>
-                <div className="text-red-500">324m - 1163m</div>
+          <TabsContent value="network" className="space-y-6">
+            {/* Network Overview */}
+            <div className="mb-8 text-center">
+              <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+                <Card className="bg-red-50 border-red-200">
+                  <CardContent className="p-4">
+                    <div className="text-2xl font-bold text-red-700">{networkSites.filter(s => s.type === 'ranch_brook').length}</div>
+                    <div className="text-sm text-red-600">Ranch Brook Sites</div>
+                    <div className="text-xs text-muted-foreground">Mount Mansfield Transect</div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-blue-50 border-blue-200">
+                  <CardContent className="p-4">
+                    <div className="text-2xl font-bold text-blue-700">{networkSites.filter(s => s.type === 'distributed').length}</div>
+                    <div className="text-sm text-blue-600">Distributed Sites</div>
+                    <div className="text-xs text-muted-foreground">Regional Network</div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-green-50 border-green-200">
+                  <CardContent className="p-4">
+                    <div className="text-2xl font-bold text-green-700">{networkSites.length}</div>
+                    <div className="text-sm text-green-600">Total Sites</div>
+                    <div className="text-xs text-muted-foreground">47m - 1163m elevation</div>
+                  </CardContent>
+                </Card>
               </div>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Site Directory */}
-        <div className="grid lg:grid-cols-2 gap-8">
-          
-          {/* Ranch Brook Sites */}
-          <Card className="data-card border-red-200">
-            <CardHeader className="bg-red-50">
-              <CardTitle className="text-red-800 flex items-center gap-2">
-                <Mountain className="h-5 w-5" />
-                Ranch Brook Transect
-              </CardTitle>
-              <p className="text-sm text-red-600">Mount Mansfield elevational gradient</p>
-            </CardHeader>
-            <CardContent className="p-4">
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {networkSites
-                  .filter(site => site.type === 'ranch_brook')
-                  .sort((a, b) => a.elevation - b.elevation)
-                  .map((site) => (
-                    <div key={site.id} className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-100 hover:bg-red-100 transition-colors">
-                      <div>
-                        <div className="font-semibold text-sm">{site.shortName}</div>
-                        <div className="text-xs text-muted-foreground">{site.name}</div>
-                        <div className="text-xs text-red-600 mt-1">
-                          {site.latitude.toFixed(4)}°N, {site.longitude.toFixed(4)}°W
+            {/* Site Directory */}
+            <div className="grid lg:grid-cols-2 gap-8">
+              
+              {/* Ranch Brook Sites */}
+              <Card className="data-card border-red-200">
+                <CardHeader className="bg-red-50">
+                  <CardTitle className="text-red-800 flex items-center gap-2">
+                    <Mountain className="h-5 w-5" />
+                    Ranch Brook Transect
+                  </CardTitle>
+                  <p className="text-sm text-red-600">Mount Mansfield elevational gradient</p>
+                </CardHeader>
+                <CardContent className="p-4">
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {networkSites
+                      .filter(site => site.type === 'ranch_brook')
+                      .sort((a, b) => a.elevation - b.elevation)
+                      .map((site) => (
+                        <div key={site.id} className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-100 hover:bg-red-100 transition-colors">
+                          <div>
+                            <div className="font-semibold text-sm">{site.shortName}</div>
+                            <div className="text-xs text-muted-foreground">{site.name}</div>
+                            <div className="text-xs text-red-600 mt-1">
+                              {site.latitude.toFixed(4)}°N, {site.longitude.toFixed(4)}°W
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-bold text-lg text-red-700">{site.elevation}m</div>
+                            <div 
+                              className="w-4 h-4 rounded-full border border-white mx-auto mt-1"
+                              style={{ backgroundColor: getElevationColor(site.elevation, site.type) }}
+                            ></div>
+                          </div>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-bold text-lg text-red-700">{site.elevation}m</div>
-                        <div 
-                          className="w-4 h-4 rounded-full border border-white mx-auto mt-1"
-                          style={{ backgroundColor: getElevationColor(site.elevation, site.type) }}
-                        ></div>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </CardContent>
-          </Card>
+                      ))}
+                  </div>
+                </CardContent>
+              </Card>
 
-          {/* Distributed Sites */}
-          <Card className="data-card border-blue-200">
-            <CardHeader className="bg-blue-50">
-              <CardTitle className="text-blue-800 flex items-center gap-2">
-                <MapPin className="h-5 w-5" />
-                Distributed Network
-              </CardTitle>
-              <p className="text-sm text-blue-600">Regional monitoring stations</p>
-            </CardHeader>
-            <CardContent className="p-4">
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {networkSites
-                  .filter(site => site.type === 'distributed')
-                  .sort((a, b) => a.elevation - b.elevation)
-                  .map((site) => (
-                    <div key={site.id} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-100 hover:bg-blue-100 transition-colors">
-                      <div>
-                        <div className="font-semibold text-sm">{site.shortName}</div>
-                        <div className="text-xs text-muted-foreground">{site.name}</div>
-                        <div className="text-xs text-blue-600 mt-1">
-                          {site.latitude.toFixed(4)}°N, {site.longitude.toFixed(4)}°W
+              {/* Distributed Sites */}
+              <Card className="data-card border-blue-200">
+                <CardHeader className="bg-blue-50">
+                  <CardTitle className="text-blue-800 flex items-center gap-2">
+                    <MapPin className="h-5 w-5" />
+                    Distributed Network
+                  </CardTitle>
+                  <p className="text-sm text-blue-600">Regional monitoring stations</p>
+                </CardHeader>
+                <CardContent className="p-4">
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {networkSites
+                      .filter(site => site.type === 'distributed')
+                      .sort((a, b) => a.elevation - b.elevation)
+                      .map((site) => (
+                        <div key={site.id} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-100 hover:bg-blue-100 transition-colors">
+                          <div>
+                            <div className="font-semibold text-sm">{site.shortName}</div>
+                            <div className="text-xs text-muted-foreground">{site.name}</div>
+                            <div className="text-xs text-blue-600 mt-1">
+                              {site.latitude.toFixed(4)}°N, {site.longitude.toFixed(4)}°W
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-bold text-lg text-blue-700">{site.elevation}m</div>
+                            <div 
+                              className="w-4 h-4 rounded-full border border-white mx-auto mt-1"
+                              style={{ backgroundColor: getElevationColor(site.elevation, site.type) }}
+                            ></div>
+                          </div>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-bold text-lg text-blue-700">{site.elevation}m</div>
-                        <div 
-                          className="w-4 h-4 rounded-full border border-white mx-auto mt-1"
-                          style={{ backgroundColor: getElevationColor(site.elevation, site.type) }}
-                        ></div>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                      ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </section>
   );
