@@ -13,112 +13,108 @@ import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 
 // Mock data for demonstration - replace with your local database queries
-const mockLocations = [
-  { id: 'RB-13', name: 'Mount Mansfield Summit', type: 'ranch_brook', elevation: 1163, lat: 44.5284, lng: -72.8147 },
-  { id: 'RB-01', name: 'Site #1', type: 'ranch_brook', elevation: 1072, lat: 44.5232, lng: -72.8087 },
-  { id: 'RB-02', name: 'Site #2', type: 'ranch_brook', elevation: 911, lat: 44.5178, lng: -72.8104 },
-  { id: 'RB-03', name: 'Site #3', type: 'ranch_brook', elevation: 795, lat: 44.5148, lng: -72.8091 },
-  { id: 'RB-06', name: 'Site #6', type: 'ranch_brook', elevation: 412, lat: 44.5037, lng: -72.7836 },
-  { id: 'RB-11', name: 'Site #11', type: 'ranch_brook', elevation: 380, lat: 44.5055, lng: -72.7714 },
-  { id: 'FEMC', name: 'FEMC', type: 'distributed', elevation: 872, lat: 44.5189, lng: -72.7979 },
-  { id: 'PROC', name: 'Proctor Maple', type: 'distributed', elevation: 422, lat: 44.5285, lng: -72.8667 },
-  { id: 'JER-F', name: 'Jericho (Forested)', type: 'distributed', elevation: 196, lat: 44.4478, lng: -73.0027 },
-  { id: 'JER-C', name: 'Jericho (Clearing)', type: 'distributed', elevation: 198, lat: 44.4477, lng: -73.0025 },
-  { id: 'SPEAR', name: 'Spear St', type: 'distributed', elevation: 86, lat: 44.4526, lng: -73.1919 },
-  { id: 'POTASH', name: 'Potash Brook', type: 'distributed', elevation: 47, lat: 44.4448, lng: -73.2143 },
+const mockDatabases = [
+  { id: 'clean_data', name: 'Clean Data', description: 'Processed and validated environmental data' },
+  { id: 'final_clean_data', name: 'Final Clean Data', description: 'Quality-controlled final dataset' }
 ];
 
 const mockTables = [
   { 
-    id: 'weather_data', 
-    name: 'Weather Data', 
-    description: 'Temperature, humidity, precipitation measurements',
+    id: 'table1', 
+    name: 'Table 1', 
+    description: 'Primary environmental measurements',
     recordCount: '2.1M',
     lastUpdated: '2024-01-15'
   },
   { 
-    id: 'snow_data', 
-    name: 'Snow Data', 
-    description: 'Snow depth, SWE, temperature profiles',
+    id: 'wind', 
+    name: 'Wind Data', 
+    description: 'Wind speed, direction, and meteorological data',
     recordCount: '890K',
     lastUpdated: '2024-01-15'
   },
   { 
-    id: 'soil_data', 
-    name: 'Soil Data', 
-    description: 'Soil temperature and moisture at multiple depths',
+    id: 'precipitation', 
+    name: 'Precipitation Data', 
+    description: 'Rainfall, snow, and precipitation measurements',
     recordCount: '1.5M',
     lastUpdated: '2024-01-15'
   },
   { 
-    id: 'radiation_data', 
-    name: 'Radiation Data', 
-    description: 'Solar radiation, albedo measurements',
+    id: 'snowpktempprofile', 
+    name: 'Snow Pack Temperature Profile', 
+    description: 'Snow depth and temperature profile data',
     recordCount: '756K',
     lastUpdated: '2024-01-15'
-  },
-  { 
-    id: 'wind_data', 
-    name: 'Wind Data', 
-    description: 'Wind speed, direction, and gusts',
-    recordCount: '1.8M',
-    lastUpdated: '2024-01-15'
-  },
+  }
+];
+
+const mockLocations = [
+  { id: 'LOC-001', name: 'Mount Mansfield Summit', elevation: 1163, lat: 44.5284, lng: -72.8147 },
+  { id: 'LOC-002', name: 'Site Alpha', elevation: 1072, lat: 44.5232, lng: -72.8087 },
+  { id: 'LOC-003', name: 'Site Beta', elevation: 911, lat: 44.5178, lng: -72.8104 },
+  { id: 'LOC-004', name: 'Site Gamma', elevation: 795, lat: 44.5148, lng: -72.8091 },
+  { id: 'LOC-005', name: 'Site Delta', elevation: 680, lat: 44.5120, lng: -72.8065 },
+  { id: 'LOC-006', name: 'Site Epsilon', elevation: 590, lat: 44.5090, lng: -72.8040 },
+  { id: 'LOC-007', name: 'Site Zeta', elevation: 520, lat: 44.5070, lng: -72.8020 },
+  { id: 'LOC-008', name: 'Site Eta', elevation: 450, lat: 44.5050, lng: -72.7950 },
+  { id: 'LOC-009', name: 'Site Theta', elevation: 412, lat: 44.5037, lng: -72.7836 },
+  { id: 'LOC-010', name: 'Site Iota', elevation: 380, lat: 44.5055, lng: -72.7714 },
+  { id: 'LOC-011', name: 'FEMC Station', elevation: 872, lat: 44.5189, lng: -72.7979 },
+  { id: 'LOC-012', name: 'Proctor Maple Research', elevation: 422, lat: 44.5285, lng: -72.8667 },
+  { id: 'LOC-013', name: 'Jericho Forested', elevation: 196, lat: 44.4478, lng: -73.0027 },
+  { id: 'LOC-014', name: 'Jericho Clearing', elevation: 198, lat: 44.4477, lng: -73.0025 },
+  { id: 'LOC-015', name: 'Spear Street', elevation: 86, lat: 44.4526, lng: -73.1919 },
+  { id: 'LOC-016', name: 'Potash Brook', elevation: 47, lat: 44.4448, lng: -73.2143 },
+  { id: 'LOC-017', name: 'Valley Station A', elevation: 320, lat: 44.4520, lng: -72.9200 },
+  { id: 'LOC-018', name: 'Valley Station B', elevation: 280, lat: 44.4480, lng: -72.9150 },
+  { id: 'LOC-019', name: 'Ridge Station', elevation: 950, lat: 44.5300, lng: -72.8200 },
+  { id: 'LOC-020', name: 'Forest Edge', elevation: 650, lat: 44.5100, lng: -72.8300 },
+  { id: 'LOC-021', name: 'Lake Monitoring', elevation: 125, lat: 44.4600, lng: -73.0800 },
+  { id: 'LOC-022', name: 'Urban Interface', elevation: 90, lat: 44.4700, lng: -73.1500 }
 ];
 
 const mockAttributes = {
-  weather_data: [
+  table1: [
     { name: 'timestamp', type: 'datetime', description: 'Measurement timestamp (UTC)' },
     { name: 'air_temperature', type: 'float', description: 'Air temperature (°C)' },
     { name: 'relative_humidity', type: 'float', description: 'Relative humidity (%)' },
-    { name: 'precipitation', type: 'float', description: 'Precipitation amount (mm)' },
     { name: 'atmospheric_pressure', type: 'float', description: 'Atmospheric pressure (hPa)' },
-    { name: 'dew_point', type: 'float', description: 'Dew point temperature (°C)' },
-    { name: 'vapor_pressure', type: 'float', description: 'Vapor pressure (kPa)' }
+    { name: 'solar_radiation', type: 'float', description: 'Solar radiation (W/m²)' },
+    { name: 'soil_temperature', type: 'float', description: 'Soil temperature (°C)' }
   ],
-  snow_data: [
-    { name: 'timestamp', type: 'datetime', description: 'Measurement timestamp (UTC)' },
-    { name: 'snow_depth', type: 'float', description: 'Snow depth (cm)' },
-    { name: 'snow_water_equivalent', type: 'float', description: 'Snow water equivalent (mm)' },
-    { name: 'snow_temperature_surface', type: 'float', description: 'Surface snow temperature (°C)' },
-    { name: 'snow_temperature_10cm', type: 'float', description: 'Snow temperature at 10cm (°C)' },
-    { name: 'snow_temperature_20cm', type: 'float', description: 'Snow temperature at 20cm (°C)' },
-    { name: 'snow_density', type: 'float', description: 'Snow density (kg/m³)' }
-  ],
-  soil_data: [
-    { name: 'timestamp', type: 'datetime', description: 'Measurement timestamp (UTC)' },
-    { name: 'soil_temp_5cm', type: 'float', description: 'Soil temperature at 5cm depth (°C)' },
-    { name: 'soil_temp_10cm', type: 'float', description: 'Soil temperature at 10cm depth (°C)' },
-    { name: 'soil_temp_20cm', type: 'float', description: 'Soil temperature at 20cm depth (°C)' },
-    { name: 'soil_moisture_5cm', type: 'float', description: 'Soil moisture at 5cm depth (%)' },
-    { name: 'soil_moisture_10cm', type: 'float', description: 'Soil moisture at 10cm depth (%)' },
-    { name: 'soil_moisture_20cm', type: 'float', description: 'Soil moisture at 20cm depth (%)' }
-  ],
-  radiation_data: [
-    { name: 'timestamp', type: 'datetime', description: 'Measurement timestamp (UTC)' },
-    { name: 'solar_radiation_incoming', type: 'float', description: 'Incoming solar radiation (W/m²)' },
-    { name: 'solar_radiation_outgoing', type: 'float', description: 'Outgoing solar radiation (W/m²)' },
-    { name: 'albedo', type: 'float', description: 'Surface albedo (dimensionless)' },
-    { name: 'net_radiation', type: 'float', description: 'Net radiation (W/m²)' },
-    { name: 'longwave_radiation', type: 'float', description: 'Longwave radiation (W/m²)' }
-  ],
-  wind_data: [
+  wind: [
     { name: 'timestamp', type: 'datetime', description: 'Measurement timestamp (UTC)' },
     { name: 'wind_speed', type: 'float', description: 'Wind speed (m/s)' },
     { name: 'wind_direction', type: 'float', description: 'Wind direction (degrees)' },
     { name: 'wind_gust_speed', type: 'float', description: 'Wind gust speed (m/s)' },
     { name: 'wind_gust_direction', type: 'float', description: 'Wind gust direction (degrees)' },
     { name: 'wind_speed_std_dev', type: 'float', description: 'Wind speed standard deviation (m/s)' }
+  ],
+  precipitation: [
+    { name: 'timestamp', type: 'datetime', description: 'Measurement timestamp (UTC)' },
+    { name: 'precipitation_amount', type: 'float', description: 'Precipitation amount (mm)' },
+    { name: 'precipitation_intensity', type: 'float', description: 'Precipitation intensity (mm/hr)' },
+    { name: 'precipitation_type', type: 'string', description: 'Type of precipitation (rain/snow/mixed)' },
+    { name: 'cumulative_precipitation', type: 'float', description: 'Cumulative precipitation (mm)' }
+  ],
+  snowpktempprofile: [
+    { name: 'timestamp', type: 'datetime', description: 'Measurement timestamp (UTC)' },
+    { name: 'snow_depth', type: 'float', description: 'Snow depth (cm)' },
+    { name: 'snow_temperature_surface', type: 'float', description: 'Surface snow temperature (°C)' },
+    { name: 'snow_temperature_10cm', type: 'float', description: 'Snow temperature at 10cm (°C)' },
+    { name: 'snow_temperature_20cm', type: 'float', description: 'Snow temperature at 20cm (°C)' },
+    { name: 'snow_temperature_50cm', type: 'float', description: 'Snow temperature at 50cm (°C)' },
+    { name: 'snow_density', type: 'float', description: 'Snow density (kg/m³)' },
+    { name: 'snow_water_equivalent', type: 'float', description: 'Snow water equivalent (mm)' }
   ]
 };
 
 const DownloadInterface = () => {
   const { toast } = useToast();
   
-  // Wizard step state
-  const [currentStep, setCurrentStep] = useState(1);
-  
   // Filter states
+  const [selectedDatabase, setSelectedDatabase] = useState<string>('');
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   const [selectedTable, setSelectedTable] = useState<string>('');
   const [selectedAttributes, setSelectedAttributes] = useState<string[]>([]);
@@ -218,14 +214,14 @@ const DownloadInterface = () => {
 
   const handleTableChange = (tableId: string) => {
     setSelectedTable(tableId);
-    setSelectedAttributes([]); // Reset attributes when table changes
+    setSelectedAttributes(['timestamp']); // Always include timestamp by default
   };
 
   const handleDownload = async () => {
-    if (!selectedTable || selectedLocations.length === 0 || selectedAttributes.length === 0) {
+    if (!selectedDatabase || !selectedTable || selectedLocations.length === 0 || selectedAttributes.length === 0) {
       toast({
         title: "Selection Required",
-        description: "Please select a data table, locations, and attributes before downloading.",
+        description: "Please select a database, table, locations, and attributes before downloading.",
         variant: "destructive"
       });
       return;
@@ -343,418 +339,295 @@ const DownloadInterface = () => {
   const estimatedRecords = selectedLocations.length * (startDate && endDate ? 
     Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60)) : 0); // Hourly data
 
-  const steps = [
-    { id: 1, title: 'Choose Data Type', description: 'Select what kind of data you want', completed: !!selectedTable },
-    { id: 2, title: 'Pick Locations', description: 'Choose monitoring stations', completed: selectedLocations.length > 0 },
-    { id: 3, title: 'Select Variables', description: 'Pick specific measurements', completed: selectedAttributes.length > 0 },
-    { id: 4, title: 'Set Time Period', description: 'Choose date range', completed: !!(startDate && endDate) },
-    { id: 5, title: 'Download Format', description: 'Choose file format', completed: !!exportFormat }
-  ];
-
-  const canProceedToStep = (stepId: number) => {
-    switch (stepId) {
-      case 1: return true;
-      case 2: return !!selectedTable;
-      case 3: return selectedLocations.length > 0;
-      case 4: return selectedAttributes.length > 0;
-      case 5: return !!(startDate && endDate);
-      default: return false;
-    }
-  };
-
-  const nextStep = () => {
-    if (currentStep < 5) setCurrentStep(currentStep + 1);
-  };
-
-  const prevStep = () => {
-    if (currentStep > 1) setCurrentStep(currentStep - 1);
-  };
-
   return (
     <div className="space-y-6">
-      {/* Step Progress Indicator */}
-      <Card className="bg-gradient-to-r from-primary/5 to-secondary/5 border-primary/20">
-        <CardContent className="p-6">
-          <h2 className="text-2xl font-bold text-foreground mb-4">Download Research Data</h2>
-          <div className="flex items-center justify-between mb-4">
-            {steps.map((step, index) => (
-              <div key={step.id} className="flex items-center">
-                <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
-                  step.completed 
-                    ? 'bg-primary border-primary text-primary-foreground' 
-                    : step.id === currentStep 
-                      ? 'border-primary bg-primary/10 text-primary' 
-                      : 'border-muted bg-muted text-muted-foreground'
-                }`}>
-                  {step.completed ? (
-                    <CheckCircle2 className="h-5 w-5" />
-                  ) : (
-                    <span className="text-sm font-medium">{step.id}</span>
-                  )}
+      {/* Header with Quick Actions */}
+      <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-xl p-6 border border-primary/20">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-foreground mb-2">Download Environmental Data</h2>
+            <p className="text-muted-foreground">Select database, locations, and time period to export research data</p>
+          </div>
+          <div className="flex gap-3">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setSelectedDatabase('');
+                setSelectedTable('');
+                setSelectedLocations([]);
+                setSelectedAttributes([]);
+                setStartDate(undefined);
+                setEndDate(undefined);
+                setTimePreset('');
+              }}
+            >
+              Clear All
+            </Button>
+            <Button 
+              onClick={handleDownload} 
+              disabled={isLoading || !selectedDatabase || !selectedTable || selectedLocations.length === 0 || selectedAttributes.length === 0 || !startDate || !endDate}
+              className="bg-primary hover:bg-primary/90"
+              size="lg"
+            >
+              {isLoading ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Preparing...
                 </div>
-                {index < steps.length - 1 && (
-                  <div className={`w-16 h-1 mx-2 ${
-                    step.completed ? 'bg-primary' : 'bg-muted'
-                  }`} />
-                )}
-              </div>
-            ))}
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Download className="h-5 w-5" />
+                  Download ({estimatedRecords.toLocaleString()} records)
+                </div>
+              )}
+            </Button>
           </div>
-          <div className="text-center">
-            <h3 className="text-lg font-semibold text-foreground">{steps[currentStep - 1].title}</h3>
-            <p className="text-muted-foreground">{steps[currentStep - 1].description}</p>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Step Content */}
-      <div className="min-h-[500px]">
-        {/* Step 1: Data Type Selection */}
-        {currentStep === 1 && (
-          <Card className="max-w-4xl mx-auto">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Database className="h-6 w-6 text-primary" />
-                What type of data do you need?
-              </CardTitle>
-              <p className="text-muted-foreground">Choose from our available environmental datasets</p>
-            </CardHeader>
-            <CardContent>
-              <div className="grid md:grid-cols-2 gap-4">
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Database & Table Selection */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Database className="h-5 w-5 text-primary" />
+              Database & Table
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Database Selection */}
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Select Database</Label>
+              <Select value={selectedDatabase} onValueChange={setSelectedDatabase}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose database..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {mockDatabases.map((db) => (
+                    <SelectItem key={db.id} value={db.id}>
+                      <div>
+                        <div className="font-medium">{db.name}</div>
+                        <div className="text-xs text-muted-foreground">{db.description}</div>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Table Selection */}
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Select Table</Label>
+              <div className="space-y-2">
                 {mockTables.map((table) => (
                   <Card 
-                    key={table.id} 
-                    className={`cursor-pointer transition-all hover:shadow-md ${
-                      selectedTable === table.id 
-                        ? 'border-primary bg-primary/5 shadow-lg' 
-                        : 'border-border hover:border-primary/50'
-                    }`}
-                    onClick={() => {
-                      handleTableChange(table.id);
-                      if (table.id && canProceedToStep(2)) {
-                        setTimeout(() => nextStep(), 500);
-                      }
-                    }}
-                  >
-                    <CardContent className="p-6">
-                      <div className="flex items-start gap-3">
-                        <div className={`w-3 h-3 rounded-full mt-2 ${
-                          selectedTable === table.id ? 'bg-primary' : 'bg-muted'
-                        }`} />
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-lg mb-2">{table.name}</h3>
-                          <p className="text-muted-foreground mb-3">{table.description}</p>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-primary font-medium">{table.recordCount} records</span>
-                            <span className="text-muted-foreground">Updated {table.lastUpdated}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Step 2: Location Selection */}
-        {currentStep === 2 && (
-          <Card className="max-w-4xl mx-auto">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="h-6 w-6 text-primary" />
-                Which monitoring stations?
-              </CardTitle>
-              <p className="text-muted-foreground">Select the locations you want data from</p>
-            </CardHeader>
-            <CardContent>
-              <div className="mb-4 flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">
-                  {selectedLocations.length} of {mockLocations.length} stations selected
-                </span>
-                <Button variant="outline" size="sm" onClick={handleSelectAllLocations}>
-                  {selectedLocations.length === mockLocations.length ? 'Deselect All' : 'Select All'}
-                </Button>
-              </div>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
-                {mockLocations.map((location) => (
-                  <Card 
-                    key={location.id}
-                    className={`cursor-pointer transition-all ${
-                      selectedLocations.includes(location.id)
+                    key={table.id}
+                    className={`cursor-pointer transition-all p-3 ${
+                      selectedTable === table.id
                         ? 'border-primary bg-primary/5' 
                         : 'border-border hover:border-primary/50'
                     }`}
+                    onClick={() => handleTableChange(table.id)}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`w-3 h-3 rounded-full mt-1 ${
+                        selectedTable === table.id ? 'bg-primary' : 'bg-muted'
+                      }`} />
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-sm">{table.name}</h4>
+                        <p className="text-xs text-muted-foreground">{table.description}</p>
+                        <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                          <span>{table.recordCount} records</span>
+                          <span>Updated {table.lastUpdated}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Location & Attributes */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MapPin className="h-5 w-5 text-primary" />
+              Locations & Variables
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Location Selection */}
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <Label className="text-sm font-medium">Monitoring Locations ({selectedLocations.length}/22)</Label>
+                <Button variant="ghost" size="sm" onClick={handleSelectAllLocations}>
+                  {selectedLocations.length === mockLocations.length ? 'Clear' : 'All'}
+                </Button>
+              </div>
+              <div className="max-h-40 overflow-y-auto space-y-1 border rounded p-2">
+                {mockLocations.map((location) => (
+                  <div 
+                    key={location.id}
+                    className="flex items-center space-x-2 p-2 hover:bg-muted/50 rounded cursor-pointer"
                     onClick={() => handleLocationToggle(location.id)}
                   >
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-3">
-                        <Checkbox 
-                          checked={selectedLocations.includes(location.id)}
-                          onChange={() => {}}
-                          className="mt-1"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-sm truncate">{location.name}</h4>
-                          <p className="text-xs text-muted-foreground">{location.id}</p>
-                          <p className="text-xs text-muted-foreground">{location.elevation}m elevation</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                    <Checkbox 
+                      checked={selectedLocations.includes(location.id)}
+                      onChange={() => {}}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium truncate">{location.name}</p>
+                      <p className="text-xs text-muted-foreground">{location.id} • {location.elevation}m</p>
+                    </div>
+                  </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
-        )}
+            </div>
 
-        {/* Step 3: Attribute Selection */}
-        {currentStep === 3 && selectedTable && (
-          <Card className="max-w-4xl mx-auto">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Filter className="h-6 w-6 text-primary" />
-                Which measurements?
-              </CardTitle>
-              <p className="text-muted-foreground">
-                Choose specific variables from {mockTables.find(t => t.id === selectedTable)?.name}
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="mb-4 flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">
-                  {selectedAttributes.length} of {mockAttributes[selectedTable as keyof typeof mockAttributes]?.length || 0} variables selected
-                </span>
-                <Button variant="outline" size="sm" onClick={handleSelectAllAttributes}>
-                  {selectedAttributes.length === (mockAttributes[selectedTable as keyof typeof mockAttributes]?.length || 0) ? 'Deselect All' : 'Select All'}
-                </Button>
-              </div>
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {(mockAttributes[selectedTable as keyof typeof mockAttributes] || []).map((attribute) => (
-                  <Card 
-                    key={attribute.name}
-                    className={`cursor-pointer transition-all ${
-                      selectedAttributes.includes(attribute.name)
-                        ? 'border-primary bg-primary/5' 
-                        : 'border-border hover:border-primary/50'
-                    }`}
-                    onClick={() => handleAttributeToggle(attribute.name)}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-3">
-                        <Checkbox 
-                          checked={selectedAttributes.includes(attribute.name)}
-                          onChange={() => {}}
-                        />
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-medium">{attribute.name}</h4>
-                            <Badge variant="secondary" className="text-xs">{attribute.type}</Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground">{attribute.description}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Step 4: Time Period Selection */}
-        {currentStep === 4 && (
-          <Card className="max-w-4xl mx-auto">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-6 w-6 text-primary" />
-                What time period?
-              </CardTitle>
-              <p className="text-muted-foreground">Choose the date range for your data</p>
-            </CardHeader>
-            <CardContent className="space-y-6">
+            {/* Attributes Selection */}
+            {selectedTable && (
               <div>
-                <Label className="text-base font-medium mb-3 block">Quick Presets</Label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {timePresets.filter(p => p.value !== 'custom').map((preset) => (
-                    <Button
-                      key={preset.value}
-                      variant={timePreset === preset.value ? "default" : "outline"}
-                      onClick={() => handleTimePresetChange(preset.value)}
-                      className="justify-start h-auto p-3"
+                <div className="flex justify-between items-center mb-2">
+                  <Label className="text-sm font-medium">
+                    Variables ({selectedAttributes.length}/{mockAttributes[selectedTable as keyof typeof mockAttributes]?.length || 0})
+                  </Label>
+                  <Button variant="ghost" size="sm" onClick={handleSelectAllAttributes}>
+                    {selectedAttributes.length === (mockAttributes[selectedTable as keyof typeof mockAttributes]?.length || 0) ? 'Clear' : 'All'}
+                  </Button>
+                </div>
+                <div className="max-h-40 overflow-y-auto space-y-1 border rounded p-2">
+                  {(mockAttributes[selectedTable as keyof typeof mockAttributes] || []).map((attribute) => (
+                    <div 
+                      key={attribute.name}
+                      className="flex items-center space-x-2 p-2 hover:bg-muted/50 rounded cursor-pointer"
+                      onClick={() => handleAttributeToggle(attribute.name)}
                     >
-                      {preset.label}
-                    </Button>
+                      <Checkbox 
+                        checked={selectedAttributes.includes(attribute.name)}
+                        onChange={() => {}}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs font-medium">{attribute.name}</p>
+                          <Badge variant="secondary" className="text-xs h-4">{attribute.type}</Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground truncate">{attribute.description}</p>
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
+            )}
+          </CardContent>
+        </Card>
 
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <Label className="text-base font-medium mb-3 block">Start Date</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full justify-start text-left font-normal">
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {startDate ? format(startDate, "PPP") : "Pick start date"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={startDate}
-                        onSelect={setStartDate}
-                        initialFocus
-                        className="pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                <div>
-                  <Label className="text-base font-medium mb-3 block">End Date</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full justify-start text-left font-normal">
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {endDate ? format(endDate, "PPP") : "Pick end date"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={endDate}
-                        onSelect={setEndDate}
-                        initialFocus
-                        className="pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
-
-              {startDate && endDate && (
-                <div className="bg-muted/50 rounded-lg p-4">
-                  <p className="text-sm text-muted-foreground">
-                    <strong>Selected period:</strong> {format(startDate, "PPP")} to {format(endDate, "PPP")}
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    <strong>Estimated records:</strong> ~{estimatedRecords.toLocaleString()} data points
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Step 5: Export Format */}
-        {currentStep === 5 && (
-          <Card className="max-w-4xl mx-auto">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileType className="h-6 w-6 text-primary" />
-                Choose download format
-              </CardTitle>
-              <p className="text-muted-foreground">Select the file format that works best for you</p>
-            </CardHeader>
-            <CardContent>
-              <div className="grid md:grid-cols-2 gap-4">
-                {exportFormats.map((format) => (
-                  <Card 
-                    key={format.value}
-                    className={`cursor-pointer transition-all ${
-                      exportFormat === format.value
-                        ? 'border-primary bg-primary/5' 
-                        : 'border-border hover:border-primary/50'
-                    }`}
-                    onClick={() => setExportFormat(format.value)}
+        {/* Time Period & Export */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-primary" />
+              Time Period & Export
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Time Presets */}
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Quick Time Periods</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {timePresets.filter(p => p.value !== 'custom').map((preset) => (
+                  <Button
+                    key={preset.value}
+                    variant={timePreset === preset.value ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => handleTimePresetChange(preset.value)}
+                    className="text-xs h-8"
                   >
-                    <CardContent className="p-6">
-                      <div className="flex items-start gap-3">
-                        <div className={`w-3 h-3 rounded-full mt-2 ${
-                          exportFormat === format.value ? 'bg-primary' : 'bg-muted'
-                        }`} />
-                        <div>
-                          <h3 className="font-semibold text-lg mb-2">{format.label}</h3>
-                          <p className="text-muted-foreground">{format.description}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                    {preset.label}
+                  </Button>
                 ))}
               </div>
+            </div>
 
-              {/* Download Summary and Action */}
-              <div className="mt-8 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-lg p-6 border border-primary/20">
-                <h3 className="text-lg font-semibold mb-4">Ready to Download</h3>
-                <div className="grid md:grid-cols-2 gap-4 mb-6">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Data Type</p>
-                    <p className="font-medium">{mockTables.find(t => t.id === selectedTable)?.name}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Locations</p>
-                    <p className="font-medium">{selectedLocations.length} stations</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Variables</p>
-                    <p className="font-medium">{selectedAttributes.length} measurements</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Time Period</p>
-                    <p className="font-medium">
-                      {startDate && endDate ? `${format(startDate, 'MMM dd')} - ${format(endDate, 'MMM dd, yyyy')}` : 'Not set'}
-                    </p>
-                  </div>
-                </div>
-                
-                <Button 
-                  onClick={handleDownload} 
-                  disabled={isLoading || !selectedTable || selectedLocations.length === 0 || selectedAttributes.length === 0 || !startDate || !endDate}
-                  className="w-full bg-primary hover:bg-primary/90 text-lg py-6"
-                  size="lg"
-                >
-                  {isLoading ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      Preparing your download...
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Download className="h-6 w-6" />
-                      Download {exportFormat.toUpperCase()} File (~{estimatedRecords.toLocaleString()} records)
-                    </div>
-                  )}
-                </Button>
+            {/* Custom Date Range */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Custom Date Range</Label>
+              <div className="space-y-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start text-left font-normal text-xs h-9">
+                      <CalendarIcon className="mr-2 h-3 w-3" />
+                      {startDate ? format(startDate, "MMM dd, yyyy") : "Start date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={startDate}
+                      onSelect={setStartDate}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start text-left font-normal text-xs h-9">
+                      <CalendarIcon className="mr-2 h-3 w-3" />
+                      {endDate ? format(endDate, "MMM dd, yyyy") : "End date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={endDate}
+                      onSelect={setEndDate}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+            </div>
 
-      {/* Navigation Controls */}
-      <div className="flex justify-between items-center max-w-4xl mx-auto">
-        <Button 
-          variant="outline" 
-          onClick={prevStep}
-          disabled={currentStep === 1}
-          className="flex items-center gap-2"
-        >
-          ← Previous Step
-        </Button>
-        
-        <div className="text-sm text-muted-foreground">
-          Step {currentStep} of 5
-        </div>
-        
-        <Button 
-          onClick={nextStep}
-          disabled={currentStep === 5 || !canProceedToStep(currentStep + 1)}
-          className="flex items-center gap-2"
-        >
-          Next Step →
-        </Button>
+            {/* Export Format */}
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Export Format</Label>
+              <Select value={exportFormat} onValueChange={setExportFormat}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {exportFormats.map((format) => (
+                    <SelectItem key={format.value} value={format.value}>
+                      <div>
+                        <div className="font-medium">{format.label}</div>
+                        <div className="text-xs text-muted-foreground">{format.description}</div>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Summary */}
+            {selectedDatabase && selectedTable && selectedLocations.length > 0 && selectedAttributes.length > 0 && startDate && endDate && (
+              <div className="bg-primary/5 rounded-lg p-3 border border-primary/20">
+                <h4 className="text-sm font-medium mb-2">Export Summary</h4>
+                <div className="space-y-1 text-xs text-muted-foreground">
+                  <p><strong>Database:</strong> {mockDatabases.find(db => db.id === selectedDatabase)?.name}</p>
+                  <p><strong>Table:</strong> {mockTables.find(t => t.id === selectedTable)?.name}</p>
+                  <p><strong>Locations:</strong> {selectedLocations.length} stations</p>
+                  <p><strong>Variables:</strong> {selectedAttributes.length} attributes</p>
+                  <p><strong>Period:</strong> {format(startDate, 'MMM dd')} - {format(endDate, 'MMM dd, yyyy')}</p>
+                  <p><strong>Estimated:</strong> ~{estimatedRecords.toLocaleString()} records</p>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
