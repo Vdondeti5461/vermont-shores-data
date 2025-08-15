@@ -158,72 +158,191 @@ const DataMap = () => {
           </TabsContent>
 
 
-          <TabsContent value="network" className="space-y-8 animate-fade-in">
-            {/* Hero Mountain Profile */}
-            <Card className="data-card bg-gradient-to-b from-sky-100 via-blue-50 to-green-50 border-none overflow-hidden">
-              <CardContent className="p-0">
-                <div className="relative h-80 flex items-end justify-center overflow-hidden">
-                  {/* Mountain silhouette background */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-green-200/30 via-blue-200/20 to-sky-300/40"></div>
-                  
-                  {/* Site markers on mountain profile */}
-                  <div className="relative w-full h-full flex items-end justify-center">
+          <TabsContent value="network" className="space-y-6 animate-fade-in">
+            {/* Research Dashboard Header */}
+            <div className="grid lg:grid-cols-4 gap-4">
+              <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-2xl font-bold text-blue-800">{networkSites.length}</div>
+                      <div className="text-sm text-blue-600">Active Stations</div>
+                    </div>
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+                <CardContent className="p-4">
+                  <div className="text-2xl font-bold text-green-800">1116m</div>
+                  <div className="text-sm text-green-600">Elevation Range</div>
+                  <div className="text-xs text-green-500 mt-1">Valley to Summit</div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+                <CardContent className="p-4">
+                  <div className="text-2xl font-bold text-purple-800">3</div>
+                  <div className="text-sm text-purple-600">Eco Zones</div>
+                  <div className="text-xs text-purple-500 mt-1">Alpine to Valley</div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
+                <CardContent className="p-4">
+                  <div className="text-2xl font-bold text-orange-800">24/7</div>
+                  <div className="text-sm text-orange-600">Data Collection</div>
+                  <div className="text-xs text-orange-500 mt-1">Real-time</div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Elevation Transect Visualization */}
+            <Card className="data-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Mountain className="h-5 w-5 text-primary" />
+                  Elevational Transect Analysis
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Environmental gradient from Champlain Valley (47m) to Mount Mansfield Summit (1163m)
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="relative h-48 bg-gradient-to-r from-green-100 via-yellow-50 to-blue-100 rounded-lg overflow-hidden border">
+                  {/* Elevation profile background */}
+                  <svg viewBox="0 0 800 200" className="absolute inset-0 w-full h-full">
+                    <defs>
+                      <linearGradient id="elevationGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#22c55e" stopOpacity="0.3" />
+                        <stop offset="50%" stopColor="#eab308" stopOpacity="0.3" />
+                        <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.3" />
+                      </linearGradient>
+                    </defs>
+                    <path
+                      d="M0,180 Q200,160 400,120 Q600,80 800,40 L800,200 L0,200 Z"
+                      fill="url(#elevationGradient)"
+                      stroke="#94a3b8"
+                      strokeWidth="2"
+                    />
+                  </svg>
+
+                  {/* Site markers positioned on the profile */}
+                  {networkSites
+                    .sort((a, b) => a.elevation - b.elevation)
+                    .map((site, index) => {
+                      const xPos = (index / (networkSites.length - 1)) * 85 + 7.5;
+                      const yPos = 85 - ((site.elevation - 47) / (1163 - 47)) * 65;
+                      const isRanchBrook = site.type === 'ranch_brook';
+                      const isSummit = site.shortName === 'RB-13';
+                      
+                      return (
+                        <div
+                          key={site.id}
+                          className="absolute group cursor-pointer transition-all duration-300 hover:scale-110"
+                          style={{ left: `${xPos}%`, top: `${yPos}%` }}
+                        >
+                          <div className={`relative ${isSummit ? 'animate-pulse' : ''}`}>
+                            <div 
+                              className={`w-4 h-4 rounded-full border-2 border-white shadow-lg ${
+                                isSummit 
+                                  ? 'bg-yellow-400 border-yellow-600' 
+                                  : isRanchBrook 
+                                    ? 'bg-red-500' 
+                                    : 'bg-blue-500'
+                              }`}
+                            />
+                            {isSummit && (
+                              <div className="absolute -top-1 -left-0.5 text-yellow-600 text-xs">⭐</div>
+                            )}
+                          </div>
+                          
+                          {/* Tooltip */}
+                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-20">
+                            <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 whitespace-nowrap">
+                              <div className="font-semibold">
+                                {isSummit ? 'Mount Mansfield Summit' : site.shortName}
+                              </div>
+                              <div>{site.elevation}m elevation</div>
+                              <div className="text-gray-300">{site.name}</div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                  {/* Elevation markers */}
+                  <div className="absolute left-2 top-2 text-xs text-gray-600 bg-white/80 px-2 py-1 rounded">
+                    1163m
+                  </div>
+                  <div className="absolute left-2 bottom-2 text-xs text-gray-600 bg-white/80 px-2 py-1 rounded">
+                    47m
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Research Station Grid */}
+            <div className="grid lg:grid-cols-2 gap-6">
+              {/* Ranch Brook Transect */}
+              <Card className="data-card">
+                <CardHeader className="bg-red-50 border-b border-red-100">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-red-800 flex items-center gap-2">
+                        <Mountain className="h-5 w-5" />
+                        Ranch Brook Transect
+                      </CardTitle>
+                      <p className="text-sm text-red-600 mt-1">
+                        Mount Mansfield elevational gradient study
+                      </p>
+                    </div>
+                    <Badge variant="outline" className="text-red-700 border-red-300">
+                      {networkSites.filter(s => s.type === 'ranch_brook').length} stations
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="max-h-80 overflow-y-auto">
                     {networkSites
-                      .sort((a, b) => a.elevation - b.elevation)
+                      .filter(site => site.type === 'ranch_brook')
+                      .sort((a, b) => b.elevation - a.elevation)
                       .map((site, index) => {
-                        const heightPercent = ((site.elevation - 47) / (1163 - 47)) * 70 + 10;
-                        const isSubmit = site.shortName === "RB-13";
-                        const isRanchBrook = site.type === 'ranch_brook';
+                        const isSummit = site.shortName === 'RB-13';
+                        const ecosystemType = site.elevation > 1000 ? 'Alpine Tundra' :
+                                             site.elevation > 800 ? 'Subalpine Forest' :
+                                             site.elevation > 600 ? 'Montane Forest' : 'Hardwood Forest';
                         
                         return (
-                          <div
+                          <div 
                             key={site.id}
-                            className="absolute group cursor-pointer transition-all duration-500 hover:scale-125"
-                            style={{ 
-                              bottom: `${heightPercent}%`,
-                              left: `${15 + (index * 3.2)}%`,
-                              zIndex: isSubmit ? 50 : 10
-                            }}
+                            className={`border-b border-gray-100 hover:bg-red-50 transition-colors cursor-pointer group ${
+                              isSummit ? 'bg-yellow-50' : ''
+                            }`}
                           >
-                            {/* Site marker */}
-                            <div className={`relative ${isSubmit ? 'animate-pulse' : ''}`}>
-                              <div 
-                                className={`w-6 h-6 rounded-full border-4 border-white shadow-lg transition-all duration-300 ${
-                                  isSubmit 
-                                    ? 'bg-yellow-400 shadow-yellow-400/50 w-8 h-8' 
-                                    : isRanchBrook 
-                                      ? 'bg-red-500' 
-                                      : 'bg-blue-500'
-                                }`}
-                              ></div>
-                              
-                              {/* Summit crown */}
-                              {isSubmit && (
-                                <div className="absolute -top-2 -left-1 text-yellow-500 text-xl">👑</div>
-                              )}
-                              
-                              {/* Site info tooltip */}
-                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none">
-                                <div className="bg-white rounded-lg shadow-xl p-3 min-w-48 border">
-                                  <div className="text-center">
-                                    <div className={`font-bold text-lg ${
-                                      isSubmit ? 'text-yellow-600' : isRanchBrook ? 'text-red-600' : 'text-blue-600'
-                                    }`}>
-                                      {isSubmit ? '🏔️ SUMMIT' : site.shortName}
-                                    </div>
-                                    <div className="text-sm text-gray-600">{site.name}</div>
-                                    <div className="text-xl font-bold text-gray-800 mt-1">{site.elevation}m</div>
-                                    <div className="text-xs text-gray-500">
-                                      {site.latitude.toFixed(4)}°N, {site.longitude.toFixed(4)}°W
-                                    </div>
-                                    <div className={`inline-block px-2 py-1 rounded-full text-xs mt-2 ${
-                                      isRanchBrook 
-                                        ? 'bg-red-100 text-red-700' 
-                                        : 'bg-blue-100 text-blue-700'
-                                    }`}>
-                                      {isRanchBrook ? 'Ranch Brook' : 'Distributed'}
-                                    </div>
+                            <div className="p-4 flex items-center justify-between">
+                              <div className="flex items-center gap-4">
+                                <div className="relative">
+                                  {isSummit && <div className="absolute -top-1 -left-1 text-yellow-500">⭐</div>}
+                                  <div 
+                                    className={`w-3 h-3 rounded-full ${
+                                      isSummit ? 'bg-yellow-400' : 'bg-red-500'
+                                    } group-hover:scale-125 transition-transform`}
+                                  />
+                                </div>
+                                <div>
+                                  <div className="font-semibold text-sm">
+                                    {isSummit ? 'Summit Station' : site.shortName}
                                   </div>
+                                  <div className="text-xs text-gray-600">{site.name}</div>
+                                  <div className="text-xs text-red-600 mt-1">{ecosystemType}</div>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="font-bold text-red-700">{site.elevation}m</div>
+                                <div className="text-xs text-gray-500">
+                                  {((site.elevation - 47) / (1163 - 47) * 100).toFixed(0)}% gradient
                                 </div>
                               </div>
                             </div>
@@ -231,198 +350,125 @@ const DataMap = () => {
                         );
                       })}
                   </div>
-                  
-                  {/* Elevation labels */}
-                  <div className="absolute left-4 top-4 text-right">
-                    <div className="text-2xl font-bold text-gray-700">1163m</div>
-                    <div className="text-sm text-gray-500">🏔️ Summit</div>
-                  </div>
-                  <div className="absolute left-4 bottom-4 text-right">
-                    <div className="text-lg font-bold text-gray-700">47m</div>
-                    <div className="text-sm text-gray-500">🌊 Valley</div>
-                  </div>
-                  
-                  {/* Network title overlay */}
-                  <div className="absolute top-6 right-6 text-right">
-                    <h3 className="text-2xl font-bold text-gray-800">Summit 2 Shore</h3>
-                    <p className="text-sm text-gray-600">Environmental Monitoring Network</p>
-                    <div className="flex gap-2 mt-2 justify-end">
-                      <Badge className="bg-red-500">
-                        {networkSites.filter(s => s.type === 'ranch_brook').length} RB Sites
-                      </Badge>
-                      <Badge className="bg-blue-500">
-                        {networkSites.filter(s => s.type === 'distributed').length} Distributed
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Interactive Network Explorer */}
-            <div className="grid lg:grid-cols-3 gap-6">
-              {/* Summit Spotlight */}
-              <Card className="lg:col-span-1 bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-200">
-                <CardHeader className="text-center">
-                  <div className="text-4xl mb-2">🏔️</div>
-                  <CardTitle className="text-yellow-800">Mount Mansfield Summit</CardTitle>
-                  <p className="text-sm text-yellow-600">Highest Monitoring Station</p>
-                </CardHeader>
-                <CardContent className="text-center space-y-4">
-                  {(() => {
-                    const summitSite = networkSites.find(s => s.shortName === "RB-13");
-                    return summitSite ? (
-                      <div className="space-y-3">
-                        <div className="text-4xl font-bold text-yellow-700">{summitSite.elevation}m</div>
-                        <div className="text-sm text-yellow-600">Above Sea Level</div>
-                        <div className="bg-yellow-100 rounded-lg p-3">
-                          <div className="text-sm font-medium text-yellow-800">Alpine Environment</div>
-                          <div className="text-xs text-yellow-600 mt-1">
-                            Extreme weather conditions, snow-dominated
-                          </div>
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          📍 {summitSite.latitude.toFixed(4)}°N, {summitSite.longitude.toFixed(4)}°W
-                        </div>
-                      </div>
-                    ) : null;
-                  })()}
                 </CardContent>
               </Card>
 
-              {/* Live Network Status */}
-              <Card className="lg:col-span-2">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-                    Live Network Status
-                  </CardTitle>
-                  <p className="text-sm text-muted-foreground">Real-time monitoring across elevation zones</p>
+              {/* Distributed Network */}
+              <Card className="data-card">
+                <CardHeader className="bg-blue-50 border-b border-blue-100">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-blue-800 flex items-center gap-2">
+                        <MapPin className="h-5 w-5" />
+                        Regional Network
+                      </CardTitle>
+                      <p className="text-sm text-blue-600 mt-1">
+                        Distributed climate monitoring stations
+                      </p>
+                    </div>
+                    <Badge variant="outline" className="text-blue-700 border-blue-300">
+                      {networkSites.filter(s => s.type === 'distributed').length} stations
+                    </Badge>
+                  </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="text-center p-4 bg-green-50 rounded-lg">
-                      <div className="text-2xl font-bold text-green-600">{networkSites.length}</div>
-                      <div className="text-sm text-green-700">Active Sites</div>
-                      <div className="text-xs text-gray-500">🟢 Online</div>
-                    </div>
-                    <div className="text-center p-4 bg-blue-50 rounded-lg">
-                      <div className="text-2xl font-bold text-blue-600">24/7</div>
-                      <div className="text-sm text-blue-700">Monitoring</div>
-                      <div className="text-xs text-gray-500">⏰ Continuous</div>
-                    </div>
-                    <div className="text-center p-4 bg-purple-50 rounded-lg">
-                      <div className="text-2xl font-bold text-purple-600">1116m</div>
-                      <div className="text-sm text-purple-700">Range</div>
-                      <div className="text-xs text-gray-500">📏 Elevation</div>
-                    </div>
-                    <div className="text-center p-4 bg-orange-50 rounded-lg">
-                      <div className="text-2xl font-bold text-orange-600">Vermont</div>
-                      <div className="text-sm text-orange-700">Statewide</div>
-                      <div className="text-xs text-gray-500">🗺️ Coverage</div>
-                    </div>
+                <CardContent className="p-0">
+                  <div className="max-h-80 overflow-y-auto">
+                    {networkSites
+                      .filter(site => site.type === 'distributed')
+                      .sort((a, b) => b.elevation - a.elevation)
+                      .map((site, index) => {
+                        const landcover = site.elevation > 500 ? 'Mixed Forest' :
+                                         site.elevation > 200 ? 'Agricultural' :
+                                         site.elevation > 100 ? 'Suburban' : 'Wetland/Urban';
+                        
+                        return (
+                          <div 
+                            key={site.id}
+                            className="border-b border-gray-100 hover:bg-blue-50 transition-colors cursor-pointer group"
+                          >
+                            <div className="p-4 flex items-center justify-between">
+                              <div className="flex items-center gap-4">
+                                <div 
+                                  className="w-3 h-3 rounded-full bg-blue-500 group-hover:scale-125 transition-transform"
+                                />
+                                <div>
+                                  <div className="font-semibold text-sm">{site.shortName}</div>
+                                  <div className="text-xs text-gray-600">{site.name}</div>
+                                  <div className="text-xs text-blue-600 mt-1">{landcover}</div>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="font-bold text-blue-700">{site.elevation}m</div>
+                                <div className="text-xs text-gray-500">
+                                  Regional climate
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                   </div>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Elevation Zones */}
+            {/* Research Context */}
             <Card className="data-card">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Mountain className="h-5 w-5 text-primary" />
-                  Monitoring Zones by Elevation
+                  <Activity className="h-5 w-5 text-primary" />
+                  Research Applications
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Sites organized by ecological and climatic zones
+                  Scientific objectives and data applications for the Summit 2 Shore observatory network
                 </p>
               </CardHeader>
               <CardContent>
-                <div className="space-y-6">
-                  {[
-                    {
-                      zone: "Alpine Zone",
-                      range: "800m - 1163m",
-                      emoji: "🏔️",
-                      color: "from-red-500 to-red-600",
-                      bgColor: "bg-red-50",
-                      borderColor: "border-red-200",
-                      textColor: "text-red-700",
-                      sites: networkSites.filter(s => s.elevation >= 800)
-                    },
-                    {
-                      zone: "Montane Zone", 
-                      range: "500m - 799m",
-                      emoji: "🌲",
-                      color: "from-orange-500 to-orange-600",
-                      bgColor: "bg-orange-50", 
-                      borderColor: "border-orange-200",
-                      textColor: "text-orange-700",
-                      sites: networkSites.filter(s => s.elevation >= 500 && s.elevation < 800)
-                    },
-                    {
-                      zone: "Valley Zone",
-                      range: "47m - 499m", 
-                      emoji: "🌿",
-                      color: "from-green-500 to-green-600",
-                      bgColor: "bg-green-50",
-                      borderColor: "border-green-200", 
-                      textColor: "text-green-700",
-                      sites: networkSites.filter(s => s.elevation < 500)
-                    }
-                  ].map((zone, zoneIndex) => (
-                    <div key={zone.zone} className={`rounded-lg border ${zone.borderColor} ${zone.bgColor} p-4`}>
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                          <span className="text-2xl">{zone.emoji}</span>
-                          <div>
-                            <h4 className={`font-bold ${zone.textColor}`}>{zone.zone}</h4>
-                            <p className="text-sm text-gray-600">{zone.range} • {zone.sites.length} sites</p>
-                          </div>
-                        </div>
-                        <div className={`px-3 py-1 bg-gradient-to-r ${zone.color} text-white rounded-full text-sm font-medium`}>
-                          {zone.sites.length} Sites
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {zone.sites
-                          .sort((a, b) => b.elevation - a.elevation)
-                          .map((site) => (
-                            <div 
-                              key={site.id} 
-                              className="bg-white rounded-lg p-3 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group"
-                            >
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <div 
-                                    className={`w-3 h-3 rounded-full ${
-                                      site.shortName === "RB-13" 
-                                        ? 'bg-yellow-400 animate-pulse' 
-                                        : site.type === 'ranch_brook' 
-                                          ? 'bg-red-500' 
-                                          : 'bg-blue-500'
-                                    }`}
-                                  ></div>
-                                  <div>
-                                    <div className="font-medium text-sm">
-                                      {site.shortName === "RB-13" ? "🏔️ SUMMIT" : site.shortName}
-                                    </div>
-                                    <div className="text-xs text-gray-500">{site.name}</div>
-                                  </div>
-                                </div>
-                                <div className="text-right">
-                                  <div className="font-bold text-sm">{site.elevation}m</div>
-                                  <div className="text-xs text-gray-400">
-                                    {site.type === 'ranch_brook' ? 'RB' : 'DIST'}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                      </div>
+                <div className="grid md:grid-cols-3 gap-6">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                      <h4 className="font-semibold text-sm">Climate Gradients</h4>
                     </div>
-                  ))}
+                    <p className="text-xs text-gray-600">
+                      Temperature and precipitation lapse rates across Vermont elevational gradients
+                    </p>
+                    <div className="text-xs text-gray-500">
+                      • Orographic precipitation effects<br/>
+                      • Temperature inversions<br/>
+                      • Microclimate variation
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      <h4 className="font-semibold text-sm">Snowpack Dynamics</h4>
+                    </div>
+                    <p className="text-xs text-gray-600">
+                      Snow accumulation, ablation, and hydrological processes across elevation zones
+                    </p>
+                    <div className="text-xs text-gray-500">
+                      • Snow water equivalent<br/>
+                      • Melt timing patterns<br/>
+                      • Watershed hydrology
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <h4 className="font-semibold text-sm">Ecosystem Response</h4>
+                    </div>
+                    <p className="text-xs text-gray-600">
+                      Climate change impacts on Vermont forest and alpine ecosystems
+                    </p>
+                    <div className="text-xs text-gray-500">
+                      • Species migration<br/>
+                      • Phenological shifts<br/>
+                      • Alpine vulnerability
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
