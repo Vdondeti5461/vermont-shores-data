@@ -16,8 +16,8 @@ const Index = () => {
         <AboutProject />
         <Team />
         <DataMap />
-        <Analytics />
         <DataDownload />
+        <Analytics />
       </main>
       <Footer />
     </div>
