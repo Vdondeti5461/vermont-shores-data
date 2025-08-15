@@ -25,6 +25,8 @@ import {
 } from 'recharts';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAnalyticsState, useSnowDepthData, useLocationSummaries } from '@/hooks/useAnalyticsData';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const AdvancedAnalytics = () => {
   const navigate = useNavigate();
@@ -32,29 +34,17 @@ const AdvancedAnalytics = () => {
   const [selectedSeason, setSelectedSeason] = useState('2024-2025');
   const [dataType, setDataType] = useState('clean');
   const [showRealTime, setShowRealTime] = useState(false);
-  const [selectedMetric, setSelectedMetric] = useState('snowDepth');
 
-  // Location data with coordinates for mapping
-  const locations = [
-    { id: 'all', name: 'All Locations', elevation: 'Various' },
-    { id: 'mansfield', name: 'Mount Mansfield Summit', elevation: '1,340m' },
-    { id: 'killington', name: 'Killington Peak', elevation: '1,293m' },
-    { id: 'champlain', name: 'Lake Champlain Shore', elevation: '95m' },
-    { id: 'green_north', name: 'Green Mountains North', elevation: '850m' },
-    { id: 'green_south', name: 'Green Mountains South', elevation: '720m' },
-    { id: 'connecticut', name: 'Connecticut River Valley', elevation: '120m' },
-    { id: 'winooski', name: 'Winooski River Basin', elevation: '200m' },
-    { id: 'white_river', name: 'White River Junction', elevation: '180m' },
-    { id: 'otter_creek', name: 'Otter Creek Valley', elevation: '150m' },
-    { id: 'stowe', name: 'Stowe Valley', elevation: '520m' }
-  ];
-
-  // Season definitions (Nov to July)
-  const seasons = [
-    { id: '2024-2025', name: '2024-2025 Season', period: 'Nov 2024 - Jul 2025', status: 'Current' },
-    { id: '2023-2024', name: '2023-2024 Season', period: 'Nov 2023 - Jul 2024', status: 'Complete' },
-    { id: '2022-2023', name: '2022-2023 Season', period: 'Nov 2022 - Jul 2023', status: 'Complete' }
-  ];
+  // Get data from the analytics service
+  const { locations, seasons, isLoading } = useAnalyticsState();
+  
+  // Get snow depth data based on current selections
+  const locationIds = selectedLocation === 'all' ? [] : [selectedLocation];
+  const { 
+    data: snowDepthData, 
+    isLoading: dataLoading, 
+    error 
+  } = useSnowDepthData(locationIds, selectedSeason);
 
   // Generate detailed snow depth time series data
   const generateSnowDepthData = () => {
@@ -122,7 +112,7 @@ const AdvancedAnalytics = () => {
       maxDepth: 80 + Math.random() * 40,
       avgDepth: 35 + Math.random() * 25,
       peakDate: 'Feb 15',
-      meltDate: season.status === 'Current' ? 'TBD' : 'May 20'
+      meltDate: season.status === 'current' ? 'TBD' : 'May 20'
     }));
   };
 
@@ -204,7 +194,7 @@ const AdvancedAnalytics = () => {
                       <SelectItem key={season.id} value={season.id}>
                         <div className="flex items-center justify-between w-full">
                           <span>{season.name}</span>
-                          <Badge variant={season.status === 'Current' ? 'default' : 'secondary'} className="ml-2">
+                          <Badge variant={season.status === 'current' ? 'default' : 'secondary'} className="ml-2">
                             {season.status}
                           </Badge>
                         </div>

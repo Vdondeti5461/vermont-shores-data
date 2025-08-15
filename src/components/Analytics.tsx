@@ -21,6 +21,8 @@ import {
 } from 'recharts';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAnalyticsState, useSnowDepthData } from '@/hooks/useAnalyticsData';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const Analytics = () => {
   const navigate = useNavigate();
