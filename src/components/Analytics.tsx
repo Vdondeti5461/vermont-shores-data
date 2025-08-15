@@ -20,8 +20,10 @@ import {
   ComposedChart 
 } from 'recharts';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const Analytics = () => {
+  const navigate = useNavigate();
   const [selectedLocation, setSelectedLocation] = useState('all');
   const [selectedSeason, setSelectedSeason] = useState('all');
   const [selectedMetric, setSelectedMetric] = useState('temperature');
@@ -391,12 +393,21 @@ const Analytics = () => {
             <CardContent className="p-8">
               <h3 className="text-2xl font-bold mb-4">Advanced Analytics Dashboard</h3>
               <p className="text-muted-foreground mb-6">
-                Access the full-featured analytics dashboard with real-time data, 
-                custom analysis tools, and advanced statistical modeling capabilities.
+                Access the full-featured analytics dashboard with advanced time series analysis, 
+                seasonal comparisons, snow depth forecasting, and sophisticated data modeling capabilities.
               </p>
-              <Button size="lg" className="btn-research">
-                Launch Full Dashboard
-              </Button>
+              <div className="flex gap-4 justify-center">
+                <Button 
+                  size="lg" 
+                  className="btn-research"
+                  onClick={() => navigate('/advanced-analytics')}
+                >
+                  Launch Advanced Analytics
+                </Button>
+                <Button size="lg" variant="outline">
+                  View Documentation
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
