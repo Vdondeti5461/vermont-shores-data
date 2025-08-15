@@ -6,6 +6,7 @@ import DataMap from '@/components/DataMap';
 import Analytics from '@/components/Analytics';
 import DataDownload from '@/components/DataDownload';
 import Footer from '@/components/Footer';
+import DatabaseStatus from '@/components/DatabaseStatus';
 
 const Index = () => {
   return (
@@ -13,6 +14,9 @@ const Index = () => {
       <Header />
       <main>
         <Hero />
+        <div className="container mx-auto px-4">
+          <DatabaseStatus />
+        </div>
         <AboutProject />
         <DataMap />
         <Analytics />

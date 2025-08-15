@@ -6,9 +6,10 @@ import { MapPin, Eye, Activity, Mountain } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import InteractiveMap from './InteractiveMap';
+import { useLocalLocations } from '@/hooks/useLocalDatabase';
 
 interface Location {
-  id: number;
+  id: string;
   name: string;
   latitude: number;
   longitude: number;
@@ -38,42 +39,11 @@ interface NetworkSite {
 const DataMap = () => {
   const { toast } = useToast();
   
-  // Fetch locations from MySQL database
-  const { data: locationsData, isLoading: locationsLoading, error: locationsError } = useQuery({
-    queryKey: ['locations'],
-    queryFn: async () => {
-      const response = await fetch('/functions/v1/get-locations', {
-        headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch locations');
-      }
-      return response.json();
-    },
-  });
+  // Fetch locations from local MySQL database
+  const { data: locationsData, isLoading: locationsLoading, error: locationsError } = useLocalLocations();
 
-  // Fetch recent analytics data
-  const { data: analyticsData, isLoading: analyticsLoading } = useQuery({
-    queryKey: ['analytics'],
-    queryFn: async () => {
-      const response = await fetch('/functions/v1/get-analytics', {
-        headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch analytics');
-      }
-      return response.json();
-    },
-  });
-
-  const locations: Location[] = locationsData?.locations || [];
-  const recentData: RecentData[] = analyticsData?.recent_data || [];
+  const locations: Location[] = locationsData || [];
+  const recentData: RecentData[] = [];
 
   // Summit 2 Shore Network Sites - Actual Coordinates from your data
   const networkSites: NetworkSite[] = [

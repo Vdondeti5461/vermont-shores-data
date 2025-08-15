@@ -21,7 +21,7 @@ import {
 } from 'recharts';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAnalyticsState, useSnowDepthData } from '@/hooks/useAnalyticsData';
+import { useLocalEnvironmentalAnalytics } from '@/hooks/useLocalDatabase';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const Analytics = () => {
@@ -30,15 +30,59 @@ const Analytics = () => {
   const [selectedSeason, setSelectedSeason] = useState('all');
   const [selectedMetric, setSelectedMetric] = useState('temperature');
 
-  // Sample locations
-  const locations = [
-    { id: 'all', name: 'All Locations' },
-    { id: 'site1', name: 'Mount Mansfield' },
-    { id: 'site2', name: 'Lake Champlain' },
-    { id: 'site3', name: 'Green Mountains' },
-    { id: 'site4', name: 'Connecticut River' },
-    { id: 'site5', name: 'Winooski Valley' }
-  ];
+  // Fetch real data from local database
+  const { locations, analytics, environmentalData, isLoading, isServerHealthy } = useLocalEnvironmentalAnalytics(
+    selectedLocation === 'all' ? undefined : selectedLocation
+  );
+
+  // Show loading skeleton while fetching data
+  if (isLoading) {
+    return (
+      <section id="analytics" className="py-12 sm:py-16 md:py-20 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12 sm:mb-16">
+            <Badge variant="outline" className="mb-4 text-xs sm:text-sm">
+              Advanced Time Series Analytics
+            </Badge>
+            <h2 className="scientific-heading text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-4 sm:mb-6 px-2">
+              <span className="text-primary">Seasonal</span> Environmental Analytics
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8 sm:mb-12 px-4 sm:px-0">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Card key={i} className="data-card">
+                <CardContent className="p-6">
+                  <Skeleton className="h-8 w-8 mb-4" />
+                  <Skeleton className="h-4 w-24 mb-2" />
+                  <Skeleton className="h-8 w-16 mb-2" />
+                  <Skeleton className="h-4 w-32" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // Show error state if server is not healthy
+  if (!isServerHealthy) {
+    return (
+      <section id="analytics" className="py-12 sm:py-16 md:py-20 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-4">Database Connection Error</h2>
+            <p className="text-muted-foreground mb-4">
+              Unable to connect to local database. Please ensure the server is running on localhost:3001
+            </p>
+            <Button onClick={() => window.location.reload()}>
+              Retry Connection
+            </Button>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   // Sample time series data for different seasons
   const generateSeasonalData = () => {
@@ -83,39 +127,59 @@ const Analytics = () => {
     Fall: item.fall[selectedMetric]
   }));
 
-  // Current metrics with seasonal context
+  // Real metrics from database with seasonal context
   const currentMetrics = [
     { 
       label: 'Current Temperature', 
-      value: '16.2°C', 
-      change: '+1.3°C vs seasonal avg', 
+      value: analytics.current_metrics?.temperature?.avg ? `${analytics.current_metrics.temperature.avg.toFixed(1)}°C` : 'N/A', 
+      change: analytics.current_metrics?.temperature?.count ? `${analytics.current_metrics.temperature.count} records` : 'No data', 
       trend: 'up',
       icon: Thermometer,
-      seasonal: { winter: '-2.1°C', spring: '12.4°C', summer: '24.8°C', fall: '11.2°C' }
+      seasonal: { 
+        winter: analytics.current_metrics?.temperature?.min ? `${analytics.current_metrics.temperature.min.toFixed(1)}°C` : 'N/A', 
+        spring: analytics.current_metrics?.temperature?.avg ? `${analytics.current_metrics.temperature.avg.toFixed(1)}°C` : 'N/A', 
+        summer: analytics.current_metrics?.temperature?.max ? `${analytics.current_metrics.temperature.max.toFixed(1)}°C` : 'N/A', 
+        fall: analytics.current_metrics?.temperature?.avg ? `${analytics.current_metrics.temperature.avg.toFixed(1)}°C` : 'N/A'
+      }
     },
     { 
       label: 'Precipitation (30d)', 
-      value: '45.2mm', 
-      change: '-8.1mm vs seasonal avg', 
-      trend: 'down',
+      value: analytics.current_metrics?.precipitation?.avg ? `${analytics.current_metrics.precipitation.avg.toFixed(1)}mm` : 'N/A', 
+      change: analytics.current_metrics?.precipitation?.count ? `${analytics.current_metrics.precipitation.count} records` : 'No data', 
+      trend: 'up',
       icon: CloudRain,
-      seasonal: { winter: '32mm', spring: '78mm', summer: '95mm', fall: '67mm' }
+      seasonal: { 
+        winter: analytics.current_metrics?.precipitation?.min ? `${analytics.current_metrics.precipitation.min.toFixed(1)}mm` : 'N/A', 
+        spring: analytics.current_metrics?.precipitation?.avg ? `${analytics.current_metrics.precipitation.avg.toFixed(1)}mm` : 'N/A', 
+        summer: analytics.current_metrics?.precipitation?.max ? `${analytics.current_metrics.precipitation.max.toFixed(1)}mm` : 'N/A', 
+        fall: analytics.current_metrics?.precipitation?.avg ? `${analytics.current_metrics.precipitation.avg.toFixed(1)}mm` : 'N/A'
+      }
     },
     { 
       label: 'Wind Speed', 
-      value: '12.4 km/h', 
-      change: '+2.1 km/h vs seasonal avg', 
+      value: analytics.current_metrics?.wind?.avg ? `${analytics.current_metrics.wind.avg.toFixed(1)} km/h` : 'N/A', 
+      change: analytics.current_metrics?.wind?.count ? `${analytics.current_metrics.wind.count} records` : 'No data', 
       trend: 'up',
       icon: Wind,
-      seasonal: { winter: '18km/h', spring: '14km/h', summer: '10km/h', fall: '13km/h' }
+      seasonal: { 
+        winter: analytics.current_metrics?.wind?.min ? `${analytics.current_metrics.wind.min.toFixed(1)}km/h` : 'N/A', 
+        spring: analytics.current_metrics?.wind?.avg ? `${analytics.current_metrics.wind.avg.toFixed(1)}km/h` : 'N/A', 
+        summer: analytics.current_metrics?.wind?.max ? `${analytics.current_metrics.wind.max.toFixed(1)}km/h` : 'N/A', 
+        fall: analytics.current_metrics?.wind?.avg ? `${analytics.current_metrics.wind.avg.toFixed(1)}km/h` : 'N/A'
+      }
     },
     { 
-      label: 'Snow Pack Depth', 
-      value: '23cm', 
-      change: '+15cm vs last year', 
+      label: 'Snow Data', 
+      value: analytics.current_metrics?.snow?.avg ? `${analytics.current_metrics.snow.avg.toFixed(1)}cm` : 'N/A', 
+      change: analytics.current_metrics?.snow?.count ? `${analytics.current_metrics.snow.count} records` : 'No data', 
       trend: 'up',
       icon: Snowflake,
-      seasonal: { winter: '45cm', spring: '12cm', summer: '0cm', fall: '3cm' }
+      seasonal: { 
+        winter: analytics.current_metrics?.snow?.max ? `${analytics.current_metrics.snow.max.toFixed(1)}cm` : 'N/A', 
+        spring: analytics.current_metrics?.snow?.avg ? `${analytics.current_metrics.snow.avg.toFixed(1)}cm` : 'N/A', 
+        summer: analytics.current_metrics?.snow?.min ? `${analytics.current_metrics.snow.min.toFixed(1)}cm` : 'N/A', 
+        fall: analytics.current_metrics?.snow?.avg ? `${analytics.current_metrics.snow.avg.toFixed(1)}cm` : 'N/A'
+      }
     }
   ];
 
@@ -152,6 +216,7 @@ const Analytics = () => {
                 <SelectValue placeholder="Select location" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="all">All Locations</SelectItem>
                 {locations.map(location => (
                   <SelectItem key={location.id} value={location.id}>
                     {location.name}
