@@ -115,6 +115,9 @@ const mockAttributes = {
 const DownloadInterface = () => {
   const { toast } = useToast();
   
+  // Wizard step state
+  const [currentStep, setCurrentStep] = useState(1);
+  
   // Filter states
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   const [selectedTable, setSelectedTable] = useState<string>('');
@@ -340,409 +343,419 @@ const DownloadInterface = () => {
   const estimatedRecords = selectedLocations.length * (startDate && endDate ? 
     Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60)) : 0); // Hourly data
 
+  const steps = [
+    { id: 1, title: 'Choose Data Type', description: 'Select what kind of data you want', completed: !!selectedTable },
+    { id: 2, title: 'Pick Locations', description: 'Choose monitoring stations', completed: selectedLocations.length > 0 },
+    { id: 3, title: 'Select Variables', description: 'Pick specific measurements', completed: selectedAttributes.length > 0 },
+    { id: 4, title: 'Set Time Period', description: 'Choose date range', completed: !!(startDate && endDate) },
+    { id: 5, title: 'Download Format', description: 'Choose file format', completed: !!exportFormat }
+  ];
+
+  const canProceedToStep = (stepId: number) => {
+    switch (stepId) {
+      case 1: return true;
+      case 2: return !!selectedTable;
+      case 3: return selectedLocations.length > 0;
+      case 4: return selectedAttributes.length > 0;
+      case 5: return !!(startDate && endDate);
+      default: return false;
+    }
+  };
+
+  const nextStep = () => {
+    if (currentStep < 5) setCurrentStep(currentStep + 1);
+  };
+
+  const prevStep = () => {
+    if (currentStep > 1) setCurrentStep(currentStep - 1);
+  };
+
   return (
     <div className="space-y-6">
-      {/* Download Configuration Summary */}
-      <Card className="bg-gradient-to-r from-blue-50 to-green-50 border-blue-200">
+      {/* Step Progress Indicator */}
+      <Card className="bg-gradient-to-r from-primary/5 to-secondary/5 border-primary/20">
         <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Data Export Configuration</h3>
-              <div className="flex flex-wrap gap-3">
-                <Badge variant="outline" className="text-blue-700 border-blue-300">
-                  {selectedLocations.length} Locations
-                </Badge>
-                <Badge variant="outline" className="text-green-700 border-green-300">
-                  {selectedTable ? mockTables.find(t => t.id === selectedTable)?.name : 'No Table'} Selected
-                </Badge>
-                <Badge variant="outline" className="text-purple-700 border-purple-300">
-                  {selectedAttributes.length} Attributes
-                </Badge>
-                {startDate && endDate && (
-                  <Badge variant="outline" className="text-orange-700 border-orange-300">
-                    {format(startDate, 'MMM dd')} - {format(endDate, 'MMM dd, yyyy')}
-                  </Badge>
-                )}
-                {estimatedRecords > 0 && (
-                  <Badge variant="outline" className="text-gray-700 border-gray-300">
-                    ~{estimatedRecords.toLocaleString()} records
-                  </Badge>
+          <h2 className="text-2xl font-bold text-foreground mb-4">Download Research Data</h2>
+          <div className="flex items-center justify-between mb-4">
+            {steps.map((step, index) => (
+              <div key={step.id} className="flex items-center">
+                <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
+                  step.completed 
+                    ? 'bg-primary border-primary text-primary-foreground' 
+                    : step.id === currentStep 
+                      ? 'border-primary bg-primary/10 text-primary' 
+                      : 'border-muted bg-muted text-muted-foreground'
+                }`}>
+                  {step.completed ? (
+                    <CheckCircle2 className="h-5 w-5" />
+                  ) : (
+                    <span className="text-sm font-medium">{step.id}</span>
+                  )}
+                </div>
+                {index < steps.length - 1 && (
+                  <div className={`w-16 h-1 mx-2 ${
+                    step.completed ? 'bg-primary' : 'bg-muted'
+                  }`} />
                 )}
               </div>
-            </div>
-            <Button 
-              onClick={handleDownload} 
-              disabled={isLoading || !selectedTable || selectedLocations.length === 0 || selectedAttributes.length === 0}
-              className="bg-primary hover:bg-primary/90"
-              size="lg"
-            >
-              {isLoading ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Preparing...
+            ))}
+          </div>
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-foreground">{steps[currentStep - 1].title}</h3>
+            <p className="text-muted-foreground">{steps[currentStep - 1].description}</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Step Content */}
+      <div className="min-h-[500px]">
+        {/* Step 1: Data Type Selection */}
+        {currentStep === 1 && (
+          <Card className="max-w-4xl mx-auto">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Database className="h-6 w-6 text-primary" />
+                What type of data do you need?
+              </CardTitle>
+              <p className="text-muted-foreground">Choose from our available environmental datasets</p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-4">
+                {mockTables.map((table) => (
+                  <Card 
+                    key={table.id} 
+                    className={`cursor-pointer transition-all hover:shadow-md ${
+                      selectedTable === table.id 
+                        ? 'border-primary bg-primary/5 shadow-lg' 
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                    onClick={() => {
+                      handleTableChange(table.id);
+                      if (table.id && canProceedToStep(2)) {
+                        setTimeout(() => nextStep(), 500);
+                      }
+                    }}
+                  >
+                    <CardContent className="p-6">
+                      <div className="flex items-start gap-3">
+                        <div className={`w-3 h-3 rounded-full mt-2 ${
+                          selectedTable === table.id ? 'bg-primary' : 'bg-muted'
+                        }`} />
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-lg mb-2">{table.name}</h3>
+                          <p className="text-muted-foreground mb-3">{table.description}</p>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-primary font-medium">{table.recordCount} records</span>
+                            <span className="text-muted-foreground">Updated {table.lastUpdated}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Step 2: Location Selection */}
+        {currentStep === 2 && (
+          <Card className="max-w-4xl mx-auto">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="h-6 w-6 text-primary" />
+                Which monitoring stations?
+              </CardTitle>
+              <p className="text-muted-foreground">Select the locations you want data from</p>
+            </CardHeader>
+            <CardContent>
+              <div className="mb-4 flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">
+                  {selectedLocations.length} of {mockLocations.length} stations selected
+                </span>
+                <Button variant="outline" size="sm" onClick={handleSelectAllLocations}>
+                  {selectedLocations.length === mockLocations.length ? 'Deselect All' : 'Select All'}
+                </Button>
+              </div>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
+                {mockLocations.map((location) => (
+                  <Card 
+                    key={location.id}
+                    className={`cursor-pointer transition-all ${
+                      selectedLocations.includes(location.id)
+                        ? 'border-primary bg-primary/5' 
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                    onClick={() => handleLocationToggle(location.id)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <Checkbox 
+                          checked={selectedLocations.includes(location.id)}
+                          onChange={() => {}}
+                          className="mt-1"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-sm truncate">{location.name}</h4>
+                          <p className="text-xs text-muted-foreground">{location.id}</p>
+                          <p className="text-xs text-muted-foreground">{location.elevation}m elevation</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Step 3: Attribute Selection */}
+        {currentStep === 3 && selectedTable && (
+          <Card className="max-w-4xl mx-auto">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Filter className="h-6 w-6 text-primary" />
+                Which measurements?
+              </CardTitle>
+              <p className="text-muted-foreground">
+                Choose specific variables from {mockTables.find(t => t.id === selectedTable)?.name}
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="mb-4 flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">
+                  {selectedAttributes.length} of {mockAttributes[selectedTable as keyof typeof mockAttributes]?.length || 0} variables selected
+                </span>
+                <Button variant="outline" size="sm" onClick={handleSelectAllAttributes}>
+                  {selectedAttributes.length === (mockAttributes[selectedTable as keyof typeof mockAttributes]?.length || 0) ? 'Deselect All' : 'Select All'}
+                </Button>
+              </div>
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {(mockAttributes[selectedTable as keyof typeof mockAttributes] || []).map((attribute) => (
+                  <Card 
+                    key={attribute.name}
+                    className={`cursor-pointer transition-all ${
+                      selectedAttributes.includes(attribute.name)
+                        ? 'border-primary bg-primary/5' 
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                    onClick={() => handleAttributeToggle(attribute.name)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <Checkbox 
+                          checked={selectedAttributes.includes(attribute.name)}
+                          onChange={() => {}}
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="font-medium">{attribute.name}</h4>
+                            <Badge variant="secondary" className="text-xs">{attribute.type}</Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">{attribute.description}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Step 4: Time Period Selection */}
+        {currentStep === 4 && (
+          <Card className="max-w-4xl mx-auto">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-6 w-6 text-primary" />
+                What time period?
+              </CardTitle>
+              <p className="text-muted-foreground">Choose the date range for your data</p>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div>
+                <Label className="text-base font-medium mb-3 block">Quick Presets</Label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {timePresets.filter(p => p.value !== 'custom').map((preset) => (
+                    <Button
+                      key={preset.value}
+                      variant={timePreset === preset.value ? "default" : "outline"}
+                      onClick={() => handleTimePresetChange(preset.value)}
+                      className="justify-start h-auto p-3"
+                    >
+                      {preset.label}
+                    </Button>
+                  ))}
                 </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <Download className="h-5 w-5" />
-                  Download Data
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <Label className="text-base font-medium mb-3 block">Start Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full justify-start text-left font-normal">
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {startDate ? format(startDate, "PPP") : "Pick start date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={startDate}
+                        onSelect={setStartDate}
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div>
+                  <Label className="text-base font-medium mb-3 block">End Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full justify-start text-left font-normal">
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {endDate ? format(endDate, "PPP") : "Pick end date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={endDate}
+                        onSelect={setEndDate}
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+
+              {startDate && endDate && (
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <p className="text-sm text-muted-foreground">
+                    <strong>Selected period:</strong> {format(startDate, "PPP")} to {format(endDate, "PPP")}
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    <strong>Estimated records:</strong> ~{estimatedRecords.toLocaleString()} data points
+                  </p>
                 </div>
               )}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        )}
 
-      <div className="grid lg:grid-cols-4 gap-6">
-        {/* Location Selection */}
-        <Card className="data-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5 text-primary" />
-              Monitoring Locations
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Select stations for data export
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex justify-between items-center">
-              <Label className="text-sm font-medium">Available Stations ({mockLocations.length})</Label>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleSelectAllLocations}
-                className="text-xs"
-              >
-                {selectedLocations.length === mockLocations.length ? 'Deselect All' : 'Select All'}
-              </Button>
-            </div>
-            
-            <div className="max-h-80 overflow-y-auto space-y-2">
-              {mockLocations.map((location) => (
-                <div 
-                  key={location.id} 
-                  className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 transition-colors cursor-pointer"
-                  onClick={() => handleLocationToggle(location.id)}
-                >
-                  <Checkbox
-                    id={location.id}
-                    checked={selectedLocations.includes(location.id)}
-                    onCheckedChange={() => handleLocationToggle(location.id)}
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <Label htmlFor={location.id} className="font-medium text-sm cursor-pointer">
-                        {location.id === 'RB-13' ? '⭐ SUMMIT' : location.id}
-                      </Label>
-                      <Badge 
-                        variant="outline" 
-                        className={`text-xs ${
-                          location.type === 'ranch_brook' 
-                            ? 'text-red-700 border-red-300 bg-red-50' 
-                            : 'text-blue-700 border-blue-300 bg-blue-50'
-                        }`}
-                      >
-                        {location.type === 'ranch_brook' ? 'RB' : 'DIST'}
-                      </Badge>
-                    </div>
-                    <div className="text-xs text-gray-500">{location.name}</div>
-                    <div className="text-xs text-gray-400">{location.elevation}m • {location.lat.toFixed(3)}°N, {location.lng.toFixed(3)}°W</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Data Table Selection */}
-        <Card className="data-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Database className="h-5 w-5 text-primary" />
-              Data Tables
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Choose data type to export
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Available Tables</Label>
-              <Select value={selectedTable} onValueChange={handleTableChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a data table" />
-                </SelectTrigger>
-                <SelectContent>
-                  {mockTables.map((table) => (
-                    <SelectItem key={table.id} value={table.id}>
-                      <div className="flex flex-col">
-                        <div className="font-medium">{table.name}</div>
-                        <div className="text-xs text-gray-500">{table.description}</div>
-                        <div className="text-xs text-blue-600">{table.recordCount} records • Updated {table.lastUpdated}</div>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {selectedTable && (
-              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <h4 className="text-sm font-medium text-blue-900 mb-2">Table Information</h4>
-                <div className="text-xs text-blue-700 space-y-1">
-                  {(() => {
-                    const table = mockTables.find(t => t.id === selectedTable);
-                    const attributes = mockAttributes[selectedTable as keyof typeof mockAttributes] || [];
-                    return (
-                      <>
-                        <div>• {table?.recordCount} total records</div>
-                        <div>• {attributes.length} available attributes</div>
-                        <div>• Last updated: {table?.lastUpdated}</div>
-                        <div>• Data frequency: Hourly measurements</div>
-                      </>
-                    );
-                  })()}
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Attribute Selection */}
-        <Card className="data-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Filter className="h-5 w-5 text-primary" />
-              Data Attributes
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Select specific measurements
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {!selectedTable ? (
-              <div className="flex items-center justify-center h-32 text-center">
-                <div className="text-sm text-gray-500">
-                  <AlertCircle className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                  Select a data table first to view available attributes
-                </div>
-              </div>
-            ) : (
-              <>
-                <div className="flex justify-between items-center">
-                  <Label className="text-sm font-medium">
-                    Attributes ({selectedAttributes.length}/{(mockAttributes[selectedTable as keyof typeof mockAttributes] || []).length})
-                  </Label>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={handleSelectAllAttributes}
-                    className="text-xs"
+        {/* Step 5: Export Format */}
+        {currentStep === 5 && (
+          <Card className="max-w-4xl mx-auto">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileType className="h-6 w-6 text-primary" />
+                Choose download format
+              </CardTitle>
+              <p className="text-muted-foreground">Select the file format that works best for you</p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-4">
+                {exportFormats.map((format) => (
+                  <Card 
+                    key={format.value}
+                    className={`cursor-pointer transition-all ${
+                      exportFormat === format.value
+                        ? 'border-primary bg-primary/5' 
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                    onClick={() => setExportFormat(format.value)}
                   >
-                    {selectedAttributes.length === (mockAttributes[selectedTable as keyof typeof mockAttributes] || []).length ? 'Deselect All' : 'Select All'}
-                  </Button>
+                    <CardContent className="p-6">
+                      <div className="flex items-start gap-3">
+                        <div className={`w-3 h-3 rounded-full mt-2 ${
+                          exportFormat === format.value ? 'bg-primary' : 'bg-muted'
+                        }`} />
+                        <div>
+                          <h3 className="font-semibold text-lg mb-2">{format.label}</h3>
+                          <p className="text-muted-foreground">{format.description}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Download Summary and Action */}
+              <div className="mt-8 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-lg p-6 border border-primary/20">
+                <h3 className="text-lg font-semibold mb-4">Ready to Download</h3>
+                <div className="grid md:grid-cols-2 gap-4 mb-6">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Data Type</p>
+                    <p className="font-medium">{mockTables.find(t => t.id === selectedTable)?.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Locations</p>
+                    <p className="font-medium">{selectedLocations.length} stations</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Variables</p>
+                    <p className="font-medium">{selectedAttributes.length} measurements</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Time Period</p>
+                    <p className="font-medium">
+                      {startDate && endDate ? `${format(startDate, 'MMM dd')} - ${format(endDate, 'MMM dd, yyyy')}` : 'Not set'}
+                    </p>
+                  </div>
                 </div>
                 
-                <div className="max-h-80 overflow-y-auto space-y-2">
-                  {(mockAttributes[selectedTable as keyof typeof mockAttributes] || []).map((attribute) => (
-                    <div 
-                      key={attribute.name} 
-                      className="flex items-start space-x-2 p-2 rounded border hover:bg-gray-50 cursor-pointer"
-                      onClick={() => handleAttributeToggle(attribute.name)}
-                    >
-                      <Checkbox
-                        id={attribute.name}
-                        checked={selectedAttributes.includes(attribute.name)}
-                        onCheckedChange={() => handleAttributeToggle(attribute.name)}
-                        className="mt-1"
-                      />
-                      <div className="flex-1">
-                        <Label htmlFor={attribute.name} className="text-sm font-medium cursor-pointer">
-                          {attribute.name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                        </Label>
-                        <div className="text-xs text-gray-500">{attribute.description}</div>
-                        <Badge variant="outline" className="text-xs mt-1">
-                          {attribute.type}
-                        </Badge>
-                      </div>
+                <Button 
+                  onClick={handleDownload} 
+                  disabled={isLoading || !selectedTable || selectedLocations.length === 0 || selectedAttributes.length === 0 || !startDate || !endDate}
+                  className="w-full bg-primary hover:bg-primary/90 text-lg py-6"
+                  size="lg"
+                >
+                  {isLoading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Preparing your download...
                     </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Time Period & Export Settings */}
-        <Card className="data-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-primary" />
-              Time Period & Export
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Configure time range and format
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Time Presets */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Time Period</Label>
-              <Select value={timePreset} onValueChange={handleTimePresetChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select time period" />
-                </SelectTrigger>
-                <SelectContent>
-                  {timePresets.map((preset) => (
-                    <SelectItem key={preset.value} value={preset.value}>
-                      {preset.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Custom Date Range */}
-            {(timePreset === 'custom' || timePreset === '') && (
-              <div className="space-y-3">
-                <div className="grid grid-cols-1 gap-3">
-                  <div className="space-y-2">
-                    <Label className="text-sm">Start Date</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full justify-start text-left font-normal">
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {startDate ? format(startDate, 'MMM dd, yyyy') : 'Select start date'}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={startDate}
-                          onSelect={setStartDate}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label className="text-sm">End Date</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full justify-start text-left font-normal">
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {endDate ? format(endDate, 'MMM dd, yyyy') : 'Select end date'}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={endDate}
-                          onSelect={setEndDate}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Export Format */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Export Format</Label>
-              <Select value={exportFormat} onValueChange={setExportFormat}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {exportFormats.map((format) => (
-                    <SelectItem key={format.value} value={format.value}>
-                      <div className="flex flex-col">
-                        <div className="flex items-center gap-2">
-                          <FileType className="h-4 w-4" />
-                          {format.label}
-                        </div>
-                        <div className="text-xs text-gray-500">{format.description}</div>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Export Preview */}
-            {selectedTable && selectedLocations.length > 0 && selectedAttributes.length > 0 && startDate && endDate && (
-              <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                <h4 className="text-sm font-medium text-green-900 mb-2 flex items-center gap-1">
-                  <CheckCircle2 className="h-4 w-4" />
-                  Ready to Export
-                </h4>
-                <div className="text-xs text-green-700 space-y-1">
-                  <div>• {selectedLocations.length} location(s)</div>
-                  <div>• {selectedAttributes.length} attribute(s)</div>
-                  <div>• {Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))} day(s) of data</div>
-                  <div>• Format: {exportFormat.toUpperCase()}</div>
-                  <div>• Estimated: ~{estimatedRecords.toLocaleString()} records</div>
-                  <div>• File size: ~{Math.ceil(estimatedRecords * selectedAttributes.length / 1000)}KB</div>
-                </div>
-              </div>
-            )}
-
-            {/* Quick Download Options */}
-            <div className="pt-4 border-t">
-              <Label className="text-sm font-medium mb-2 block">Quick Downloads</Label>
-              <div className="space-y-2">
-                <Button variant="outline" size="sm" className="w-full justify-start text-xs">
-                  <Download className="h-3 w-3 mr-2" />
-                  Last 24 Hours - All Sites
-                </Button>
-                <Button variant="outline" size="sm" className="w-full justify-start text-xs">
-                  <Download className="h-3 w-3 mr-2" />
-                  Weekly Summary Report
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Download className="h-6 w-6" />
+                      Download {exportFormat.toUpperCase()} File (~{estimatedRecords.toLocaleString()} records)
+                    </div>
+                  )}
                 </Button>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
-      {/* Usage Guidelines */}
-      <Card className="bg-blue-50 border-blue-200">
-        <CardContent className="p-4">
-          <h4 className="font-medium mb-2 text-sm flex items-center text-blue-800">
-            <CheckCircle2 className="h-4 w-4 mr-2 text-blue-600" />
-            Data Usage Guidelines
-          </h4>
-          <div className="grid md:grid-cols-3 gap-4 text-xs text-blue-700">
-            <div>
-              <div className="font-semibold mb-1">Attribution</div>
-              <ul className="space-y-1">
-                <li>• Cite "University of Vermont Summit 2 Shore Observatory"</li>
-                <li>• Include data access date in publications</li>
-                <li>• Reference DOI when available</li>
-              </ul>
-            </div>
-            <div>
-              <div className="font-semibold mb-1">Data Quality</div>
-              <ul className="space-y-1">
-                <li>• Check QC flags in downloaded data</li>
-                <li>• Review metadata for sensor specifications</li>
-                <li>• Contact PI for large-scale research use</li>
-              </ul>
-            </div>
-            <div>
-              <div className="font-semibold mb-1">Technical Support</div>
-              <ul className="space-y-1">
-                <li>• API documentation available for developers</li>
-                <li>• Bulk downloads &gt;1M records: contact team</li>
-                <li>• Real-time data feeds available via API</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Navigation Controls */}
+      <div className="flex justify-between items-center max-w-4xl mx-auto">
+        <Button 
+          variant="outline" 
+          onClick={prevStep}
+          disabled={currentStep === 1}
+          className="flex items-center gap-2"
+        >
+          ← Previous Step
+        </Button>
+        
+        <div className="text-sm text-muted-foreground">
+          Step {currentStep} of 5
+        </div>
+        
+        <Button 
+          onClick={nextStep}
+          disabled={currentStep === 5 || !canProceedToStep(currentStep + 1)}
+          className="flex items-center gap-2"
+        >
+          Next Step →
+        </Button>
+      </div>
     </div>
   );
 };
