@@ -288,26 +288,46 @@ const AdvancedAnalytics = () => {
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={400}>
-                    <RechartsLineChart data={timeSeriesData}>
+                    <RechartsLineChart data={snowDepthData || []}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="formatted" />
-                      <YAxis label={{ value: 'Depth (cm)', angle: -90, position: 'insideLeft' }} />
-                      <Tooltip />
+                      <XAxis 
+                        dataKey="timestamp"
+                        tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      />
+                      <YAxis 
+                        yAxisId="depth"
+                        label={{ value: 'Snow Depth (cm)', angle: -90, position: 'insideLeft' }} 
+                      />
+                      <YAxis 
+                        yAxisId="temp"
+                        orientation="right"
+                        label={{ value: 'Temperature (°C)', angle: 90, position: 'insideRight' }}
+                      />
+                      <Tooltip 
+                        labelFormatter={(value) => new Date(value).toLocaleDateString()}
+                        formatter={(value, name) => [
+                          typeof value === 'number' ? value.toFixed(1) : value,
+                          name
+                        ]}
+                      />
                       <Legend />
                       <Line 
+                        yAxisId="depth"
                         type="monotone" 
-                        dataKey={dataType === 'clean' ? 'cleanData' : 'rawData'} 
+                        dataKey={dataType === 'clean' ? 'snow_depth_clean' : 'snow_depth_raw'} 
                         stroke="#2563eb" 
                         strokeWidth={2}
                         name="Snow Depth (cm)"
+                        dot={false}
                       />
                       <Line 
+                        yAxisId="temp"
                         type="monotone" 
                         dataKey="temperature" 
                         stroke="#dc2626" 
                         strokeWidth={1}
                         name="Temperature (°C)"
-                        yAxisId="temp"
+                        dot={false}
                       />
                     </RechartsLineChart>
                   </ResponsiveContainer>
