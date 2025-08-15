@@ -1,6 +1,6 @@
 // Local Database Service for MySQL Integration
 export interface LocationData {
-  id: number;
+  id: string;
   name: string;
   latitude: number;
   longitude: number;
@@ -22,8 +22,20 @@ export interface MetricData {
   location: string;
 }
 
+export interface AnalyticsData {
+  current_metrics: {
+    temperature?: any;
+    wind?: any;
+    precipitation?: any;
+    snow?: any;
+  };
+  recent_data: any[];
+}
+
 export class LocalDatabaseService {
-  private static baseUrl = 'http://localhost:3001/api'; // Your local API server
+  private static baseUrl = process.env.NODE_ENV === 'development' 
+    ? 'http://localhost:3001/api' 
+    : '/api'; // Adjust for production
 
   static async getLocations(): Promise<LocationData[]> {
     try {
@@ -65,7 +77,7 @@ export class LocalDatabaseService {
     const data = await this.getEnvironmentalData('temperature_data', locationId, startDate, endDate);
     return data.map(item => ({
       timestamp: item.timestamp,
-      value: item.PTemp || 0,
+      value: item.temperature || item.PTemp || 0,
       location: item.location
     }));
   }
@@ -74,7 +86,7 @@ export class LocalDatabaseService {
     const data = await this.getEnvironmentalData('wind_data', locationId, startDate, endDate);
     return data.map(item => ({
       timestamp: item.timestamp,
-      value: item.WS_ms || 0,
+      value: item.wind_speed || item.WS_ms || 0,
       location: item.location
     }));
   }
@@ -83,7 +95,7 @@ export class LocalDatabaseService {
     const data = await this.getEnvironmentalData('precipitation_data', locationId, startDate, endDate);
     return data.map(item => ({
       timestamp: item.timestamp,
-      value: item.Accu_RT_NRT || 0,
+      value: item.accumulation_rt || item.Accu_RT_NRT || 0,
       location: item.location
     }));
   }
@@ -92,12 +104,12 @@ export class LocalDatabaseService {
     const data = await this.getEnvironmentalData('snow_data', locationId, startDate, endDate);
     return data.map(item => ({
       timestamp: item.timestamp,
-      value: item.SWE || 0,
+      value: item.snow_water_equivalent || item.SWE || 0,
       location: item.location
     }));
   }
 
-  static async getAnalyticsSummary(locationId?: string): Promise<any> {
+  static async getAnalyticsSummary(locationId?: string): Promise<AnalyticsData> {
     try {
       const params = locationId ? `?location_id=${locationId}` : '';
       const response = await fetch(`${this.baseUrl}/analytics${params}`);
@@ -110,6 +122,17 @@ export class LocalDatabaseService {
         current_metrics: {},
         recent_data: []
       };
+    }
+  }
+
+  // Health check to verify server connection
+  static async healthCheck(): Promise<boolean> {
+    try {
+      const response = await fetch(`${this.baseUrl.replace('/api', '')}/health`);
+      return response.ok;
+    } catch (error) {
+      console.error('Health check failed:', error);
+      return false;
     }
   }
 }
