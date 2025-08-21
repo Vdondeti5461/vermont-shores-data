@@ -1,17 +1,21 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Menu, X, MapPin, BarChart3, Download, Users, Info } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const location = useLocation();
 
   const navItems = [
-    { label: 'About', href: '#about', icon: Info },
-    { label: 'Network', href: '#map', icon: MapPin },
-    { label: 'Analytics', href: '#analytics', icon: BarChart3 },
-    { label: 'Data Download', href: '#download', icon: Download },
-    { label: 'Team', href: '#team', icon: Users }
+    { label: 'About', href: '/about', icon: Info },
+    { label: 'Network', href: '/network', icon: MapPin },
+    { label: 'Analytics', href: '/analytics', icon: BarChart3 },
+    { label: 'Data Download', href: '/download', icon: Download },
+    { label: 'Research', href: '/research', icon: Users }
   ];
+
+  const isActive = (path: string) => location.pathname === path;
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200/50 shadow-sm">
@@ -19,10 +23,8 @@ const Header = () => {
         <div className="flex items-center justify-between h-16">
           
           {/* Logo */}
-          <a 
-            href="https://www.uvm.edu" 
-            target="_blank" 
-            rel="noopener noreferrer"
+          <Link 
+            to="/"
             className="flex items-center space-x-3 hover:opacity-80 transition-opacity"
           >
             <div className="w-10 h-10 bg-gradient-to-br from-green-700 to-green-600 rounded-lg flex items-center justify-center">
@@ -38,21 +40,25 @@ const Header = () => {
                 <span className="text-green-700">University of Vermont</span> × CRREL
               </div>
             </div>
-          </a>
+          </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
             {navItems.map((item) => {
               const Icon = item.icon;
               return (
-                <a
+                <Link
                   key={item.label}
-                  href={item.href}
-                  className="flex items-center space-x-1 text-gray-700 hover:text-primary transition-colors duration-200 font-medium"
+                  to={item.href}
+                  className={`flex items-center space-x-1 transition-colors duration-200 font-medium ${
+                    isActive(item.href) 
+                      ? 'text-primary' 
+                      : 'text-gray-700 hover:text-primary'
+                  }`}
                 >
                   <Icon className="h-4 w-4" />
                   <span>{item.label}</span>
-                </a>
+                </Link>
               );
             })}
           </nav>
@@ -80,15 +86,19 @@ const Header = () => {
               {navItems.map((item) => {
                 const Icon = item.icon;
                 return (
-                  <a
+                  <Link
                     key={item.label}
-                    href={item.href}
+                    to={item.href}
                     onClick={() => setIsMenuOpen(false)}
-                    className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:text-primary hover:bg-primary/5 transition-colors rounded-lg mx-2"
+                    className={`flex items-center space-x-3 px-4 py-3 transition-colors rounded-lg mx-2 font-medium ${
+                      isActive(item.href)
+                        ? 'text-primary bg-primary/10'
+                        : 'text-gray-700 hover:text-primary hover:bg-primary/5'
+                    }`}
                   >
                     <Icon className="h-5 w-5" />
-                    <span className="font-medium">{item.label}</span>
-                  </a>
+                    <span>{item.label}</span>
+                  </Link>
                 );
               })}
               <div className="px-6 pt-4">
