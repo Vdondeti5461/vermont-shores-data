@@ -1,240 +1,177 @@
-# 🚀 Local Development Setup with MySQL Database
+# Local Database Setup Guide
 
-This guide will help you set up your cloned repository to work with your local MySQL database containing environmental monitoring data.
+## Database Configuration
 
-## 📋 Prerequisites
+Your MySQL database is configured with the following details:
 
-Before starting, ensure you have:
-- ✅ Node.js (v16 or higher)
-- ✅ MySQL database with your environmental data tables
-- ✅ Git (repository already cloned)
+### Connection Information
+- **Host**: webdb5.uvm.edu
+- **User**: crrels2s_admin
+- **Password**: y0m5dxldXSLP
+- **Databases**: 
+  - CRRELS2S_VTClimateRepository (Primary)
+  - CRRELS2S_VTClimateRepository_Processed
 
-## 🛠️ Setup Instructions
+### Available Tables
 
-### 1. Install Dependencies
+#### 1. table1 (Environmental Monitoring Data)
+Primary environmental measurements including:
+- Temperature (Air, Soil)
+- Humidity
+- Solar radiation (SW/LW in/out)
+- Snow metrics (SWE, density, ice/water content)
+- Soil properties
 
+#### 2. Wind (Wind Measurements)
+Wind data including:
+- Wind direction
+- Wind speed (avg, min, max)
+- Vector components
+- Timestamps for extremes
+
+#### 3. SnowpkTempProfile (Snow Temperature Profile)
+Temperature measurements at depths from 0cm to 290cm in 10cm increments
+
+#### 4. Precipitation (Precipitation Data)
+Precipitation measurements including:
+- Real-time intensity
+- Accumulated amounts
+- Bucket measurements
+
+## Setup Instructions
+
+### 1. Install Server Dependencies
 ```bash
-# Install frontend dependencies
-npm install
-
-# Install server dependencies
 cd server
 npm install
-cd ..
 ```
 
-### 2. Configure Database Connection
-
-1. **Create environment file:**
-```bash
-cd server
-cp .env.example .env
-```
-
-2. **Edit `server/.env` with your MySQL credentials:**
+### 2. Verify Database Configuration
+The `.env` file in the `server` directory should contain:
 ```env
-MYSQL_HOST=your_mysql_host
-MYSQL_USER=your_mysql_username
-MYSQL_PASSWORD=your_mysql_password
-MYSQL_DATABASE=summit2shore
+MYSQL_HOST=webdb5.uvm.edu
+MYSQL_USER=crrels2s_admin
+MYSQL_PASSWORD=y0m5dxldXSLP
+MYSQL_DATABASE=CRRELS2S_VTClimateRepository
 MYSQL_PORT=3306
 PORT=3001
 ```
 
-### 3. Update Frontend to Use Local Database
-
-In your components, replace the analytics service import:
-
-```typescript
-// OLD - Mock data service
-import { useAnalyticsData } from '@/hooks/useAnalyticsData';
-
-// NEW - Local database service
-import { useLocalEnvironmentalAnalytics } from '@/hooks/useLocalDatabase';
-```
-
-### 4. Start Development Servers
-
-**Terminal 1 - Start API Server:**
+### 3. Start the Backend Server
 ```bash
 cd server
-npm run dev
+npm start
 ```
 
-**Terminal 2 - Start Frontend:**
+The server will run on `http://localhost:3001`
+
+### 4. Start the Frontend
+In a new terminal:
 ```bash
 npm run dev
 ```
 
-Your application will be available at:
-- 🌐 **Frontend:** http://localhost:5173
-- 🔌 **API Server:** http://localhost:3001
-- ❤️ **Health Check:** http://localhost:3001/health
+The frontend will run on `http://localhost:8080`
 
-## 📡 API Endpoints
-
-The local server provides these endpoints for your environmental data:
+## API Endpoints
 
 ### Core Endpoints
-- `GET /api/locations` - Get all monitoring locations
-- `GET /api/data/:table` - Get data from specific table
-- `GET /api/analytics` - Get analytics summary
-- `GET /health` - Server health check
 
-### Supported Tables
-Based on your schema, these tables are supported:
-- `temperature_data` - Temperature and environmental measurements
-- `wind_data` - Wind speed and direction data
-- `precipitation_data` - Precipitation measurements
-- `snow_data` - Snow water equivalent and related data
+1. **Get Locations**
+   - `GET /api/locations`
+   - Returns all unique locations from all tables
 
-### Query Parameters
-All data endpoints support:
-- `location_id` - Filter by specific location
-- `start_date` - Filter from start date (ISO format)
-- `end_date` - Filter to end date (ISO format)
-- `limit` - Limit number of records (default: 1000)
+2. **Get Table Data**
+   - `GET /api/data/:table`
+   - Parameters:
+     - `location`: Filter by location name
+     - `start_date`: Start date (ISO format)
+     - `end_date`: End date (ISO format)
+     - `limit`: Number of records (default: 1000)
+   - Available tables: `table1`, `Wind`, `SnowpkTempProfile`, `Precipitation`
 
-**Example requests:**
+3. **Get Table Metadata**
+   - `GET /api/metadata/:table`
+   - Returns column information for specified table
+
+4. **Get Analytics**
+   - `GET /api/analytics`
+   - Parameters:
+     - `location`: Optional location filter
+     - `start_date`: Start date (default: 24 hours ago)
+     - `end_date`: End date (default: now)
+   - Returns aggregated statistics
+
+5. **Download Data as CSV**
+   - `GET /api/download/:table`
+   - Parameters:
+     - `location`: Filter by location
+     - `start_date`: Start date filter
+     - `end_date`: End date filter
+     - `columns`: Comma-separated column names
+   - Returns CSV file download
+
+6. **Health Check**
+   - `GET /health`
+   - Returns server and database connection status
+
+## Example API Calls
+
+### Get all locations
 ```bash
-# Get temperature data for specific location
-GET /api/data/temperature_data?location_id=Station1&limit=500
-
-# Get analytics for all locations
-GET /api/analytics
-
-# Get wind data for date range
-GET /api/data/wind_data?start_date=2024-01-01&end_date=2024-01-31
+curl http://localhost:3001/api/locations
 ```
 
-## 🔄 Using the Local Database in Your App
-
-### 1. Basic Location and Analytics Data
-
-```typescript
-import { useLocalEnvironmentalAnalytics } from '@/hooks/useLocalDatabase';
-
-function MyComponent() {
-  const { 
-    locations, 
-    analytics, 
-    environmentalData,
-    isLoading,
-    isServerHealthy 
-  } = useLocalEnvironmentalAnalytics();
-
-  if (!isServerHealthy) {
-    return <div>Server connection failed. Please check your local API server.</div>;
-  }
-
-  return (
-    <div>
-      <h2>Locations: {locations.length}</h2>
-      <h3>Current Temperature: {analytics.current_metrics.temperature?.avg_temp}°C</h3>
-      {/* Your UI components */}
-    </div>
-  );
-}
-```
-
-### 2. Specific Metric Data
-
-```typescript
-import { useLocalTemperatureData, useLocalWindData } from '@/hooks/useLocalDatabase';
-
-function EnvironmentalCharts({ locationId }) {
-  const { data: temperatureData } = useLocalTemperatureData(locationId);
-  const { data: windData } = useLocalWindData(locationId);
-
-  // Use data for charts, tables, etc.
-  return (
-    <div>
-      {/* Your charts using temperatureData and windData */}
-    </div>
-  );
-}
-```
-
-## 🐛 Troubleshooting
-
-### Database Connection Issues
-1. **Check credentials:** Verify your `.env` file has correct MySQL credentials
-2. **Test connection:** Visit http://localhost:3001/health
-3. **Check MySQL:** Ensure your MySQL server is running and accessible
-
-### CORS Issues
-The server includes CORS middleware for cross-origin requests. If you encounter issues:
-1. Ensure the API server is running on port 3001
-2. Check browser console for specific CORS errors
-
-### Table Not Found Errors
-If you get table not found errors:
-1. Verify table names match your MySQL schema exactly
-2. Check that your database contains the expected tables
-3. Review the `allowedTables` array in `server/server.js`
-
-### Data Mapping Issues
-The server automatically maps your table structure to standardized format. If data appears incorrect:
-1. Check the `mapTableData` function in `server/server.js`
-2. Verify column names match your actual database schema
-3. Add console logging to debug data transformation
-
-## 🚀 Production Deployment
-
-For production deployment:
-
-1. **Build the frontend:**
+### Get temperature data for a specific location
 ```bash
-npm run build
+curl "http://localhost:3001/api/data/table1?location=MountMansfield&limit=100"
 ```
 
-2. **Deploy the API server** to your hosting platform (Heroku, DigitalOcean, etc.)
-
-3. **Update the base URL** in `src/services/localDatabaseService.ts`:
-```typescript
-private static baseUrl = process.env.NODE_ENV === 'development' 
-  ? 'http://localhost:3001/api' 
-  : 'https://your-api-server.com/api';
+### Get wind data for date range
+```bash
+curl "http://localhost:3001/api/data/Wind?start_date=2024-01-01&end_date=2024-01-31"
 ```
 
-## 📊 Data Structure Mapping
-
-Your MySQL tables are automatically mapped to these standardized formats:
-
-### Temperature Data
-- `PTemp` → `temperature`
-- `AirTC_Avg` → `air_temperature`
-- `RH` → `relative_humidity`
-- `SWE` → `snow_water_equivalent`
-
-### Wind Data
-- `WS_ms` → `wind_speed`
-- `WindDir` → `wind_direction`
-- `WS_ms_Max` → `wind_speed_max`
-
-### Precipitation Data
-- `Accu_RT_NRT` → `accumulation_rt`
-- `Intensity_RT` → `intensity_rt`
-- `Bucket_RT` → `bucket_rt`
-
-## 🔄 Switching Between Mock and Real Data
-
-You can easily switch between mock data and real database data:
-
-```typescript
-// For local development with real database
-import { useLocalEnvironmentalAnalytics } from '@/hooks/useLocalDatabase';
-
-// For demo/mock data
-import { useAnalyticsState } from '@/hooks/useAnalyticsData';
+### Download precipitation data as CSV
+```bash
+curl -o precipitation.csv "http://localhost:3001/api/download/Precipitation?location=Burlington&start_date=2024-01-01"
 ```
 
-## 📝 Next Steps
+### Get analytics summary
+```bash
+curl "http://localhost:3001/api/analytics?location=MountMansfield"
+```
 
-1. Test the connection with your database
-2. Verify data is being fetched correctly
-3. Update your analytics components to use the new hooks
-4. Customize the data mapping if needed
-5. Add any additional endpoints for specific requirements
+## Switching Databases
 
-Need help? Check the server logs in your terminal for detailed error messages and debugging information.
+To switch to the processed database, update the `.env` file:
+```env
+MYSQL_DATABASE=CRRELS2S_VTClimateRepository_Processed
+```
+
+Then restart the server.
+
+## Troubleshooting
+
+1. **Database Connection Failed**
+   - Verify you're on the UVM network or VPN
+   - Check credentials in `.env` file
+   - Ensure MySQL port is not blocked
+
+2. **No Data Returned**
+   - Check if tables exist in the selected database
+   - Verify location names match exactly (case-sensitive)
+   - Check date format (use ISO 8601: YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss)
+
+3. **Server Port Already in Use**
+   - Change the PORT in `.env` file
+   - Or kill the process using port 3001
+
+## Adding New Tables
+
+To add new tables to the API:
+
+1. Add table name to `allowedTables` array in `server/server.js`
+2. Add formatting logic in `formatTableData()` function
+3. Update analytics queries if needed
+4. Restart the server
