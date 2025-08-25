@@ -21,7 +21,7 @@ import {
 } from 'recharts';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useLocalEnvironmentalAnalytics } from '@/hooks/useLocalDatabase';
+import { useLocalDatabaseOverview } from '@/hooks/useLocalDatabase';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const Analytics = () => {
@@ -31,9 +31,13 @@ const Analytics = () => {
   const [selectedMetric, setSelectedMetric] = useState('temperature');
 
   // Fetch real data from local database
-  const { locations, analytics, environmentalData, isLoading, isServerHealthy } = useLocalEnvironmentalAnalytics(
-    selectedLocation === 'all' ? undefined : selectedLocation
-  );
+  const { 
+    locations, 
+    analytics, 
+    tableData,
+    isLoading, 
+    isServerHealthy 
+  } = useLocalDatabaseOverview();
 
   // Show loading skeleton while fetching data
   if (isLoading) {
@@ -131,54 +135,54 @@ const Analytics = () => {
   const currentMetrics = [
     { 
       label: 'Current Temperature', 
-      value: analytics.current_metrics?.temperature?.avg ? `${analytics.current_metrics.temperature.avg.toFixed(1)}°C` : 'N/A', 
-      change: analytics.current_metrics?.temperature?.count ? `${analytics.current_metrics.temperature.count} records` : 'No data', 
+      value: analytics.temperature?.average ? `${analytics.temperature.average.toFixed(1)}°C` : 'N/A', 
+      change: analytics.temperature?.count ? `${analytics.temperature.count} records` : 'No data', 
       trend: 'up',
       icon: Thermometer,
       seasonal: { 
-        winter: analytics.current_metrics?.temperature?.min ? `${analytics.current_metrics.temperature.min.toFixed(1)}°C` : 'N/A', 
-        spring: analytics.current_metrics?.temperature?.avg ? `${analytics.current_metrics.temperature.avg.toFixed(1)}°C` : 'N/A', 
-        summer: analytics.current_metrics?.temperature?.max ? `${analytics.current_metrics.temperature.max.toFixed(1)}°C` : 'N/A', 
-        fall: analytics.current_metrics?.temperature?.avg ? `${analytics.current_metrics.temperature.avg.toFixed(1)}°C` : 'N/A'
+        winter: analytics.temperature?.min ? `${analytics.temperature.min.toFixed(1)}°C` : 'N/A', 
+        spring: analytics.temperature?.average ? `${analytics.temperature.average.toFixed(1)}°C` : 'N/A', 
+        summer: analytics.temperature?.max ? `${analytics.temperature.max.toFixed(1)}°C` : 'N/A', 
+        fall: analytics.temperature?.average ? `${analytics.temperature.average.toFixed(1)}°C` : 'N/A'
       }
     },
     { 
       label: 'Precipitation (30d)', 
-      value: analytics.current_metrics?.precipitation?.avg ? `${analytics.current_metrics.precipitation.avg.toFixed(1)}mm` : 'N/A', 
-      change: analytics.current_metrics?.precipitation?.count ? `${analytics.current_metrics.precipitation.count} records` : 'No data', 
+      value: analytics.precipitation?.total ? `${analytics.precipitation.total.toFixed(1)}mm` : 'N/A', 
+      change: analytics.precipitation?.count ? `${analytics.precipitation.count} records` : 'No data', 
       trend: 'up',
       icon: CloudRain,
       seasonal: { 
-        winter: analytics.current_metrics?.precipitation?.min ? `${analytics.current_metrics.precipitation.min.toFixed(1)}mm` : 'N/A', 
-        spring: analytics.current_metrics?.precipitation?.avg ? `${analytics.current_metrics.precipitation.avg.toFixed(1)}mm` : 'N/A', 
-        summer: analytics.current_metrics?.precipitation?.max ? `${analytics.current_metrics.precipitation.max.toFixed(1)}mm` : 'N/A', 
-        fall: analytics.current_metrics?.precipitation?.avg ? `${analytics.current_metrics.precipitation.avg.toFixed(1)}mm` : 'N/A'
+        winter: analytics.precipitation?.average_intensity ? `${analytics.precipitation.average_intensity.toFixed(1)}mm/h` : 'N/A', 
+        spring: analytics.precipitation?.total ? `${analytics.precipitation.total.toFixed(1)}mm` : 'N/A', 
+        summer: analytics.precipitation?.total ? `${analytics.precipitation.total.toFixed(1)}mm` : 'N/A', 
+        fall: analytics.precipitation?.total ? `${analytics.precipitation.total.toFixed(1)}mm` : 'N/A'
       }
     },
     { 
       label: 'Wind Speed', 
-      value: analytics.current_metrics?.wind?.avg ? `${analytics.current_metrics.wind.avg.toFixed(1)} km/h` : 'N/A', 
-      change: analytics.current_metrics?.wind?.count ? `${analytics.current_metrics.wind.count} records` : 'No data', 
+      value: analytics.wind?.average_speed ? `${analytics.wind.average_speed.toFixed(1)} m/s` : 'N/A', 
+      change: analytics.wind?.count ? `${analytics.wind.count} records` : 'No data', 
       trend: 'up',
       icon: Wind,
       seasonal: { 
-        winter: analytics.current_metrics?.wind?.min ? `${analytics.current_metrics.wind.min.toFixed(1)}km/h` : 'N/A', 
-        spring: analytics.current_metrics?.wind?.avg ? `${analytics.current_metrics.wind.avg.toFixed(1)}km/h` : 'N/A', 
-        summer: analytics.current_metrics?.wind?.max ? `${analytics.current_metrics.wind.max.toFixed(1)}km/h` : 'N/A', 
-        fall: analytics.current_metrics?.wind?.avg ? `${analytics.current_metrics.wind.avg.toFixed(1)}km/h` : 'N/A'
+        winter: analytics.wind?.max_speed ? `${analytics.wind.max_speed.toFixed(1)}m/s` : 'N/A', 
+        spring: analytics.wind?.average_speed ? `${analytics.wind.average_speed.toFixed(1)}m/s` : 'N/A', 
+        summer: analytics.wind?.average_speed ? `${analytics.wind.average_speed.toFixed(1)}m/s` : 'N/A', 
+        fall: analytics.wind?.average_speed ? `${analytics.wind.average_speed.toFixed(1)}m/s` : 'N/A'
       }
     },
     { 
-      label: 'Snow Data', 
-      value: analytics.current_metrics?.snow?.avg ? `${analytics.current_metrics.snow.avg.toFixed(1)}cm` : 'N/A', 
-      change: analytics.current_metrics?.snow?.count ? `${analytics.current_metrics.snow.count} records` : 'No data', 
+      label: 'Snow Water Equivalent', 
+      value: analytics.snow?.average_swe ? `${analytics.snow.average_swe.toFixed(1)}mm` : 'N/A', 
+      change: analytics.snow?.count ? `${analytics.snow.count} records` : 'No data', 
       trend: 'up',
       icon: Snowflake,
       seasonal: { 
-        winter: analytics.current_metrics?.snow?.max ? `${analytics.current_metrics.snow.max.toFixed(1)}cm` : 'N/A', 
-        spring: analytics.current_metrics?.snow?.avg ? `${analytics.current_metrics.snow.avg.toFixed(1)}cm` : 'N/A', 
-        summer: analytics.current_metrics?.snow?.min ? `${analytics.current_metrics.snow.min.toFixed(1)}cm` : 'N/A', 
-        fall: analytics.current_metrics?.snow?.avg ? `${analytics.current_metrics.snow.avg.toFixed(1)}cm` : 'N/A'
+        winter: analytics.snow?.average_swe ? `${analytics.snow.average_swe.toFixed(1)}mm` : 'N/A', 
+        spring: analytics.snow?.average_density ? `${analytics.snow.average_density.toFixed(0)}kg/m³` : 'N/A', 
+        summer: '0mm', 
+        fall: '0mm'
       }
     }
   ];
@@ -218,9 +222,9 @@ const Analytics = () => {
               <SelectContent>
                 <SelectItem value="all">All Locations</SelectItem>
                 {locations.map(location => (
-                  <SelectItem key={location.id} value={location.id}>
-                    {location.name}
-                  </SelectItem>
+                <SelectItem key={location.id} value={location.id.toString()}>
+                  {location.name}
+                </SelectItem>
                 ))}
               </SelectContent>
             </Select>

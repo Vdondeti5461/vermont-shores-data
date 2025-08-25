@@ -9,12 +9,11 @@ import InteractiveMap from './InteractiveMap';
 import { useLocalLocations } from '@/hooks/useLocalDatabase';
 
 interface Location {
-  id: string;
+  id: number;
   name: string;
   latitude: number;
   longitude: number;
   elevation?: number;
-  status?: string;
 }
 
 interface RecentData {
@@ -32,19 +31,13 @@ interface NetworkSite {
   latitude: number;
   longitude: number;
   elevation: number;
-  type: 'ranch_brook' | 'distributed';
+  type: 'ranch_brook' | 'distributed' | 'database';
   description?: string;
 }
 
 const DataMap = () => {
   const { toast } = useToast();
   
-  // Fetch locations from local MySQL database
-  const { data: locationsData, isLoading: locationsLoading, error: locationsError } = useLocalLocations();
-
-  const locations: Location[] = locationsData || [];
-  const recentData: RecentData[] = [];
-
   // Summit 2 Shore Network Sites - Actual Coordinates from your data
   const networkSites: NetworkSite[] = [
     // Ranch Brook Sites (Mount Mansfield)
@@ -73,6 +66,24 @@ const DataMap = () => {
     { id: 18, name: "Sleepers W1/R11", shortName: "SLP-W1", latitude: 44.4999008208884, longitude: -72.0671042476799, elevation: 226, type: "distributed" },
     { id: 12, name: "FEMC", shortName: "FEMC", latitude: 44.5188601707834, longitude: -72.7979001248108, elevation: 872, type: "distributed" }
   ];
+  
+  // Fetch locations from local MySQL database
+  const { data: locationsData, isLoading: locationsLoading, error: locationsError } = useLocalLocations();
+
+  const locations: Location[] = locationsData || [];
+  const recentData: RecentData[] = [];
+
+  // Merge real database locations with network sites if available
+  const allSites: NetworkSite[] = locations.length > 0 ? locations.map(loc => ({
+    id: loc.id,
+    name: loc.name,
+    shortName: loc.name.substring(0, 10),
+    latitude: loc.latitude,
+    longitude: loc.longitude,
+    elevation: loc.elevation || 0,
+    type: 'database' as const,
+    description: `Database location at ${loc.elevation}m elevation`
+  })) : networkSites;
 
   const getElevationColor = (elevation: number, type: string) => {
     if (type === 'ranch_brook') {
@@ -124,7 +135,13 @@ const DataMap = () => {
           </TabsList>
 
           <TabsContent value="map" className="space-y-6">
-            <InteractiveMap sites={networkSites} onSiteClick={(site) => console.log('Site clicked:', site)} />
+            <InteractiveMap sites={allSites} onSiteClick={(site) => console.log('Site clicked:', site)} />
+            {locationsLoading && (
+              <div className="text-center py-4">
+                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                <p className="text-sm text-muted-foreground">Loading database locations...</p>
+              </div>
+            )}
           </TabsContent>
 
 

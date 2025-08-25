@@ -1,12 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useLocalEnvironmentalAnalytics, useLocalHealthCheck } from '@/hooks/useLocalDatabase';
+import { useLocalDatabaseOverview, useLocalHealthCheck } from '@/hooks/useLocalDatabase';
 import { RefreshCw, Database, AlertCircle, CheckCircle } from 'lucide-react';
 
 const DatabaseStatus = () => {
   const { data: isHealthy, isLoading, refetch } = useLocalHealthCheck();
-  const { locations, analytics } = useLocalEnvironmentalAnalytics();
+  const { locations, analytics } = useLocalDatabaseOverview();
 
   return (
     <Card className="mb-6">

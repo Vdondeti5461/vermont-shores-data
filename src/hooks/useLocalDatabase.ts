@@ -1,5 +1,5 @@
-import { useQuery, useQueries } from '@tanstack/react-query';
-import { LocalDatabaseService, LocationData, MetricData, AnalyticsData } from '@/services/localDatabaseService';
+import { useQuery } from '@tanstack/react-query';
+import { LocalDatabaseService, LocationData, EnvironmentalData, AnalyticsData, TableMetadata } from '@/services/localDatabaseService';
 
 export const useLocalLocations = () => {
   return useQuery({
@@ -10,62 +10,38 @@ export const useLocalLocations = () => {
   });
 };
 
-export const useLocalTemperatureData = (
-  locationId?: string,
+export const useLocalTableData = (
+  table: string,
+  location?: string,
   startDate?: string,
-  endDate?: string
+  endDate?: string,
+  limit?: number
 ) => {
   return useQuery({
-    queryKey: ['local-temperature', locationId, startDate, endDate],
-    queryFn: () => LocalDatabaseService.getTemperatureData(locationId, startDate, endDate),
-    enabled: Boolean(locationId),
+    queryKey: ['local-table-data', table, location, startDate, endDate, limit],
+    queryFn: () => LocalDatabaseService.getTableData(table, location, startDate, endDate, limit),
+    enabled: Boolean(table),
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 };
 
-export const useLocalWindData = (
-  locationId?: string,
+export const useLocalTableMetadata = (table: string) => {
+  return useQuery({
+    queryKey: ['local-table-metadata', table],
+    queryFn: () => LocalDatabaseService.getTableMetadata(table),
+    enabled: Boolean(table),
+    staleTime: 1000 * 60 * 60, // 1 hour - metadata doesn't change often
+  });
+};
+
+export const useLocalAnalytics = (
+  location?: string,
   startDate?: string,
   endDate?: string
 ) => {
   return useQuery({
-    queryKey: ['local-wind', locationId, startDate, endDate],
-    queryFn: () => LocalDatabaseService.getWindData(locationId, startDate, endDate),
-    enabled: Boolean(locationId),
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  });
-};
-
-export const useLocalPrecipitationData = (
-  locationId?: string,
-  startDate?: string,
-  endDate?: string
-) => {
-  return useQuery({
-    queryKey: ['local-precipitation', locationId, startDate, endDate],
-    queryFn: () => LocalDatabaseService.getPrecipitationData(locationId, startDate, endDate),
-    enabled: Boolean(locationId),
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  });
-};
-
-export const useLocalSnowData = (
-  locationId?: string,
-  startDate?: string,
-  endDate?: string
-) => {
-  return useQuery({
-    queryKey: ['local-snow', locationId, startDate, endDate],
-    queryFn: () => LocalDatabaseService.getSnowData(locationId, startDate, endDate),
-    enabled: Boolean(locationId),
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  });
-};
-
-export const useLocalAnalytics = (locationId?: string) => {
-  return useQuery({
-    queryKey: ['local-analytics', locationId],
-    queryFn: () => LocalDatabaseService.getAnalyticsSummary(locationId),
+    queryKey: ['local-analytics', location, startDate, endDate],
+    queryFn: () => LocalDatabaseService.getAnalyticsSummary(location, startDate, endDate),
     staleTime: 1000 * 60 * 5, // 5 minutes
     refetchInterval: 1000 * 60 * 10, // Auto-refresh every 10 minutes
   });
@@ -80,41 +56,61 @@ export const useLocalHealthCheck = () => {
   });
 };
 
-// Combined hook for environmental analytics
-export const useLocalEnvironmentalAnalytics = (locationId?: string, dateRange?: { start: string; end: string }) => {
+// Combined hook for database overview
+export const useLocalDatabaseOverview = (location?: string, dateRange?: { start: string; end: string }) => {
   const { data: locations, isLoading: locationsLoading } = useLocalLocations();
-  const { data: analytics, isLoading: analyticsLoading } = useLocalAnalytics(locationId);
+  const { data: analytics, isLoading: analyticsLoading } = useLocalAnalytics(
+    location, 
+    dateRange?.start, 
+    dateRange?.end
+  );
   const { data: isHealthy } = useLocalHealthCheck();
-  
-  const { data: temperature } = useLocalTemperatureData(
-    locationId, 
+
+  // Get sample data from each table
+  const { data: table1Data } = useLocalTableData(
+    LocalDatabaseService.TABLES.TABLE1, 
+    location, 
     dateRange?.start, 
-    dateRange?.end
+    dateRange?.end, 
+    100
   );
-  const { data: wind } = useLocalWindData(
-    locationId, 
+  const { data: windData } = useLocalTableData(
+    LocalDatabaseService.TABLES.WIND, 
+    location, 
     dateRange?.start, 
-    dateRange?.end
+    dateRange?.end, 
+    100
   );
-  const { data: precipitation } = useLocalPrecipitationData(
-    locationId, 
+  const { data: precipitationData } = useLocalTableData(
+    LocalDatabaseService.TABLES.PRECIPITATION, 
+    location, 
     dateRange?.start, 
-    dateRange?.end
+    dateRange?.end, 
+    100
   );
-  const { data: snow } = useLocalSnowData(
-    locationId, 
+  const { data: snowData } = useLocalTableData(
+    LocalDatabaseService.TABLES.SNOW_TEMP_PROFILE, 
+    location, 
     dateRange?.start, 
-    dateRange?.end
+    dateRange?.end, 
+    100
   );
 
   return {
     locations: locations || [],
-    analytics: analytics || { current_metrics: {}, recent_data: [] },
-    environmentalData: {
-      temperature: temperature || [],
-      wind: wind || [],
-      precipitation: precipitation || [],
-      snow: snow || []
+    analytics: analytics || {
+      temperature: { average: null, min: null, max: null, count: 0 },
+      humidity: { average: null },
+      wind: { average_speed: null, max_speed: null, average_direction: null, count: 0 },
+      precipitation: { total: 0, average_intensity: null, count: 0 },
+      snow: { average_swe: null, average_density: null, count: 0 },
+      period: { start: '', end: '' }
+    },
+    tableData: {
+      table1: table1Data || [],
+      wind: windData || [],
+      precipitation: precipitationData || [],
+      snow: snowData || []
     },
     isLoading: locationsLoading || analyticsLoading,
     isServerHealthy: isHealthy || false
