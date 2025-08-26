@@ -26,34 +26,34 @@ const About = () => {
 
   const timeline = [
     {
-      year: '2015',
-      title: 'Project Inception',
-      description: 'Initial planning and site selection began with UVM and CRREL partnership'
+      year: 'Nov 2022',
+      title: 'Project Launch',
+      description: 'Summit-to-Shore Environmental Monitoring Network officially launched with station installations'
     },
     {
-      year: '2016',
-      title: 'First Stations',
-      description: 'Deployment of initial monitoring stations at key elevation sites'
+      year: '2022-2023',
+      title: 'First Season Data Collection',
+      description: 'Initial deployment of monitoring stations and first season of comprehensive data collection'
     },
     {
-      year: '2018',
-      title: 'Network Expansion',
-      description: 'Addition of 15 new monitoring locations across Vermont'
+      year: '2023-2024',
+      title: 'Second Season & Expansion',
+      description: 'Completed second season of data collection with network expansion to 22 monitoring locations'
     },
     {
-      year: '2020',
-      title: 'Data Platform Launch',
-      description: 'Public release of real-time data access portal'
+      year: '2024-2025',
+      title: 'Current Season',
+      description: 'Ongoing third season data collection with enhanced monitoring capabilities and data quality improvements'
     },
     {
-      year: '2022',
-      title: 'Advanced Analytics',
-      description: 'Implementation of machine learning and predictive modeling'
+      year: '2025',
+      title: 'Strategic Partnerships',
+      description: 'Collaboration expansion with White Face Mountain Observatory, Mount Washington Observatory, and Vermont Mesonet integration'
     },
     {
-      year: '2024',
-      title: 'Current Phase',
-      description: 'Ongoing expansion and research integration'
+      year: 'Future',
+      title: 'Network Growth',
+      description: 'Planned expansion across New England with advanced sensor technologies and real-time data streaming'
     }
   ];
 
@@ -181,41 +181,41 @@ const About = () => {
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
               <Card className="text-center">
                 <CardHeader>
-                  <div className="text-4xl font-bold text-primary">45</div>
-                  <CardTitle className="text-lg">Monitoring Stations</CardTitle>
+                  <div className="text-4xl font-bold text-primary">22</div>
+                  <CardTitle className="text-lg">Monitoring Locations</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground">Active environmental monitoring locations</p>
+                  <p className="text-sm text-muted-foreground">Active environmental monitoring stations</p>
                 </CardContent>
               </Card>
 
               <Card className="text-center">
                 <CardHeader>
-                  <div className="text-4xl font-bold text-primary">2.3M</div>
-                  <CardTitle className="text-lg">Data Points</CardTitle>
+                  <div className="text-4xl font-bold text-primary">3</div>
+                  <CardTitle className="text-lg">Data Seasons</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground">Environmental measurements collected</p>
+                  <p className="text-sm text-muted-foreground">Complete seasons of data collection</p>
                 </CardContent>
               </Card>
 
               <Card className="text-center">
                 <CardHeader>
-                  <div className="text-4xl font-bold text-primary">68</div>
-                  <CardTitle className="text-lg">Publications</CardTitle>
+                  <div className="text-4xl font-bold text-primary">4</div>
+                  <CardTitle className="text-lg">Data Tables</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground">Peer-reviewed research papers</p>
+                  <p className="text-sm text-muted-foreground">Comprehensive environmental datasets</p>
                 </CardContent>
               </Card>
 
               <Card className="text-center">
                 <CardHeader>
-                  <div className="text-4xl font-bold text-primary">12</div>
-                  <CardTitle className="text-lg">Partner Institutions</CardTitle>
+                  <div className="text-4xl font-bold text-primary">5</div>
+                  <CardTitle className="text-lg">Partner Organizations</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground">Collaborative research partners</p>
+                  <p className="text-sm text-muted-foreground">UVM, CRREL, White Face, Mt. Washington, VT Mesonet</p>
                 </CardContent>
               </Card>
             </div>
@@ -241,13 +241,13 @@ const About = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground mb-4">
-                    Plans to add 20 additional monitoring stations across New England, 
-                    expanding our coverage to include coastal and urban environments.
+                    Strategic expansion through partnerships with White Face Mountain Observatory, 
+                    Mount Washington Observatory, and Vermont Mesonet integration in 2025.
                   </p>
                   <ul className="text-sm text-muted-foreground space-y-1">
-                    <li>• Coastal monitoring stations</li>
-                    <li>• Urban heat island studies</li>
-                    <li>• Transboundary collaborations</li>
+                    <li>• Regional network integration</li>
+                    <li>• Enhanced data quality and coverage</li>
+                    <li>• Cross-platform data sharing</li>
                   </ul>
                 </CardContent>
               </Card>

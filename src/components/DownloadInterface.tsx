@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Download, Database, Filter, Clock, FileType, MapPin, Settings, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { CalendarIcon, Download, Database, Filter, Clock, FileType, MapPin, Settings, AlertCircle, CheckCircle2, Info } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useLocalLocations, useLocalTableMetadata, useLocalHealthCheck } from '@/hooks/useLocalDatabase';
@@ -162,6 +162,15 @@ const DownloadInterface = () => {
       return;
     }
 
+    if (startDate && endDate && startDate > endDate) {
+      toast({
+        title: "Invalid Date Range",
+        description: "Start date must be before end date.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -181,13 +190,14 @@ const DownloadInterface = () => {
 
       toast({
         title: "Download Complete",
-        description: `Successfully downloaded data from ${selectedTable} for ${selectedLocations.length} location(s).`
+        description: `Successfully downloaded ${selectedTable} data for ${selectedLocations.length} location(s) from ${startDate ? format(startDate, 'MMM dd, yyyy') : 'beginning'} to ${endDate ? format(endDate, 'MMM dd, yyyy') : 'now'}.`
       });
 
     } catch (error) {
+      console.error('Download error:', error);
       toast({
         title: "Download Failed",
-        description: "There was an error processing your download request. Please try again.",
+        description: error instanceof Error ? error.message : "There was an error processing your download request. Please try again.",
         variant: "destructive"
       });
     } finally {

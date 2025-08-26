@@ -8,11 +8,11 @@ import 'leaflet/dist/leaflet.css';
 interface NetworkSite {
   id: number;
   name: string;
-  shortName: string;
+  shortName?: string;
   latitude: number;
   longitude: number;
   elevation: number;
-  type: 'ranch_brook' | 'distributed';
+  type: 'ranch_brook' | 'distributed' | 'database';
 }
 
 interface InteractiveMapProps {
@@ -80,16 +80,35 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
           iconAnchor: [8, 8],
         });
 
+        const databaseIcon = L.divIcon({
+          className: 'custom-marker database',
+          html: '<div style="background-color: #059669; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
+          iconSize: [16, 16],
+          iconAnchor: [8, 8],
+        });
+
         // Add site markers
         mapSites.forEach((site) => {
-          const icon = site.type === 'ranch_brook' ? ranchBrookIcon : distributedIcon;
+          let icon = distributedIcon;
+          let typeLabel = 'Distributed';
+          let color = '#2563eb';
+          
+          if (site.type === 'ranch_brook') {
+            icon = ranchBrookIcon;
+            typeLabel = 'Ranch Brook';
+            color = '#dc2626';
+          } else if (site.type === 'database') {
+            icon = databaseIcon;
+            typeLabel = 'Database Station';
+            color = '#059669';
+          }
           
           const marker = L.marker([site.latitude, site.longitude], { icon })
             .addTo(map)
             .bindPopup(`
               <div style="min-width: 200px;">
-                <h3 style="margin: 0 0 8px 0; font-weight: bold; color: ${site.type === 'ranch_brook' ? '#dc2626' : '#2563eb'};">
-                  ${site.shortName}
+                <h3 style="margin: 0 0 8px 0; font-weight: bold; color: ${color};">
+                  ${site.shortName || site.name}
                 </h3>
                 <p style="margin: 0 0 4px 0; font-size: 14px; color: #666;">
                   ${site.name}
@@ -101,7 +120,7 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
                   <strong>Coordinates:</strong> ${site.latitude.toFixed(4)}°N, ${site.longitude.toFixed(4)}°W
                 </p>
                 <p style="margin: 0; font-size: 12px;">
-                  <strong>Type:</strong> ${site.type === 'ranch_brook' ? 'Ranch Brook' : 'Distributed'}
+                  <strong>Type:</strong> ${typeLabel}
                 </p>
               </div>
             `);
@@ -177,6 +196,9 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
             <Badge variant="outline" className="text-blue-700 border-blue-300">
               {mapSites.filter(s => s.type === 'distributed').length} Distributed
             </Badge>
+            <Badge variant="outline" className="text-green-700 border-green-300">
+              {mapSites.filter(s => s.type === 'database').length} Database
+            </Badge>
           </div>
         </div>
       </CardHeader>
@@ -228,6 +250,10 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
               <div className="flex items-center gap-2 text-xs">
                 <div className="w-3 h-3 rounded-full bg-blue-600 border border-white"></div>
                 <span>Distributed Sites (Regional)</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <div className="w-3 h-3 rounded-full bg-green-600 border border-white"></div>
+                <span>Database Stations</span>
               </div>
             </div>
           </div>
