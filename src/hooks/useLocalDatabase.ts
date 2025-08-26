@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { LocalDatabaseService, LocationData, EnvironmentalData, AnalyticsData, TableMetadata } from '@/services/localDatabaseService';
 
-export const useLocalLocations = () => {
+export const useLocalLocations = (database: string = 'raw_data') => {
   return useQuery({
-    queryKey: ['local-locations'],
-    queryFn: LocalDatabaseService.getLocations,
+    queryKey: ['local-locations', database],
+    queryFn: () => LocalDatabaseService.getLocations(database),
     staleTime: 1000 * 60 * 60, // 1 hour
     retry: 3,
   });
@@ -12,36 +12,40 @@ export const useLocalLocations = () => {
 
 export const useLocalTableData = (
   table: string,
+  database: string = 'raw_data',
   location?: string,
   startDate?: string,
   endDate?: string,
+  season?: string,
   limit?: number
 ) => {
   return useQuery({
-    queryKey: ['local-table-data', table, location, startDate, endDate, limit],
-    queryFn: () => LocalDatabaseService.getTableData(table, location, startDate, endDate, limit),
+    queryKey: ['local-table-data', database, table, location, startDate, endDate, season, limit?.toString()],
+    queryFn: () => LocalDatabaseService.getTableData(table, database, location, startDate, endDate, season, limit),
     enabled: Boolean(table),
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 };
 
-export const useLocalTableMetadata = (table: string) => {
+export const useLocalTableMetadata = (table: string, database: string = 'raw_data') => {
   return useQuery({
-    queryKey: ['local-table-metadata', table],
-    queryFn: () => LocalDatabaseService.getTableMetadata(table),
+    queryKey: ['local-table-metadata', database, table],
+    queryFn: () => LocalDatabaseService.getTableMetadata(table, database),
     enabled: Boolean(table),
     staleTime: 1000 * 60 * 60, // 1 hour - metadata doesn't change often
   });
 };
 
 export const useLocalAnalytics = (
+  database: string = 'raw_data',
   location?: string,
   startDate?: string,
-  endDate?: string
+  endDate?: string,
+  season?: string
 ) => {
   return useQuery({
-    queryKey: ['local-analytics', location, startDate, endDate],
-    queryFn: () => LocalDatabaseService.getAnalyticsSummary(location, startDate, endDate),
+    queryKey: ['local-analytics', database, location, startDate, endDate, season],
+    queryFn: () => LocalDatabaseService.getAnalyticsSummary(database, location, startDate, endDate, season),
     staleTime: 1000 * 60 * 5, // 5 minutes
     refetchInterval: 1000 * 60 * 10, // Auto-refresh every 10 minutes
   });
@@ -57,47 +61,18 @@ export const useLocalHealthCheck = () => {
 };
 
 // Combined hook for database overview
-export const useLocalDatabaseOverview = (location?: string, dateRange?: { start: string; end: string }) => {
-  const { data: locations, isLoading: locationsLoading } = useLocalLocations();
+export const useLocalDatabaseOverview = (database: string = 'raw_data', location?: string, dateRange?: { start: string; end: string }) => {
+  const { data: locations, isLoading: locationsLoading } = useLocalLocations(database);
   const { data: analytics, isLoading: analyticsLoading } = useLocalAnalytics(
+    database,
     location, 
     dateRange?.start, 
     dateRange?.end
   );
   const { data: isHealthy } = useLocalHealthCheck();
 
-  // Get sample data from each table
-  const { data: table1Data } = useLocalTableData(
-    LocalDatabaseService.TABLES.TABLE1, 
-    location, 
-    dateRange?.start, 
-    dateRange?.end, 
-    100
-  );
-  const { data: windData } = useLocalTableData(
-    LocalDatabaseService.TABLES.WIND, 
-    location, 
-    dateRange?.start, 
-    dateRange?.end, 
-    100
-  );
-  const { data: precipitationData } = useLocalTableData(
-    LocalDatabaseService.TABLES.PRECIPITATION, 
-    location, 
-    dateRange?.start, 
-    dateRange?.end, 
-    100
-  );
-  const { data: snowData } = useLocalTableData(
-    LocalDatabaseService.TABLES.SNOW_TEMP_PROFILE, 
-    location, 
-    dateRange?.start, 
-    dateRange?.end, 
-    100
-  );
-
   return {
-    locations: locations || [],
+    locations: (locations as LocationData[]) || [],
     analytics: analytics || {
       temperature: { average: null, min: null, max: null, count: 0 },
       humidity: { average: null },
@@ -106,12 +81,7 @@ export const useLocalDatabaseOverview = (location?: string, dateRange?: { start:
       snow: { average_swe: null, average_density: null, count: 0 },
       period: { start: '', end: '' }
     },
-    tableData: {
-      table1: table1Data || [],
-      wind: windData || [],
-      precipitation: precipitationData || [],
-      snow: snowData || []
-    },
+    tableData: {},
     isLoading: locationsLoading || analyticsLoading,
     isServerHealthy: isHealthy || false
   };

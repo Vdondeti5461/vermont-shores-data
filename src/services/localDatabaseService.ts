@@ -56,6 +56,27 @@ export interface AnalyticsData {
     start: string;
     end: string;
   };
+  database?: string;
+  database_name?: string;
+}
+
+export interface DatabaseInfo {
+  id: string;
+  name: string;
+  database_name: string;
+}
+
+export interface SeasonInfo {
+  id: string;
+  name: string;
+  start_date: string;
+  end_date: string;
+}
+
+export interface DatabasesResponse {
+  databases: DatabaseInfo[];
+  seasons: SeasonInfo[];
+  tables: string[];
 }
 
 export class LocalDatabaseService {
@@ -71,9 +92,21 @@ export class LocalDatabaseService {
     PRECIPITATION: 'Precipitation'
   } as const;
 
-  static async getLocations(): Promise<LocationData[]> {
+  static async getDatabasesInfo(): Promise<DatabasesResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/locations`);
+      const response = await fetch(`${this.baseUrl}/api/databases`);
+      if (!response.ok) throw new Error('Failed to fetch databases info');
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching databases info:', error);
+      return { databases: [], seasons: [], tables: [] };
+    }
+  }
+
+  static async getLocations(database: string = 'raw_data'): Promise<LocationData[]> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/locations?database=${database}`);
       if (!response.ok) throw new Error('Failed to fetch locations');
       const data = await response.json();
       return data;
@@ -85,9 +118,11 @@ export class LocalDatabaseService {
 
   static async getTableData(
     table: string,
+    database: string = 'raw_data',
     location?: string,
     startDate?: string,
     endDate?: string,
+    season?: string,
     limit: number = 1000
   ): Promise<EnvironmentalData[]> {
     try {
@@ -95,9 +130,10 @@ export class LocalDatabaseService {
       if (location) params.append('location', location);
       if (startDate) params.append('start_date', startDate);
       if (endDate) params.append('end_date', endDate);
+      if (season) params.append('season', season);
       params.append('limit', limit.toString());
 
-      const response = await fetch(`${this.baseUrl}/api/data/${table}?${params}`);
+      const response = await fetch(`${this.baseUrl}/api/data/${database}/${table}?${params}`);
       if (!response.ok) throw new Error(`Failed to fetch ${table} data`);
       const data = await response.json();
       return data;
@@ -107,9 +143,9 @@ export class LocalDatabaseService {
     }
   }
 
-  static async getTableMetadata(table: string): Promise<TableMetadata | null> {
+  static async getTableMetadata(table: string, database: string = 'raw_data'): Promise<TableMetadata | null> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/metadata/${table}`);
+      const response = await fetch(`${this.baseUrl}/api/metadata/${database}/${table}`);
       if (!response.ok) throw new Error(`Failed to fetch ${table} metadata`);
       const data = await response.json();
       return data;
@@ -120,17 +156,20 @@ export class LocalDatabaseService {
   }
 
   static async getAnalyticsSummary(
+    database: string = 'raw_data',
     location?: string,
     startDate?: string,
-    endDate?: string
+    endDate?: string,
+    season?: string
   ): Promise<AnalyticsData> {
     try {
       const params = new URLSearchParams();
       if (location) params.append('location', location);
       if (startDate) params.append('start_date', startDate);
       if (endDate) params.append('end_date', endDate);
+      if (season) params.append('season', season);
 
-      const response = await fetch(`${this.baseUrl}/api/analytics?${params}`);
+      const response = await fetch(`${this.baseUrl}/api/analytics/${database}?${params}`);
       if (!response.ok) throw new Error('Failed to fetch analytics');
       const data = await response.json();
       return data;
@@ -149,9 +188,11 @@ export class LocalDatabaseService {
 
   static async downloadTableData(
     table: string,
+    database: string = 'raw_data',
     location?: string,
     startDate?: string,
     endDate?: string,
+    season?: string,
     columns?: string[]
   ): Promise<void> {
     try {
@@ -159,16 +200,17 @@ export class LocalDatabaseService {
       if (location) params.append('location', location);
       if (startDate) params.append('start_date', startDate);
       if (endDate) params.append('end_date', endDate);
+      if (season) params.append('season', season);
       if (columns && columns.length > 0) params.append('columns', columns.join(','));
 
-      const response = await fetch(`${this.baseUrl}/api/download/${table}?${params}`);
+      const response = await fetch(`${this.baseUrl}/api/download/${database}/${table}?${params}`);
       if (!response.ok) throw new Error(`Failed to download ${table} data`);
       
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${table}_${new Date().getTime()}.csv`;
+      link.download = `${database}_${table}_${new Date().getTime()}.csv`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
