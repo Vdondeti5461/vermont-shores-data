@@ -50,7 +50,7 @@ const Hero = () => {
           
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center mb-12 sm:mb-16 animate-fade-in px-4">
-            <a href="#analytics" className="group w-full sm:w-auto">
+            <a href="/analytics" className="group w-full sm:w-auto">
               <Button size="lg" className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 hover-scale px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg">
                 <BarChart3 className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6 group-hover:animate-pulse" />
                 <span className="hidden sm:inline">Explore Live Data</span>
@@ -58,7 +58,7 @@ const Hero = () => {
                 <span className="ml-2 text-green-100">→</span>
               </Button>
             </a>
-            <a href="#download" className="group w-full sm:w-auto">
+            <a href="/download" className="group w-full sm:w-auto">
               <Button size="lg" className="w-full sm:w-auto bg-green-700/90 hover:bg-green-600 text-white border-2 border-green-500/50 backdrop-blur-sm font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 hover-scale px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg">
                 <Download className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6 group-hover:animate-pulse" />
                 <span className="hidden sm:inline">Download Data</span>

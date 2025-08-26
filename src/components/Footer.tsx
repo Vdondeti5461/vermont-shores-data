@@ -5,27 +5,27 @@ import logo from '@/assets/summit2shore-logo.png';
 
 const Footer = () => {
   const contactInfo = [
-    { icon: Mail, label: 'summit2shore@uvm.edu', href: 'mailto:summit2shore@uvm.edu' },
-    { icon: Phone, label: '(802) 656-3131', href: 'tel:8026563131' },
+    { icon: Mail, label: 's2s@uvm.edu', href: 'mailto:s2s@uvm.edu' },
+    { icon: Phone, label: '(802) 656-2215', href: 'tel:8026562215' },
     { icon: MapPin, label: 'Burlington, VT 05405', href: '#' }
   ];
 
   const quickLinks = [
-    { label: 'Data Portal', href: '#download' },
-    { label: 'Site Map', href: '#map' },
-    { label: 'Analytics', href: '#analytics' },
-    { label: 'Research Team', href: '#about' },
-    { label: 'Documentation', href: '#' },
-    { label: 'API Access', href: '#' }
+    { label: 'Data Portal', href: '/download' },
+    { label: 'Site Map', href: '/network' },
+    { label: 'Analytics', href: '/analytics' },
+    { label: 'Research Team', href: '/research' },
+    { label: 'Documentation', href: '/documentation' },
+    { label: 'API Access', href: '/download' }
   ];
 
   const resources = [
-    { label: 'Data Guidelines', href: '#' },
-    { label: 'Methodology', href: '#' },
-    { label: 'Publications', href: '#' },
-    { label: 'Collaborations', href: '#' },
-    { label: 'News & Updates', href: '#' },
-    { label: 'Support', href: '#' }
+    { label: 'Data Guidelines', href: '/documentation' },
+    { label: 'Methodology', href: '/about' },
+    { label: 'Publications', href: '/research' },
+    { label: 'Collaborations', href: '/about' },
+    { label: 'News & Updates', href: '/about' },
+    { label: 'Support', href: 'mailto:s2s@uvm.edu' }
   ];
 
   return (
@@ -50,7 +50,7 @@ const Footer = () => {
                 22 Active Sites
               </Badge>
               <Badge variant="outline" className="border-primary-foreground/20 text-primary-foreground">
-                5+ Years Data
+                3 Years Data
               </Badge>
             </div>
           </div>
@@ -77,9 +77,9 @@ const Footer = () => {
             <div className="mt-6">
               <h5 className="font-medium mb-3">University of Vermont</h5>
               <p className="text-sm text-primary-foreground/80">
-                Environmental Program<br />
-                Rubenstein School of Environment<br />
-                and Natural Resources
+                Civil and Environmental Engineering<br />
+                CEMS UVM<br />
+                Water Resource Institute
               </p>
             </div>
           </div>
@@ -117,22 +117,26 @@ const Footer = () => {
             
             {/* Action Buttons */}
             <div className="space-y-3">
-              <Button 
-                variant="secondary" 
-                size="sm" 
-                className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90"
-              >
-                <Database className="mr-2 h-4 w-4" />
-                Access Data API
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10"
-              >
-                <Github className="mr-2 h-4 w-4" />
-                View on GitHub
-              </Button>
+              <a href="/download" className="block">
+                <Button 
+                  variant="secondary" 
+                  size="sm" 
+                  className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90"
+                >
+                  <Database className="mr-2 h-4 w-4" />
+                  Access Data API
+                </Button>
+              </a>
+              <a href="https://github.com/uvm-summit2shore" target="_blank" rel="noopener noreferrer" className="block">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10"
+                >
+                  <Github className="mr-2 h-4 w-4" />
+                  View on GitHub
+                </Button>
+              </a>
             </div>
           </div>
         </div>
@@ -144,13 +148,13 @@ const Footer = () => {
               © 2024 University of Vermont Summit 2 Shore Project. All rights reserved.
             </div>
             <div className="flex items-center space-x-6 text-sm text-primary-foreground/80">
-              <a href="#" className="hover:text-secondary transition-colors">
+              <a href="/documentation" className="hover:text-secondary transition-colors">
                 Privacy Policy
               </a>
-              <a href="#" className="hover:text-secondary transition-colors">
+              <a href="/documentation" className="hover:text-secondary transition-colors">
                 Data License
               </a>
-              <a href="#" className="hover:text-secondary transition-colors flex items-center">
+              <a href="https://www.uvm.edu/cems/cee" target="_blank" rel="noopener noreferrer" className="hover:text-secondary transition-colors flex items-center">
                 UVM Environmental Program
                 <ExternalLink className="ml-1 h-3 w-3" />
               </a>
