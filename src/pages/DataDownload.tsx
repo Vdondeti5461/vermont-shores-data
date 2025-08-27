@@ -1,11 +1,11 @@
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import DownloadInterface from '@/components/DownloadInterface';
+import MultiDatabaseDownload from '@/components/MultiDatabaseDownload';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Download, Database, Code, FileText, Zap } from 'lucide-react';
+import { Download, Database, Code, FileText, Zap, BookOpen } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const DataDownloadPage = () => {
@@ -87,17 +87,17 @@ const DataDownloadPage = () => {
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
               <Badge variant="outline" className="mb-4">
-                Interactive Download
+                Multi-Database Access
               </Badge>
               <h2 className="scientific-heading text-3xl md:text-4xl mb-6">
-                Custom <span className="text-primary">Data Export</span>
+                Dynamic <span className="text-primary">Data Export</span>
               </h2>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Filter and download exactly the data you need for your research
+                Access data from multiple databases with timestamp and location-based filtering
               </p>
             </div>
 
-            <DownloadInterface />
+            <MultiDatabaseDownload />
           </div>
         </section>
 
@@ -160,28 +160,48 @@ const DataDownloadPage = () => {
                         <div className="p-4 bg-muted/50 rounded-lg">
                           <div className="flex items-center gap-2 mb-2">
                             <Badge variant="secondary">GET</Badge>
-                            <code className="text-sm">/api/locations</code>
+                            <code className="text-sm">/api/databases</code>
                           </div>
-                          <p className="text-sm text-muted-foreground">Get all monitoring station locations</p>
+                          <p className="text-sm text-muted-foreground">Get all available databases</p>
                         </div>
                         <div className="p-4 bg-muted/50 rounded-lg">
                           <div className="flex items-center gap-2 mb-2">
                             <Badge variant="secondary">GET</Badge>
-                            <code className="text-sm">/api/data/:table</code>
+                            <code className="text-sm">/api/databases/:db/tables</code>
                           </div>
-                          <p className="text-sm text-muted-foreground">Get environmental data from specific tables</p>
+                          <p className="text-sm text-muted-foreground">Get tables for a specific database</p>
                         </div>
                         <div className="p-4 bg-muted/50 rounded-lg">
                           <div className="flex items-center gap-2 mb-2">
                             <Badge variant="secondary">GET</Badge>
-                            <code className="text-sm">/api/analytics</code>
+                            <code className="text-sm">/api/databases/:db/locations</code>
                           </div>
-                          <p className="text-sm text-muted-foreground">Get analytics summaries and metrics</p>
+                          <p className="text-sm text-muted-foreground">Get locations for specific database</p>
+                        </div>
+                        <div className="p-4 bg-muted/50 rounded-lg">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Badge variant="secondary">GET</Badge>
+                            <code className="text-sm">/api/databases/:db/data/:table</code>
+                          </div>
+                          <p className="text-sm text-muted-foreground">Get filtered data with timestamp and location filters</p>
                         </div>
                       </div>
-                      <div className="mt-6">
+                      <div className="mt-6 space-y-4">
+                        <div className="p-4 bg-primary/5 rounded-lg">
+                          <h4 className="font-semibold mb-2">Query Parameters</h4>
+                          <div className="text-sm text-muted-foreground space-y-1">
+                            <p><code>location</code> - Filter by specific location name</p>
+                            <p><code>start_date</code> - ISO date string for start of date range</p>
+                            <p><code>end_date</code> - ISO date string for end of date range</p>
+                            <p><code>attributes</code> - Comma-separated list of attributes to include</p>
+                            <p><code>limit</code> - Maximum number of records to return</p>
+                          </div>
+                        </div>
                         <Button asChild>
-                          <Link to="/documentation/api">View Full API Documentation</Link>
+                          <Link to="/documentation">
+                            <BookOpen className="w-4 h-4 mr-2" />
+                            View Full API Documentation
+                          </Link>
                         </Button>
                       </div>
                     </CardContent>

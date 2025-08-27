@@ -11,6 +11,7 @@ import DataDownload from "./pages/DataDownload";
 import Research from "./pages/Research";
 import AdvancedAnalytics from "./pages/AdvancedAnalytics";
 import Documentation from "./pages/Documentation";
+import APIDocumentation from "./pages/APIDocumentation";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,8 +41,8 @@ const App = () => (
           <Route path="/download/bulk" element={<DataDownload />} />
           <Route path="/download/feeds" element={<DataDownload />} />
           <Route path="/research" element={<Research />} />
-          <Route path="/documentation" element={<Documentation />} />
-          <Route path="/documentation/api" element={<Documentation />} />
+          <Route path="/documentation" element={<APIDocumentation />} />
+          <Route path="/documentation/api" element={<APIDocumentation />} />
           <Route path="/documentation/feeds" element={<Documentation />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
