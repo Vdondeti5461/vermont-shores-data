@@ -365,17 +365,35 @@ app.get('/api/databases/:database/locations', async (req, res) => {
       tableList = allTables.map(table => Object.values(table)[0]);
     }
     
-    // Build union query for all tables with performance optimization
-    const unionQueries = tableList.map(table => 
-      `SELECT DISTINCT Location as name FROM \`${table}\` WHERE Location IS NOT NULL LIMIT 100`
-    );
+    // Get valid tables that have Location column
+    const validTables = [];
+    for (const table of tableList) {
+      try {
+        // Check if Location column exists
+        const [columns] = await connection.execute(
+          `SHOW COLUMNS FROM \`${table}\` LIKE 'Location'`
+        );
+        if (columns.length > 0) {
+          validTables.push(table);
+        }
+      } catch (err) {
+        console.log(`Table ${table} doesn't exist or is not accessible, skipping...`);
+      }
+    }
     
-    if (unionQueries.length === 0) {
+    if (validTables.length === 0) {
       connection.release();
       return res.json([]);
     }
     
-    const query = unionQueries.join(' UNION ') + ' ORDER BY name';
+    // Build union query with proper MySQL syntax
+    const unionQueries = validTables.map(table => 
+      `(SELECT DISTINCT Location as name FROM \`${table}\` WHERE Location IS NOT NULL AND Location != '' LIMIT 100)`
+    );
+    
+    // Proper MySQL UNION syntax with ORDER BY at the end
+    const query = `SELECT DISTINCT name FROM (${unionQueries.join(' UNION ')}) AS combined_locations ORDER BY name`;
+    
     const [rows] = await connection.execute(query);
     
     // Use actual location metadata with proper coordinates
