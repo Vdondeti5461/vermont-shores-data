@@ -17,7 +17,7 @@ const DATABASES = {
   'raw_data': 'CRRELS2S_VTClimateRepository',
   'initial_clean_data': 'CRRELS2S_VTClimateRepository_Processed',
   'final_clean_data': 'CRRELS2S_ProcessedData',
-  'seasonal_clean_data': 'CRRELS2S_cleaned_data_season'
+  'seasonal_clean_data': 'CRRELS2S_cleaned_data_seasons'
 };
 
 // Location metadata with complete information

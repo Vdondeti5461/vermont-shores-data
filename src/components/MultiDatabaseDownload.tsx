@@ -415,19 +415,6 @@ const MultiDatabaseDownload = () => {
         </Card>
       )}
 
-      {/* Metadata Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Info className="h-5 w-5" />
-            Project Metadata & Documentation
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <MetadataDisplay />
-        </CardContent>
-      </Card>
-
       {/* Download Summary and Action */}
       <Card>
         <CardContent className="pt-6">
@@ -451,6 +438,19 @@ const MultiDatabaseDownload = () => {
               {isLoading ? 'Preparing...' : 'Download CSV'}
             </Button>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Metadata Information */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Info className="h-5 w-5" />
+            Project Metadata & Documentation
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <MetadataDisplay />
         </CardContent>
       </Card>
     </div>
