@@ -97,7 +97,14 @@ export class LocalDatabaseService {
       const response = await fetch(`${this.baseUrl}/api/databases`);
       if (!response.ok) throw new Error('Failed to fetch databases info');
       const data = await response.json();
-      return data;
+      const databases: DatabaseInfo[] = (data.databases || []).map((d: any) => ({
+        id: d.key,
+        name: d.displayName || d.key,
+        database_name: d.name,
+      }));
+      const seasons: SeasonInfo[] = data.seasons || [];
+      const tables: string[] = data.tables || [];
+      return { databases, seasons, tables };
     } catch (error) {
       console.error('Error fetching databases info:', error);
       return { databases: [], seasons: [], tables: [] };
@@ -106,12 +113,24 @@ export class LocalDatabaseService {
 
   static async getLocations(database: string = 'raw_data'): Promise<LocationData[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/locations?database=${database}`);
+      const response = await fetch(`${this.baseUrl}/api/databases/${database}/locations`);
       if (!response.ok) throw new Error('Failed to fetch locations');
       const data = await response.json();
       return data;
     } catch (error) {
       console.error('Error fetching locations:', error);
+      return [];
+    }
+  }
+
+  static async getTables(database: string = 'raw_data'): Promise<any[]> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/databases/${database}/tables`);
+      if (!response.ok) throw new Error('Failed to fetch tables');
+      const data = await response.json();
+      return data.tables || [];
+    } catch (error) {
+      console.error('Error fetching tables:', error);
       return [];
     }
   }
@@ -133,7 +152,7 @@ export class LocalDatabaseService {
       if (season) params.append('season', season);
       params.append('limit', limit.toString());
 
-      const response = await fetch(`${this.baseUrl}/api/data/${database}/${table}?${params}`);
+      const response = await fetch(`${this.baseUrl}/api/databases/${database}/data/${table}?${params}`);
       if (!response.ok) throw new Error(`Failed to fetch ${table} data`);
       const data = await response.json();
       return data;
@@ -145,10 +164,17 @@ export class LocalDatabaseService {
 
   static async getTableMetadata(table: string, database: string = 'raw_data'): Promise<TableMetadata | null> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/metadata/${database}/${table}`);
+      const response = await fetch(`${this.baseUrl}/api/databases/${database}/tables/${table}/attributes`);
       if (!response.ok) throw new Error(`Failed to fetch ${table} metadata`);
       const data = await response.json();
-      return data;
+      const columns = (data.attributes || []).map((col: any) => ({
+        name: col.name,
+        type: col.type,
+        nullable: col.nullable,
+        default: col.default,
+        comment: col.comment,
+      }));
+      return { table_name: table, columns };
     } catch (error) {
       console.error(`Error fetching ${table} metadata:`, error);
       return null;
@@ -169,7 +195,7 @@ export class LocalDatabaseService {
       if (endDate) params.append('end_date', endDate);
       if (season) params.append('season', season);
 
-      const response = await fetch(`${this.baseUrl}/api/analytics/${database}?${params}`);
+      const response = await fetch(`${this.baseUrl}/api/analytics?${params}`);
       if (!response.ok) throw new Error('Failed to fetch analytics');
       const data = await response.json();
       return data;
@@ -203,7 +229,7 @@ export class LocalDatabaseService {
       if (season) params.append('season', season);
       if (columns && columns.length > 0) params.append('columns', columns.join(','));
 
-      const response = await fetch(`${this.baseUrl}/api/download/${database}/${table}?${params}`);
+      const response = await fetch(`${this.baseUrl}/api/databases/${database}/download/${table}?${params}`);
       if (!response.ok) throw new Error(`Failed to download ${table} data`);
       
       const blob = await response.blob();

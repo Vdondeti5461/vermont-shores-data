@@ -35,17 +35,18 @@ const DownloadInterface = () => {
   const [databases, setDatabases] = useState<DatabaseInfo[]>([]);
   const [seasons, setSeasons] = useState<SeasonInfo[]>([]);
   const [locations, setLocations] = useState<any[]>([]);
+  const [tables, setTables] = useState<any[]>([]);
   const [tableMetadata, setTableMetadata] = useState<any>(null);
-  
   // Load databases and seasons info on component mount
   useEffect(() => {
     loadDatabasesInfo();
   }, []);
   
-  // Load locations when database changes
+  // Load locations and tables when database changes
   useEffect(() => {
     if (selectedDatabase) {
       loadLocations();
+      loadTables();
     }
   }, [selectedDatabase]);
   
@@ -80,6 +81,15 @@ const DownloadInterface = () => {
     }
   };
 
+  const loadTables = async () => {
+    try {
+      const t = await LocalDatabaseService.getTables(selectedDatabase);
+      setTables(t);
+    } catch (error) {
+      console.error('Error loading tables:', error);
+    }
+  };
+
   const loadTableMetadata = async () => {
     try {
       const metadata = await LocalDatabaseService.getTableMetadata(selectedTable, selectedDatabase);
@@ -89,37 +99,7 @@ const DownloadInterface = () => {
     }
   };
 
-  // Available tables from your database
-  const availableTables = [
-    { 
-      id: 'table1', 
-      name: 'Primary Environmental Data', 
-      description: 'Air temperature, humidity, soil conditions, radiation, snow measurements',
-      recordCount: 'Variable',
-      lastUpdated: 'Real-time'
-    },
-    { 
-      id: 'Wind', 
-      name: 'Wind Data', 
-      description: 'Wind speed, direction, gusts, and meteorological data',
-      recordCount: 'Variable',
-      lastUpdated: 'Real-time'
-    },
-    { 
-      id: 'Precipitation', 
-      name: 'Precipitation Data', 
-      description: 'Rainfall intensity, accumulation, and precipitation measurements',
-      recordCount: 'Variable',
-      lastUpdated: 'Real-time'
-    },
-    { 
-      id: 'SnowpkTempProfile', 
-      name: 'Snow Pack Temperature Profile', 
-      description: 'Snow temperature profiles at various depths (0-290cm)',
-      recordCount: 'Variable',
-      lastUpdated: 'Real-time'
-    }
-  ];
+  // Tables are loaded dynamically from the selected database
 
   // Time presets (enhanced with season support)
   const timePresets = [
@@ -331,26 +311,6 @@ const DownloadInterface = () => {
             >
               Clear All
             </Button>
-            <Button 
-              onClick={handleDownload} 
-              disabled={isLoading || !selectedDatabase || !selectedTable || selectedLocations.length === 0 || 
-                (timePreset === 'season' && !selectedSeason) || 
-                (timePreset !== 'season' && !startDate && !endDate)}
-              className="bg-primary hover:bg-primary/90"
-              size="lg"
-            >
-              {isLoading ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Preparing...
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <Download className="h-5 w-5" />
-                  Download CSV
-                </div>
-              )}
-            </Button>
           </div>
         </div>
       </div>
@@ -404,43 +364,43 @@ const DownloadInterface = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              {availableTables.map((table) => (
-                <Card 
-                  key={table.id}
-                  className={`cursor-pointer transition-all hover:shadow-md ${
-                    selectedTable === table.id 
-                      ? 'ring-2 ring-primary bg-primary/5' 
-                      : 'hover:bg-muted/50'
-                  }`}
-                  onClick={() => handleTableChange(table.id)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <div className={`w-3 h-3 rounded-full ${
-                            selectedTable === table.id ? 'bg-primary' : 'bg-muted'
-                          }`}></div>
-                          <h4 className="font-medium text-sm">{table.name}</h4>
-                        </div>
-                        <p className="text-xs text-muted-foreground mb-2">
-                          {table.description}
-                        </p>
-                        <div className="flex gap-4 text-xs">
-                          <div>
-                            <span className="text-muted-foreground">Records: </span>
-                            <span className="font-medium">{table.recordCount}</span>
+              {tables && tables.length > 0 ? (
+                tables.map((table: any) => (
+                  <Card 
+                    key={table.name}
+                    className={`cursor-pointer transition-all hover:shadow-md ${
+                      selectedTable === table.name 
+                        ? 'ring-2 ring-primary bg-primary/5' 
+                        : 'hover:bg-muted/50'
+                    }`}
+                    onClick={() => handleTableChange(table.name)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className={`w-3 h-3 rounded-full ${
+                              selectedTable === table.name ? 'bg-primary' : 'bg-muted'
+                            }`}></div>
+                            <h4 className="font-medium text-sm">{table.displayName || table.name}</h4>
                           </div>
-                          <div>
-                            <span className="text-muted-foreground">Updated: </span>
-                            <span className="font-medium">{table.lastUpdated}</span>
+                          <p className="text-xs text-muted-foreground mb-2">
+                            {table.description || 'Environmental data table'}
+                          </p>
+                          <div className="flex gap-4 text-xs">
+                            <div>
+                              <span className="text-muted-foreground">Records: </span>
+                              <span className="font-medium">{table.rowCount ?? '—'}</span>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <div className="text-sm text-muted-foreground">No tables found for this database.</div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -611,6 +571,29 @@ const DownloadInterface = () => {
                   </div>
                 </div>
               )}
+            </div>
+
+            <div className="pt-2">
+              <Button 
+                onClick={handleDownload} 
+                disabled={isLoading || !selectedDatabase || !selectedTable || selectedLocations.length === 0 || 
+                  (timePreset === 'season' && !selectedSeason) || 
+                  (timePreset !== 'season' && !startDate && !endDate)}
+                className="bg-primary hover:bg-primary/90 w-full"
+                size="lg"
+              >
+                {isLoading ? (
+                  <div className="flex items-center gap-2 justify-center">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Preparing...
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 justify-center">
+                    <Download className="h-5 w-5" />
+                    Download CSV
+                  </div>
+                )}
+              </Button>
             </div>
 
             {/* Attributes Selection */}
