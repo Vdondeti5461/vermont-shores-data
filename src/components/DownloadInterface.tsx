@@ -339,16 +339,6 @@ const DownloadInterface = () => {
           isLoading={isLocationsLoading}
         />
 
-        {/* Attribute Selection */}
-        <AttributeSelector
-          attributes={tableMetadata?.columns || []}
-          selectedAttributes={selectedAttributes}
-          onAttributeToggle={handleAttributeToggle}
-          onSelectAll={handleSelectAllAttributes}
-          isLoading={isAttributesLoading}
-          tableName={selectedTable}
-        />
-
         {/* Date Range & Download */}
         <DateRangeSelector
           startDate={startDate}
@@ -365,6 +355,16 @@ const DownloadInterface = () => {
             locations: selectedLocations.length,
             attributes: selectedAttributes.length,
           }}
+        />
+
+        {/* Attribute Selection - moved after download */}
+        <AttributeSelector
+          attributes={tableMetadata?.columns || []}
+          selectedAttributes={selectedAttributes}
+          onAttributeToggle={handleAttributeToggle}
+          onSelectAll={handleSelectAllAttributes}
+          isLoading={isAttributesLoading}
+          tableName={selectedTable}
         />
       </div>
     </div>

@@ -15,10 +15,9 @@ let pool;
 // Known database configurations
 const DATABASES = {
   'raw_data': 'CRRELS2S_VTClimateRepository',
-  'cleaned_data': 'CRRELS2S_cleaned_data_seasons', 
-  'processed_data': 'CRRELS2S_ProcessedData',
-  'main_data': 'CRRELS2S_MAIN',
-  'processed_clean': 'CRRELS2S_VTClimateRepository_Processed'
+  'initial_clean_data': 'CRRELS2S_VTClimateRepository_Processed',
+  'final_clean_data': 'CRRELS2S_ProcessedData',
+  'seasonal_clean_data': 'CRRELS2S_cleaned_data_seasons'
 };
 
 // Location metadata with complete information
@@ -821,11 +820,10 @@ app.post('/api/bulk-download/request', async (req, res) => {
 // Helper functions for database and table descriptions
 function getDatabaseDescription(key) {
   const descriptions = {
-    'raw_data': 'Original unprocessed environmental data from sensors',
-    'cleaned_data': 'Quality-controlled seasonal environmental data',
-    'processed_data': 'Fully processed and analyzed environmental data',
-    'main_data': 'Core environmental monitoring dataset',
-    'processed_clean': 'Enhanced processed environmental measurements'
+    'raw_data': 'Raw data',
+    'initial_clean_data': 'Initial clean data',
+    'final_clean_data': 'Final Clean Data',
+    'seasonal_clean_data': 'season wise final clean data'
   };
   return descriptions[key] || 'Environmental monitoring database';
 }
