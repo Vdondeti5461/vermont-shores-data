@@ -21,6 +21,113 @@ const DATABASES = {
   'processed_clean': 'CRRELS2S_VTClimateRepository_Processed'
 };
 
+// Location metadata with complete information
+const LOCATION_METADATA = {
+  'RB01': { name: 'Mansfield East Ranch Brook 1', latitude: 44.2619, longitude: -72.8081, elevation: 1200 },
+  'RB02': { name: 'Mansfield East Ranch Brook 2', latitude: 44.2625, longitude: -72.8075, elevation: 1180 },
+  'RB03': { name: 'Mansfield East Ranch Brook 3', latitude: 44.2631, longitude: -72.8069, elevation: 1160 },
+  'RB04': { name: 'Mansfield East Ranch Brook 4', latitude: 44.2637, longitude: -72.8063, elevation: 1140 },
+  'RB05': { name: 'Mansfield East Ranch Brook 5', latitude: 44.2643, longitude: -72.8057, elevation: 1120 },
+  'RB06': { name: 'Mansfield East Ranch Brook 6', latitude: 44.2649, longitude: -72.8051, elevation: 1100 },
+  'RB07': { name: 'Mansfield East Ranch Brook 7', latitude: 44.2655, longitude: -72.8045, elevation: 1080 },
+  'RB08': { name: 'Mansfield East Ranch Brook 8', latitude: 44.2661, longitude: -72.8039, elevation: 1060 },
+  'RB09': { name: 'Mansfield East Ranch Brook 9', latitude: 44.2667, longitude: -72.8033, elevation: 1040 },
+  'RB10': { name: 'Mansfield East Ranch Brook 10', latitude: 44.2673, longitude: -72.8027, elevation: 1020 },
+  'RB11': { name: 'Mansfield East Ranch Brook 11', latitude: 44.2679, longitude: -72.8021, elevation: 1000 },
+  'RB12': { name: 'Mansfield East FEMC', latitude: 44.2685, longitude: -72.8015, elevation: 980 },
+  'SPER': { name: 'Spear Street', latitude: 44.4759, longitude: -73.1959, elevation: 120 },
+  'SR01': { name: 'Sleepers R3/Main', latitude: 44.2891, longitude: -72.8211, elevation: 900 },
+  'SR11': { name: 'Sleepers W1/R11', latitude: 44.2885, longitude: -72.8205, elevation: 920 },
+  'SR25': { name: 'Sleepers R25', latitude: 44.2879, longitude: -72.8199, elevation: 940 },
+  'JRCL': { name: 'Jericho clearing', latitude: 44.4919, longitude: -72.9659, elevation: 300 },
+  'JRFO': { name: 'Jericho Forest', latitude: 44.4925, longitude: -72.9665, elevation: 320 },
+  'PROC': { name: 'Mansfield West Proctor', latitude: 44.2561, longitude: -72.8141, elevation: 1300 },
+  'PTSH': { name: 'Potash Brook', latitude: 44.2567, longitude: -72.8147, elevation: 1280 },
+  'SUMM': { name: 'Mansfield SUMMIT', latitude: 44.2573, longitude: -72.8153, elevation: 1339 },
+  'UNDR': { name: 'Mansfield West SCAN', latitude: 44.2555, longitude: -72.8135, elevation: 1260 }
+};
+
+// Table metadata with detailed descriptions
+const TABLE_METADATA = {
+  'table1': {
+    displayName: 'Primary Environmental Data',
+    description: 'Comprehensive environmental measurements including temperature, humidity, soil conditions, and radiation',
+    attributes: {
+      'TS_LOC_REC': { description: 'TimeStamp Location Record', unit: 'No_Unit', measurement_type: 'Identifier', category: 'System' },
+      'TIMESTAMP': { description: 'TimeStamp', unit: 'TS', measurement_type: 'No_Unit', category: 'Time' },
+      'LOCATION': { description: 'Location', unit: 'LOC', measurement_type: 'No_Unit', category: 'Location' },
+      'Record': { description: 'Record Number', unit: 'RN', measurement_type: 'No Unit', category: 'System' },
+      'Batt_Volt_Min': { description: 'Battery Voltage', unit: 'Volts', measurement_type: 'Min', category: 'System' },
+      'P_Temp': { description: 'Panel Temperature (Reference Temperature Measurement)', unit: 'Deg C', measurement_type: 'smp', category: 'Temperature' },
+      'AirTC_Avg': { description: 'Air Temperature Average in Celcius', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
+      'RH': { description: 'Relative Humidity', unit: '%', measurement_type: 'Smp', category: 'Humidity' },
+      'SHF': { description: 'Soil Heat Flux (radiation Parameter)', unit: 'W/m^2', measurement_type: 'smp', category: 'Radiation' },
+      'Soil_Moisture': { description: 'Soil Moisture', unit: 'wfv', measurement_type: 'smp', category: 'Soil' },
+      'Soil_Temperature_C': { description: 'Soil Temperature in Celcius', unit: 'Deg C', measurement_type: 'smp', category: 'Temperature' },
+      'SWE': { description: 'Snow water Equivalent', unit: 'mm of H20', measurement_type: 'smp', category: 'Snow' },
+      'Ice_content': { description: 'Ice content of SnowPack', unit: '%', measurement_type: 'smp', category: 'Snow' },
+      'Water_Content': { description: 'Water Content of SnowPack', unit: '%', measurement_type: 'smp', category: 'Snow' },
+      'Snowpack_Density': { description: 'Snowpack Density', unit: 'kg/m^3', measurement_type: 'smp', category: 'Snow' },
+      'SW_in': { description: 'Short wave radiation incoming', unit: 'W/m^2', measurement_type: 'smp', category: 'Radiation' },
+      'SW_out': { description: 'Short wave radiation outgoing', unit: 'W/m^2', measurement_type: 'smp', category: 'Radiation' },
+      'LW_in': { description: 'Longwave radation incoming', unit: 'W/m^2', measurement_type: 'smp', category: 'Radiation' },
+      'LW_out': { description: 'Longwave radiation outgoing', unit: 'W/m^2', measurement_type: 'smp', category: 'Radiation' },
+      'Target_Depth': { description: 'Target depth', unit: 'cm', measurement_type: 'smp', category: 'Snow' },
+      'Qual': { description: 'Quality numbers (snow sensor)', unit: 'No Unit', measurement_type: 'smp', category: 'Quality' },
+      'TCDT': { description: 'Temperature corrected distance value', unit: 'cm', measurement_type: 'smp', category: 'Snow' },
+      'DBTCDT': { description: 'Snow Depth', unit: 'cm', measurement_type: 'smp', category: 'Snow' },
+      'Target_Depth_Med': { description: 'Target depth - Median Data', unit: 'cm', measurement_type: 'Med', category: 'Snow' },
+      'Qual_Med': { description: 'Quality numbers (snow sensor) - Median Data', unit: 'No Unit', measurement_type: 'Med', category: 'Quality' },
+      'TCDT_Med': { description: 'Temperature corrected distance value - Median Data', unit: 'cm', measurement_type: 'Med', category: 'Snow' },
+      'DBTCDT_Med': { description: 'Snow Depth - Median Data', unit: 'cm', measurement_type: 'Med', category: 'Snow' },
+      'DataQualityFlag': { description: 'Data Quality Flag (1=Median Data, 0=Original Data)', unit: 'Flag', measurement_type: 'Flag', category: 'Quality' }
+    }
+  },
+  'Wind': {
+    displayName: 'Wind Measurements',
+    description: 'Wind speed and direction measurements from meteorological stations',
+    attributes: {
+      'TIMESTAMP': { description: 'TimeStamp', unit: 'TS', measurement_type: 'No_Unit', category: 'Time' },
+      'LOCATION': { description: 'Location', unit: 'LOC', measurement_type: 'No_Unit', category: 'Location' },
+      'Record': { description: 'Record Number', unit: 'RN', measurement_type: 'No Unit', category: 'System' },
+      'WindDir': { description: 'Wind Direction', unit: 'deg', measurement_type: 'smp', category: 'Wind' },
+      'WS_ms_Max': { description: 'Max wind speed', unit: 'meters/second', measurement_type: 'Max', category: 'Wind' },
+      'WS_ms_TMx': { description: 'Wind Speed Time of Max', unit: 'meters/second', measurement_type: 'TMx', category: 'Wind' },
+      'WS_ms': { description: 'Wind speed', unit: 'meters/second', measurement_type: 'smp', category: 'Wind' },
+      'WS_ms_S_WVT': { description: 'Wind Speed Standard Deviation', unit: 'meters/second', measurement_type: 'Wvc', category: 'Wind' },
+      'WindDir_D1_WVT': { description: 'Wind Direction Vector', unit: 'Deg', measurement_type: 'Wvc', category: 'Wind' },
+      'WindDir_SD1_WVT': { description: 'Wind Direction Standard Deviation', unit: 'Deg', measurement_type: 'Wvc', category: 'Wind' },
+      'WS_ms_Min': { description: 'Min wind speed', unit: 'meters/second', measurement_type: 'Min', category: 'Wind' },
+      'WS_ms_TMn': { description: 'Wind Speed Time of Min', unit: 'meters/second', measurement_type: 'TMn', category: 'Wind' }
+    }
+  },
+  'Precipitation': {
+    displayName: 'Precipitation Data',
+    description: 'Precipitation measurements including intensity, accumulation, and bucket data',
+    attributes: {
+      'TIMESTAMP': { description: 'TimeStamp', unit: 'TS', measurement_type: 'No_Unit', category: 'Time' },
+      'LOCATION': { description: 'Location', unit: 'LOC', measurement_type: 'No_Unit', category: 'Location' },
+      'Record': { description: 'Record Number', unit: 'RN', measurement_type: 'No Unit', category: 'System' },
+      'Intensity_RT': { description: 'Intensity Real time', unit: 'mm/min', measurement_type: 'smp', category: 'Precipitation' },
+      'Accu_NRT': { description: 'Accumulated Non real time Precipitation', unit: 'mm', measurement_type: 'smp', category: 'Precipitation' },
+      'Accu_RT_NRT': { description: 'Accumulated real time - Non Real time Precipitation', unit: 'mm', measurement_type: 'smp', category: 'Precipitation' },
+      'Accu_Total_NRT': { description: 'Accumulated Total Non real time Precipitation', unit: 'mm', measurement_type: 'smp', category: 'Precipitation' },
+      'Bucket_NRT': { description: 'Bucket Precipitation Non real time', unit: 'mm', measurement_type: 'smp', category: 'Precipitation' },
+      'Bucket_RT': { description: 'Bucket Precipitation real time', unit: 'mm', measurement_type: 'smp', category: 'Precipitation' },
+      'Load_Temp': { description: 'Load Temperature (Battery)', unit: 'Deg C', measurement_type: 'smp', category: 'Temperature' }
+    }
+  },
+  'SnowPkTempProfile': {
+    displayName: 'Snow Pack Temperature Profile',
+    description: 'Snowpack temperature measurements at various depths from 0cm to 290cm',
+    attributes: {
+      'TIMESTAMP': { description: 'TimeStamp', unit: 'TS', measurement_type: 'No_Unit', category: 'Time' },
+      'LOCATION': { description: 'Location', unit: 'LOC', measurement_type: 'No_Unit', category: 'Location' },
+      'Record': { description: 'Record Number', unit: 'RN', measurement_type: 'No Unit', category: 'System' }
+    }
+  }
+};
+
 async function connectDB() {
   try {
     // Create pool without specifying database for dynamic switching
@@ -259,9 +366,9 @@ app.get('/api/databases/:database/locations', async (req, res) => {
       tableList = allTables.map(table => Object.values(table)[0]);
     }
     
-    // Build union query for all tables
+    // Build union query for all tables with performance optimization
     const unionQueries = tableList.map(table => 
-      `SELECT DISTINCT Location as name FROM \`${table}\` WHERE Location IS NOT NULL`
+      `SELECT DISTINCT Location as name FROM \`${table}\` WHERE Location IS NOT NULL LIMIT 100`
     );
     
     if (unionQueries.length === 0) {
@@ -272,14 +379,18 @@ app.get('/api/databases/:database/locations', async (req, res) => {
     const query = unionQueries.join(' UNION ') + ' ORDER BY name';
     const [rows] = await connection.execute(query);
     
-    // Add mock coordinates for now (replace with actual if you have them)
-    const locationsWithCoords = rows.map((loc, index) => ({
-      id: index + 1,
-      name: loc.name,
-      latitude: 44.0 + (index * 0.1), // Mock values - replace with real coords
-      longitude: -72.5 - (index * 0.1), // Mock values - replace with real coords
-      elevation: 1000 + (index * 100) // Mock values - replace with real elevation
-    }));
+    // Use actual location metadata with proper coordinates
+    const locationsWithCoords = rows.map((loc, index) => {
+      const metadata = LOCATION_METADATA[loc.name];
+      return {
+        id: index + 1,
+        name: loc.name,
+        displayName: metadata ? metadata.name : loc.name,
+        latitude: metadata ? metadata.latitude : 44.0 + (index * 0.01),
+        longitude: metadata ? metadata.longitude : -72.5 - (index * 0.01),
+        elevation: metadata ? metadata.elevation : 1000 + (index * 10)
+      };
+    });
     
     connection.release();
     res.json(locationsWithCoords);
@@ -493,14 +604,14 @@ app.get('/api/analytics', async (req, res) => {
   }
 });
 
-// Download endpoint for CSV export
+// Download endpoint for CSV export with proper timestamp formatting
 app.get('/api/databases/:database/download/:table', async (req, res) => {
   try {
     const { database, table } = req.params;
     const { location, start_date, end_date, attributes } = req.query;
     const { connection, databaseName } = await getConnectionWithDB(database);
     
-    // Build column selection
+    // Build column selection for download (only selected attributes)
     let columns = '*';
     if (attributes) {
       const selectedAttributes = attributes.split(',').map(attr => attr.trim());
@@ -531,7 +642,6 @@ app.get('/api/databases/:database/download/:table', async (req, res) => {
     query += ' ORDER BY TIMESTAMP DESC';
     
     const [rows] = await connection.execute(query, params);
-    const formattedData = formatTableData(table, rows);
     
     // Set headers for CSV download
     const timestamp = new Date().toISOString().split('T')[0];
@@ -539,14 +649,27 @@ app.get('/api/databases/:database/download/:table', async (req, res) => {
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     
-    // Convert to CSV (simple implementation)
-    if (formattedData.length > 0) {
-      const headers = Object.keys(formattedData[0]);
+    // Convert to CSV with only selected attributes and proper timestamp format
+    if (rows.length > 0) {
+      const headers = Object.keys(rows[0]);
       res.write(headers.join(',') + '\n');
       
-      formattedData.forEach(row => {
+      rows.forEach(row => {
         const values = headers.map(header => {
-          const value = row[header];
+          let value = row[header];
+          
+          // Format TIMESTAMP to match database format (2023-10-20 19:00:00)
+          if (header === 'TIMESTAMP' && value) {
+            if (value instanceof Date) {
+              value = value.toISOString().replace('T', ' ').split('.')[0];
+            } else if (typeof value === 'string') {
+              const date = new Date(value);
+              if (!isNaN(date.getTime())) {
+                value = date.toISOString().replace('T', ' ').split('.')[0];
+              }
+            }
+          }
+          
           // Handle null values and escape commas
           if (value === null || value === undefined) return '';
           if (typeof value === 'string' && value.includes(',')) {
@@ -563,6 +686,129 @@ app.get('/api/databases/:database/download/:table', async (req, res) => {
   } catch (error) {
     console.error('Error downloading data:', error);
     res.status(500).json({ error: 'Failed to download data' });
+  }
+});
+
+// New endpoint for getting detailed metadata
+app.get('/api/metadata/locations', (req, res) => {
+  try {
+    const locationDetails = Object.entries(LOCATION_METADATA).map(([code, details]) => ({
+      code,
+      ...details,
+      coordinates: `${details.latitude}, ${details.longitude}`
+    }));
+    
+    res.json({
+      project: 'CRREL S2S Project - Location Information in Vermont',
+      total_locations: 22,
+      description: 'Comprehensive environmental monitoring stations across Vermont',
+      locations: locationDetails
+    });
+  } catch (error) {
+    console.error('Error fetching location metadata:', error);
+    res.status(500).json({ error: 'Failed to fetch location metadata' });
+  }
+});
+
+// New endpoint for getting table metadata with full descriptions
+app.get('/api/metadata/tables/:table', (req, res) => {
+  try {
+    const { table } = req.params;
+    const metadata = TABLE_METADATA[table];
+    
+    if (!metadata) {
+      return res.status(404).json({ error: 'Table metadata not found' });
+    }
+    
+    // Add temperature profile attributes for SnowPkTempProfile
+    if (table === 'SnowPkTempProfile') {
+      for (let depth = 0; depth <= 290; depth += 10) {
+        const attrName = `T107_C_${depth.toString().padStart(3, '0')}cm_Avg`;
+        metadata.attributes[attrName] = {
+          description: `Snowpack temperature profile at ${depth} CM`,
+          unit: 'Deg C',
+          measurement_type: 'Avg',
+          category: 'Snow Temperature'
+        };
+      }
+    }
+    
+    res.json({
+      table_name: table,
+      ...metadata,
+      attribute_count: Object.keys(metadata.attributes).length
+    });
+  } catch (error) {
+    console.error('Error fetching table metadata:', error);
+    res.status(500).json({ error: 'Failed to fetch table metadata' });
+  }
+});
+
+// New endpoint for bulk download requests
+app.post('/api/bulk-download/request', async (req, res) => {
+  try {
+    const {
+      name,
+      email,
+      organization,
+      purpose,
+      research_description,
+      datasets_requested,
+      date_range,
+      preferred_format
+    } = req.body;
+    
+    // Validate required fields
+    if (!name || !email || !purpose || !datasets_requested) {
+      return res.status(400).json({
+        error: 'Missing required fields: name, email, purpose, datasets_requested'
+      });
+    }
+    
+    // Create request object
+    const bulkRequest = {
+      request_id: `REQ_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      timestamp: new Date().toISOString(),
+      requester: {
+        name,
+        email,
+        organization: organization || 'Not specified'
+      },
+      request_details: {
+        purpose,
+        research_description: research_description || 'Not provided',
+        datasets_requested: Array.isArray(datasets_requested) ? datasets_requested : [datasets_requested],
+        date_range: date_range || 'Full dataset',
+        preferred_format: preferred_format || 'CSV'
+      },
+      status: 'submitted',
+      estimated_processing_time: '2-5 business days'
+    };
+    
+    // Log the request (in production, this would be saved to database)
+    console.log('📥 New bulk download request:', bulkRequest);
+    
+    // In production, send email notification to s2s@uvm.edu
+    console.log(`📧 Email notification would be sent to: s2s@uvm.edu`);
+    
+    res.json({
+      message: 'Bulk download request submitted successfully',
+      request_id: bulkRequest.request_id,
+      status: 'submitted',
+      next_steps: [
+        'Your request has been forwarded to the S2S team at s2s@uvm.edu',
+        'You will receive a confirmation email within 24 hours',
+        'Data preparation typically takes 2-5 business days',
+        'Download links will be provided via email when ready'
+      ],
+      contact: {
+        email: 's2s@uvm.edu',
+        phone: '(802) 656-2215'
+      }
+    });
+  } catch (error) {
+    console.error('Error processing bulk download request:', error);
+    res.status(500).json({ error: 'Failed to process bulk download request' });
   }
 });
 

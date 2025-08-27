@@ -6,11 +6,12 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { CalendarIcon, Download, Database, Table, FileText, MapPin, Clock } from 'lucide-react';
+import { CalendarIcon, Download, Database, Table, FileText, MapPin, Clock, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
+import MetadataDisplay from './MetadataDisplay';
 
 interface DatabaseInfo {
   key: string;
@@ -39,6 +40,7 @@ interface AttributeInfo {
 interface LocationInfo {
   id: number;
   name: string;
+  displayName: string;
   latitude: number;
   longitude: number;
   elevation: number;
@@ -314,7 +316,7 @@ const MultiDatabaseDownload = () => {
                     onCheckedChange={() => toggleLocation(location.name)}
                   />
                   <Label htmlFor={location.name} className="text-sm">
-                    {location.name} ({location.elevation}m)
+                    {location.displayName || location.name}
                   </Label>
                 </div>
               ))}
@@ -408,6 +410,19 @@ const MultiDatabaseDownload = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Metadata Information */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Info className="h-5 w-5" />
+            Project Metadata & Documentation
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <MetadataDisplay />
+        </CardContent>
+      </Card>
 
       {/* Download Summary and Action */}
       <Card>
