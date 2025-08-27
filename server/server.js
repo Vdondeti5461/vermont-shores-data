@@ -283,9 +283,11 @@ app.get('/api/databases/:database/tables', async (req, res) => {
 
     // Filter season-based tables for specific databases
     let tableNames = infoRows.map((r) => r.TABLE_NAME);
-    if (database === 'seasonal_clean_data' || database === 'final_clean_data') {
+    if (database === 'seasonal_clean_data') {
+      // Only filter for seasonal database - it should contain tables starting with 'cleaned_data_season_'
       tableNames = tableNames.filter((t) => t.startsWith('cleaned_data_season_'));
     }
+    // For final_clean_data (CRRELS2S_ProcessedData), show all tables without filtering
 
     // Build table info without running COUNT(*) per table
     const rowCountMap = new Map(infoRows.map((r) => [r.TABLE_NAME, r.TABLE_ROWS ?? 0]));
@@ -371,9 +373,11 @@ app.get('/api/databases/:database/locations', async (req, res) => {
     }
 
     // Additional filtering for season-based databases
-    if (database === 'seasonal_clean_data' || database === 'final_clean_data') {
+    if (database === 'seasonal_clean_data') {
+      // Only filter seasonal database for season-specific tables
       validTables = validTables.filter((t) => t.startsWith('cleaned_data_season_'));
     }
+    // For final_clean_data, show all tables that have Location column
     
     if (validTables.length === 0) {
       connection.release();
