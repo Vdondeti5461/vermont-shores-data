@@ -61,6 +61,7 @@ const MultiDatabaseDownload = () => {
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingTables, setIsLoadingTables] = useState(false);
 
   // Fetch available databases
   useEffect(() => {
@@ -106,9 +107,10 @@ const MultiDatabaseDownload = () => {
 
   const fetchTables = async (database: string) => {
     try {
+      setIsLoadingTables(true);
       const response = await fetch(`http://localhost:3001/api/databases/${database}/tables`);
       const data = await response.json();
-      setTables(data.tables);
+      setTables(data.tables || []);
     } catch (error) {
       console.error('Error fetching tables:', error);
       toast({
@@ -116,6 +118,8 @@ const MultiDatabaseDownload = () => {
         description: "Failed to fetch tables",
         variant: "destructive"
       });
+    } finally {
+      setIsLoadingTables(false);
     }
   };
 
@@ -278,9 +282,9 @@ const MultiDatabaseDownload = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <Select value={selectedTable} onValueChange={setSelectedTable} disabled={!selectedDatabase}>
+            <Select value={selectedTable} onValueChange={setSelectedTable} disabled={!selectedDatabase || isLoadingTables}>
               <SelectTrigger>
-                <SelectValue placeholder="Choose a table" />
+                <SelectValue placeholder={isLoadingTables ? "Loading tables..." : "Choose a table"} />
               </SelectTrigger>
               <SelectContent>
                 {tables.map((table) => (

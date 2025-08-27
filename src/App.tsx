@@ -13,6 +13,7 @@ import AdvancedAnalytics from "./pages/AdvancedAnalytics";
 import Documentation from "./pages/Documentation";
 import APIDocumentation from "./pages/APIDocumentation";
 import NotFound from "./pages/NotFound";
+import BulkRequest from "./pages/BulkRequest";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,7 @@ const App = () => (
           <Route path="/download/browse" element={<DataDownload />} />
           <Route path="/download/api" element={<DataDownload />} />
           <Route path="/download/bulk" element={<DataDownload />} />
+          <Route path="/download/bulk-request" element={<BulkRequest />} />
           <Route path="/download/feeds" element={<DataDownload />} />
           <Route path="/research" element={<Research />} />
           <Route path="/documentation" element={<APIDocumentation />} />

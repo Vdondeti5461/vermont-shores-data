@@ -83,7 +83,7 @@ const DataDownloadPage = () => {
         </section>
 
         {/* Download Interface */}
-        <section className="py-16">
+        <section id="download" className="py-16">
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
               <Badge variant="outline" className="mb-4">
@@ -148,7 +148,7 @@ const DataDownloadPage = () => {
                   <p className="text-sm text-muted-foreground mb-4">
                     <strong>Data Age:</strong> 3 Years of comprehensive environmental monitoring data available.
                   </p>
-                  <Button>Start Browsing Data</Button>
+                  <Button asChild><Link to="#download">Start Browsing Data</Link></Button>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -254,14 +254,10 @@ const DataDownloadPage = () => {
                       </ul>
                     </div>
                   </div>
-                  <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-950/20 rounded-lg">
-                    <p className="text-sm text-amber-800 dark:text-amber-200">
-                      <strong>Note:</strong> NetCDF format is not currently available but may be provided upon special request. 
-                      All requests are routed to s2s@uvm.edu for processing.
-                    </p>
-                  </div>
                   <div className="mt-6">
-                    <Button>Request Bulk Download</Button>
+                    <Button asChild>
+                      <Link to="/download/bulk-request">Request Bulk Download</Link>
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

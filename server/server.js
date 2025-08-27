@@ -270,27 +270,23 @@ app.get('/api/databases', async (req, res) => {
   }
 });
 
-// Get available tables for a database (optimized and restricted to known tables)
+// Get available tables for a database (optimized, per selected DB)
 app.get('/api/databases/:database/tables', async (req, res) => {
   try {
     const { database } = req.params;
     const { connection, databaseName } = await getConnectionWithDB(database);
 
-    // Only consider the four canonical tables (case-insensitive)
-    const allowedTables = ['table1', 'Table1', 'Wind', 'Precipitation', 'SnowPkTempProfile', 'SnowpkTempProfile'];
-
-    // Use INFORMATION_SCHEMA for faster approximate row counts and to filter by allowed tables
-    const placeholders = allowedTables.map(() => '?').join(',');
+    // Use INFORMATION_SCHEMA to list all base tables for the selected database
     const [rows] = await connection.execute(
-      `SELECT TABLE_NAME, TABLE_ROWS
+      `SELECT TABLE_NAME, TABLE_ROWS, TABLE_TYPE
        FROM INFORMATION_SCHEMA.TABLES
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME IN (${placeholders})`,
-      [databaseName, ...allowedTables]
+       WHERE TABLE_SCHEMA = ? AND TABLE_TYPE = 'BASE TABLE'`
+      , [databaseName]
     );
 
-    // Normalize and map results
+    // Map results to response shape
     const tablesWithInfo = rows.map((r) => {
-      const tableName = r.TABLE_NAME; // Preserve actual case from DB
+      const tableName = r.TABLE_NAME;
       return {
         name: tableName,
         displayName: getTableDisplayName(tableName),
@@ -300,17 +296,15 @@ app.get('/api/databases/:database/tables', async (req, res) => {
       };
     });
 
-    // If none found (e.g., permissions), fallback to SHOW TABLES but filter client-side
+    // Fallback to SHOW TABLES if INFORMATION_SCHEMA returns nothing
     if (tablesWithInfo.length === 0) {
       const [all] = await connection.execute('SHOW TABLES');
-      const names = all.map(t => Object.values(t)[0]).filter((t) =>
-        allowedTables.some(at => at.toLowerCase() === String(t).toLowerCase())
-      );
-      names.forEach((t) => {
+      all.forEach((t) => {
+        const name = Object.values(t)[0];
         tablesWithInfo.push({
-          name: t,
-          displayName: getTableDisplayName(t),
-          description: getTableDescription(t),
+          name,
+          displayName: getTableDisplayName(name),
+          description: getTableDescription(name),
           rowCount: 0,
           primaryAttributes: ['TIMESTAMP', 'Location']
         });

@@ -302,9 +302,6 @@ const BulkDownloadRequest = () => {
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-sm text-muted-foreground mt-2">
-              Note: NetCDF format is not currently available but may be provided upon special request.
-            </p>
           </CardContent>
         </Card>
 
