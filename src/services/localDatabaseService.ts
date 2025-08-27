@@ -80,9 +80,9 @@ export interface DatabasesResponse {
 }
 
 export class LocalDatabaseService {
-  private static baseUrl = process.env.NODE_ENV === 'development' 
+  private static baseUrl = import.meta.env.DEV 
     ? 'http://localhost:3001' 
-    : '';
+    : 'https://your-domain.silk.uvm.edu:3001'; // Replace with your actual silk server URL
 
   // Available tables in the database
   static readonly TABLES = {
