@@ -227,7 +227,7 @@ export class LocalDatabaseService {
       if (startDate) params.append('start_date', startDate);
       if (endDate) params.append('end_date', endDate);
       if (season) params.append('season', season);
-      if (columns && columns.length > 0) params.append('columns', columns.join(','));
+      if (columns && columns.length > 0) params.append('attributes', columns.join(','));
 
       const response = await fetch(`${this.baseUrl}/api/databases/${database}/download/${table}?${params}`);
       if (!response.ok) throw new Error(`Failed to download ${table} data`);

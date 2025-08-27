@@ -17,7 +17,7 @@ const DATABASES = {
   'raw_data': 'CRRELS2S_VTClimateRepository',
   'initial_clean_data': 'CRRELS2S_VTClimateRepository_Processed',
   'final_clean_data': 'CRRELS2S_ProcessedData',
-  'seasonal_clean_data': 'CRRELS2S_cleaned_data_seasons'
+  'seasonal_clean_data': 'CRRELS2S_cleaned_data_season'
 };
 
 // Location metadata with complete information
@@ -275,35 +275,27 @@ app.get('/api/databases/:database/tables', async (req, res) => {
     const { database } = req.params;
     const { connection, databaseName } = await getConnectionWithDB(database);
     
-    const [tables] = await connection.execute('SHOW TABLES');
-    const tableNames = tables.map(table => Object.values(table)[0]);
-    
-    // Get table info with row counts and descriptions
-    const tablesWithInfo = await Promise.all(
-      tableNames.map(async (tableName) => {
-        try {
-          const [countResult] = await connection.execute(`SELECT COUNT(*) as count FROM \`${tableName}\``);
-          const rowCount = countResult[0].count;
-          
-          return {
-            name: tableName,
-            displayName: getTableDisplayName(tableName),
-            description: getTableDescription(tableName),
-            rowCount,
-            primaryAttributes: ['TIMESTAMP', 'Location'] // Always present
-          };
-        } catch (err) {
-          console.warn(`Error getting info for table ${tableName}:`, err.message);
-          return {
-            name: tableName,
-            displayName: getTableDisplayName(tableName),
-            description: 'Environmental data table',
-            rowCount: 0,
-            primaryAttributes: ['TIMESTAMP', 'Location']
-          };
-        }
-      })
+    // Fetch tables and approximate row counts from information_schema (fast)
+    const [infoRows] = await connection.execute(
+      `SELECT TABLE_NAME, TABLE_ROWS FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? ORDER BY TABLE_NAME`,
+      [databaseName]
     );
+
+    // Filter season-based tables for specific databases
+    let tableNames = infoRows.map((r) => r.TABLE_NAME);
+    if (database === 'seasonal_clean_data' || database === 'final_clean_data') {
+      tableNames = tableNames.filter((t) => t.startsWith('cleaned_data_season_'));
+    }
+
+    // Build table info without running COUNT(*) per table
+    const rowCountMap = new Map(infoRows.map((r) => [r.TABLE_NAME, r.TABLE_ROWS ?? 0]));
+    const tablesWithInfo = tableNames.map((tableName) => ({
+      name: tableName,
+      displayName: getTableDisplayName(tableName),
+      description: getTableDescription(tableName),
+      rowCount: rowCountMap.get(tableName) || 0,
+      primaryAttributes: ['TIMESTAMP', 'Location']
+    }));
     
     connection.release();
     res.json({ database: databaseName, tables: tablesWithInfo });
@@ -365,20 +357,22 @@ app.get('/api/databases/:database/locations', async (req, res) => {
       tableList = allTables.map(table => Object.values(table)[0]);
     }
     
-    // Get valid tables that have Location column
-    const validTables = [];
-    for (const table of tableList) {
-      try {
-        // Check if Location column exists
-        const [columns] = await connection.execute(
-          `SHOW COLUMNS FROM \`${table}\` LIKE 'Location'`
-        );
-        if (columns.length > 0) {
-          validTables.push(table);
-        }
-      } catch (err) {
-        console.log(`Table ${table} doesn't exist or is not accessible, skipping...`);
-      }
+    // Use information_schema to find tables that contain a Location column (fast)
+    const [locTableRows] = await connection.execute(
+      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND COLUMN_NAME IN ('Location','location')`,
+      [databaseName]
+    );
+    let validTables = locTableRows.map((r) => r.TABLE_NAME);
+
+    // If specific tables were requested, intersect with valid tables
+    if (tables) {
+      const requested = new Set(tableList);
+      validTables = validTables.filter((t) => requested.has(t));
+    }
+
+    // Additional filtering for season-based databases
+    if (database === 'seasonal_clean_data' || database === 'final_clean_data') {
+      validTables = validTables.filter((t) => t.startsWith('cleaned_data_season_'));
     }
     
     if (validTables.length === 0) {
@@ -392,7 +386,7 @@ app.get('/api/databases/:database/locations', async (req, res) => {
     );
     
     // Proper MySQL UNION syntax with ORDER BY at the end
-    const query = `SELECT DISTINCT name FROM (${unionQueries.join(' UNION ')}) AS combined_locations ORDER BY name`;
+    const query = `SELECT DISTINCT name FROM (${unionQueries.join(' UNION ALL ')}) AS combined_locations ORDER BY name`;
     
     const [rows] = await connection.execute(query);
     
