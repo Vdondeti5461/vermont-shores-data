@@ -3,6 +3,10 @@ import { Badge } from '@/components/ui/badge';
 import { Mail, Linkedin, ExternalLink } from 'lucide-react';
 
 const Team = () => {
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  };
+
   const teamMembers = [
     {
       name: "Anna Grunes",
@@ -18,7 +22,7 @@ const Team = () => {
       role: "Data Architect & Manager",
       affiliation: "UVM Civil & Environmental Engineering",
       expertise: "Data Management, System Architecture",
-      image: "/lovable-uploads/250350aa-abaa-4e6e-b886-bae339af81b9.png", // placeholder
+      image: null, // no photo available
       email: "vdondeti@uvm.edu",
       linkedin: "https://www.linkedin.com/in/vamsi-naidu-d/"
     },
@@ -36,7 +40,7 @@ const Team = () => {
       role: "Co-Investigator",
       affiliation: "UVM Geography & Geosciences",
       expertise: "Geomorphology, Watershed Hydrology",
-      image: "/lovable-uploads/3953a891-e744-46ca-b6fa-0ebf0ce9835d.png", // needs photo update
+      image: null, // photo needs to be updated - current one is Jacob's
       email: "bwemple@uvm.edu",
       linkedin: "https://www.linkedin.com/in/beverley-wemple-94557721/"
     },
@@ -45,7 +49,7 @@ const Team = () => {
       role: "Research Associate",
       affiliation: "UVM Civil & Environmental Engineering",
       expertise: "Field Research, Data Collection",
-      image: "/lovable-uploads/b5c6fd03-eb65-45ac-b61a-268cd0dd5602.png", // placeholder
+      image: "/lovable-uploads/3953a891-e744-46ca-b6fa-0ebf0ce9835d.png", // this is actually Jacob's photo
       email: "Jacob.Ladue@uvm.edu",
       linkedin: "https://www.linkedin.com/in/jacob-ladue-8aa992232/"
     }
@@ -76,12 +80,18 @@ const Team = () => {
           {teamMembers.map((member, index) => (
             <Card key={index} className="data-card group hover:shadow-lg transition-all duration-300">
               <CardContent className="p-6 text-center">
-                <div className="w-20 h-20 rounded-full mx-auto mb-4 overflow-hidden">
-                  <img 
-                    src={member.image} 
-                    alt={member.name}
-                    className="w-full h-full object-cover"
-                  />
+                <div className="w-20 h-20 rounded-full mx-auto mb-4 overflow-hidden bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
+                  {member.image ? (
+                    <img 
+                      src={member.image} 
+                      alt={member.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="text-xl font-bold text-primary">
+                      {getInitials(member.name)}
+                    </div>
+                  )}
                 </div>
                 <h3 className="font-semibold text-lg mb-2">{member.name}</h3>
                 <Badge variant="secondary" className="mb-3">
