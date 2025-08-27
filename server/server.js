@@ -15,8 +15,10 @@ let pool;
 // Known database configurations
 const DATABASES = {
   'raw_data': 'CRRELS2S_VTClimateRepository',
-  'processed_initial': 'CRRELS2S_VTClimateRepository_Processed',
-  'processed_final': 'CRRELS2S_ProcessedData'
+  'cleaned_data': 'CRRELS2S_cleaned_data_seasons', 
+  'processed_data': 'CRRELS2S_ProcessedData',
+  'main_data': 'CRRELS2S_MAIN',
+  'processed_clean': 'CRRELS2S_VTClimateRepository_Processed'
 };
 
 // Location metadata with complete information
@@ -268,36 +270,42 @@ app.get('/api/databases', async (req, res) => {
   }
 });
 
-// Get available tables for a database (only canonical 4 tables per selected DB)
+// Get available tables for a database
 app.get('/api/databases/:database/tables', async (req, res) => {
   try {
     const { database } = req.params;
     const { connection, databaseName } = await getConnectionWithDB(database);
-
-    const allowedLower = ['table1', 'wind', 'precipitation', 'snowpktempprofile'];
-    const placeholders = allowedLower.map(() => '?').join(',');
-
-    const [rows] = await connection.execute(
-      `SELECT TABLE_NAME, TABLE_ROWS
-       FROM INFORMATION_SCHEMA.TABLES
-       WHERE TABLE_SCHEMA = ? AND LOWER(TABLE_NAME) IN (${placeholders})
-       ORDER BY FIELD(LOWER(TABLE_NAME), ${placeholders})`,
-      [
-        databaseName,
-        ...allowedLower,
-        // for ORDER BY FIELD
-        ...allowedLower
-      ]
+    
+    const [tables] = await connection.execute('SHOW TABLES');
+    const tableNames = tables.map(table => Object.values(table)[0]);
+    
+    // Get table info with row counts and descriptions
+    const tablesWithInfo = await Promise.all(
+      tableNames.map(async (tableName) => {
+        try {
+          const [countResult] = await connection.execute(`SELECT COUNT(*) as count FROM \`${tableName}\``);
+          const rowCount = countResult[0].count;
+          
+          return {
+            name: tableName,
+            displayName: getTableDisplayName(tableName),
+            description: getTableDescription(tableName),
+            rowCount,
+            primaryAttributes: ['TIMESTAMP', 'Location'] // Always present
+          };
+        } catch (err) {
+          console.warn(`Error getting info for table ${tableName}:`, err.message);
+          return {
+            name: tableName,
+            displayName: getTableDisplayName(tableName),
+            description: 'Environmental data table',
+            rowCount: 0,
+            primaryAttributes: ['TIMESTAMP', 'Location']
+          };
+        }
+      })
     );
-
-    const tablesWithInfo = rows.map((r) => ({
-      name: r.TABLE_NAME,
-      displayName: getTableDisplayName(r.TABLE_NAME),
-      description: getTableDescription(r.TABLE_NAME),
-      rowCount: r.TABLE_ROWS ?? 0,
-      primaryAttributes: ['TIMESTAMP', 'Location']
-    }));
-
+    
     connection.release();
     res.json({ database: databaseName, tables: tablesWithInfo });
   } catch (error) {
@@ -326,7 +334,7 @@ app.get('/api/databases/:database/tables/:table/attributes', async (req, res) =>
       default: col.COLUMN_DEFAULT,
       comment: col.COLUMN_COMMENT || '',
       category: getAttributeCategory(col.COLUMN_NAME),
-      isPrimary: ['timestamp', 'location'].includes(String(col.COLUMN_NAME).toLowerCase())
+      isPrimary: ['TIMESTAMP', 'Location'].includes(col.COLUMN_NAME)
     }));
     
     connection.release();
@@ -814,8 +822,10 @@ app.post('/api/bulk-download/request', async (req, res) => {
 function getDatabaseDescription(key) {
   const descriptions = {
     'raw_data': 'Original unprocessed environmental data from sensors',
-    'processed_initial': 'Initial cleaned data from CRRELS2S_VTClimateRepository_Processed',
-    'processed_final': 'Final processed and quality-assured dataset'
+    'cleaned_data': 'Quality-controlled seasonal environmental data',
+    'processed_data': 'Fully processed and analyzed environmental data',
+    'main_data': 'Core environmental monitoring dataset',
+    'processed_clean': 'Enhanced processed environmental measurements'
   };
   return descriptions[key] || 'Environmental monitoring database';
 }
