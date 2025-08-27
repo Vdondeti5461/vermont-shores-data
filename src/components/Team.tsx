@@ -9,29 +9,51 @@ const Team = () => {
       role: "Lead Researcher",
       affiliation: "UVM Civil & Environmental Engineering",
       expertise: "Snowpack Dynamics, Hydrologic Modeling",
-      image: "/lovable-uploads/250350aa-abaa-4e6e-b886-bae339af81b9.png"
+      image: "/lovable-uploads/250350aa-abaa-4e6e-b886-bae339af81b9.png",
+      email: "Anna.Grunes@uvm.edu",
+      linkedin: "https://www.linkedin.com/in/anna-grunes/"
+    },
+    {
+      name: "Vamsi Dondeti",
+      role: "Data Architect & Manager",
+      affiliation: "UVM Civil & Environmental Engineering",
+      expertise: "Data Management, System Architecture",
+      image: "/lovable-uploads/250350aa-abaa-4e6e-b886-bae339af81b9.png", // placeholder
+      email: "vdondeti@uvm.edu",
+      linkedin: "https://www.linkedin.com/in/vamsi-naidu-d/"
     },
     {
       name: "Dr. Arne Bomblies",
       role: "Principal Investigator", 
       affiliation: "UVM Civil & Environmental Engineering",
       expertise: "Computational Hydrology, Climate Modeling",
-      image: "/lovable-uploads/f0e8b972-8f4c-4294-98e6-d3ae431cbd24.png"
-    },
-    {
-      name: "Katherine Hale",
-      role: "Research Associate",
-      affiliation: "UVM Civil & Environmental Engineering", 
-      expertise: "Field Instrumentation, Data Analysis",
-      image: "/lovable-uploads/b5c6fd03-eb65-45ac-b61a-268cd0dd5602.png"
+      image: "/lovable-uploads/f0e8b972-8f4c-4294-98e6-d3ae431cbd24.png",
+      email: "abomblie@uvm.edu",
+      linkedin: "https://www.linkedin.com/in/arne-bomblies-phd-pe-73835a21/"
     },
     {
       name: "Dr. Beverley Wemple",
       role: "Co-Investigator",
       affiliation: "UVM Geography & Geosciences",
       expertise: "Geomorphology, Watershed Hydrology",
-      image: "/lovable-uploads/3953a891-e744-46ca-b6fa-0ebf0ce9835d.png"
+      image: "/lovable-uploads/3953a891-e744-46ca-b6fa-0ebf0ce9835d.png", // needs photo update
+      email: "bwemple@uvm.edu",
+      linkedin: "https://www.linkedin.com/in/beverley-wemple-94557721/"
+    },
+    {
+      name: "Jacob LaDue",
+      role: "Research Associate",
+      affiliation: "UVM Civil & Environmental Engineering",
+      expertise: "Field Research, Data Collection",
+      image: "/lovable-uploads/b5c6fd03-eb65-45ac-b61a-268cd0dd5602.png", // placeholder
+      email: "Jacob.Ladue@uvm.edu",
+      linkedin: "https://www.linkedin.com/in/jacob-ladue-8aa992232/"
     }
+  ];
+
+  const otherContributors = [
+    "Katherine Hale",
+    "Madison Torrey"
   ];
 
   return (
@@ -68,16 +90,42 @@ const Team = () => {
                 <p className="text-sm text-muted-foreground mb-2">{member.affiliation}</p>
                 <p className="text-xs text-muted-foreground mb-4">{member.expertise}</p>
                 <div className="flex justify-center space-x-2">
-                  <button className="p-2 hover:bg-primary/10 rounded-full transition-colors">
+                  <a 
+                    href={`mailto:${member.email}`}
+                    className="p-2 hover:bg-primary/10 rounded-full transition-colors"
+                    aria-label={`Email ${member.name}`}
+                  >
                     <Mail className="h-4 w-4 text-primary" />
-                  </button>
-                  <button className="p-2 hover:bg-primary/10 rounded-full transition-colors">
+                  </a>
+                  <a 
+                    href={member.linkedin}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2 hover:bg-primary/10 rounded-full transition-colors"
+                    aria-label={`${member.name}'s LinkedIn`}
+                  >
                     <Linkedin className="h-4 w-4 text-primary" />
-                  </button>
+                  </a>
                 </div>
               </CardContent>
             </Card>
           ))}
+        </div>
+
+        {/* Other Contributors Section */}
+        <div className="mt-12 text-center">
+          <Card className="data-card">
+            <CardContent className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Other Contributors</h3>
+              <div className="flex flex-wrap justify-center gap-3">
+                {otherContributors.map((contributor, index) => (
+                  <Badge key={index} variant="outline" className="text-sm">
+                    {contributor}
+                  </Badge>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="mt-12 text-center">
