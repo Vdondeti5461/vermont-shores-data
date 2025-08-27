@@ -270,42 +270,53 @@ app.get('/api/databases', async (req, res) => {
   }
 });
 
-// Get available tables for a database
+// Get available tables for a database (optimized and restricted to known tables)
 app.get('/api/databases/:database/tables', async (req, res) => {
   try {
     const { database } = req.params;
     const { connection, databaseName } = await getConnectionWithDB(database);
-    
-    const [tables] = await connection.execute('SHOW TABLES');
-    const tableNames = tables.map(table => Object.values(table)[0]);
-    
-    // Get table info with row counts and descriptions
-    const tablesWithInfo = await Promise.all(
-      tableNames.map(async (tableName) => {
-        try {
-          const [countResult] = await connection.execute(`SELECT COUNT(*) as count FROM \`${tableName}\``);
-          const rowCount = countResult[0].count;
-          
-          return {
-            name: tableName,
-            displayName: getTableDisplayName(tableName),
-            description: getTableDescription(tableName),
-            rowCount,
-            primaryAttributes: ['TIMESTAMP', 'Location'] // Always present
-          };
-        } catch (err) {
-          console.warn(`Error getting info for table ${tableName}:`, err.message);
-          return {
-            name: tableName,
-            displayName: getTableDisplayName(tableName),
-            description: 'Environmental data table',
-            rowCount: 0,
-            primaryAttributes: ['TIMESTAMP', 'Location']
-          };
-        }
-      })
+
+    // Only consider the four canonical tables (case-insensitive)
+    const allowedTables = ['table1', 'Table1', 'Wind', 'Precipitation', 'SnowPkTempProfile', 'SnowpkTempProfile'];
+
+    // Use INFORMATION_SCHEMA for faster approximate row counts and to filter by allowed tables
+    const placeholders = allowedTables.map(() => '?').join(',');
+    const [rows] = await connection.execute(
+      `SELECT TABLE_NAME, TABLE_ROWS
+       FROM INFORMATION_SCHEMA.TABLES
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME IN (${placeholders})`,
+      [databaseName, ...allowedTables]
     );
-    
+
+    // Normalize and map results
+    const tablesWithInfo = rows.map((r) => {
+      const tableName = r.TABLE_NAME; // Preserve actual case from DB
+      return {
+        name: tableName,
+        displayName: getTableDisplayName(tableName),
+        description: getTableDescription(tableName),
+        rowCount: r.TABLE_ROWS ?? 0,
+        primaryAttributes: ['TIMESTAMP', 'Location']
+      };
+    });
+
+    // If none found (e.g., permissions), fallback to SHOW TABLES but filter client-side
+    if (tablesWithInfo.length === 0) {
+      const [all] = await connection.execute('SHOW TABLES');
+      const names = all.map(t => Object.values(t)[0]).filter((t) =>
+        allowedTables.some(at => at.toLowerCase() === String(t).toLowerCase())
+      );
+      names.forEach((t) => {
+        tablesWithInfo.push({
+          name: t,
+          displayName: getTableDisplayName(t),
+          description: getTableDescription(t),
+          rowCount: 0,
+          primaryAttributes: ['TIMESTAMP', 'Location']
+        });
+      });
+    }
+
     connection.release();
     res.json({ database: databaseName, tables: tablesWithInfo });
   } catch (error) {
@@ -610,77 +621,83 @@ app.get('/api/databases/:database/download/:table', async (req, res) => {
     const { database, table } = req.params;
     const { location, start_date, end_date, attributes } = req.query;
     const { connection, databaseName } = await getConnectionWithDB(database);
-    
-    // Build column selection for download (only selected attributes)
-    let columns = '*';
+
+    // Discover actual column names (preserve case) and identify TIMESTAMP/Location columns
+    const [colRows] = await connection.query(`SHOW COLUMNS FROM \`${table}\``);
+    const allCols = colRows.map((c) => c.Field);
+    const colMap = new Map(allCols.map((c) => [c.toLowerCase(), c]));
+    const tsCol = colMap.get('timestamp') || 'TIMESTAMP';
+    const locCol = colMap.get('location') || 'Location';
+
+    // Determine selected columns
+    let selected;
     if (attributes) {
-      const selectedAttributes = attributes.split(',').map(attr => attr.trim());
-      // Always include primary attributes
-      const allAttributes = [...new Set(['TIMESTAMP', 'Location', ...selectedAttributes])];
-      columns = allAttributes.map(attr => `\`${attr}\``).join(', ');
+      const requested = String(attributes)
+        .split(',')
+        .map((a) => a.trim())
+        .filter(Boolean);
+      // Map requested to actual case from DB
+      const mapped = requested.map((a) => colMap.get(a.toLowerCase()) || a);
+      selected = Array.from(new Set([tsCol, locCol, ...mapped])).filter((c) => allCols.includes(c));
+    } else {
+      selected = allCols;
     }
-    
+
+    // Build SELECT list with SQL-side TIMESTAMP formatting
+    const selectList = selected
+      .map((c) => {
+        if (c.toLowerCase() === 'timestamp') {
+          return `DATE_FORMAT(\`${tsCol}\`, '%Y-%m-%d %H:%i:%s') AS \`TIMESTAMP\``;
+        }
+        return `\`${c}\``;
+      })
+      .join(', ');
+
     // Build query with filters
-    let query = `SELECT ${columns} FROM \`${table}\` WHERE 1=1`;
+    let query = `SELECT ${selectList} FROM \`${table}\` WHERE 1=1`;
     const params = [];
-    
+
     if (location) {
-      query += ' AND Location = ?';
+      query += ` AND \`${locCol}\` = ?`;
       params.push(location);
     }
-    
+
     if (start_date) {
-      query += ' AND TIMESTAMP >= ?';
+      query += ` AND \`${tsCol}\` >= ?`;
       params.push(start_date);
     }
-    
+
     if (end_date) {
-      query += ' AND TIMESTAMP <= ?';
+      query += ` AND \`${tsCol}\` <= ?`;
       params.push(end_date);
     }
-    
-    query += ' ORDER BY TIMESTAMP DESC';
-    
+
+    query += ` ORDER BY \`${tsCol}\` DESC`;
+
     const [rows] = await connection.execute(query, params);
-    
+
     // Set headers for CSV download
-    const timestamp = new Date().toISOString().split('T')[0];
-    const filename = `${database}_${table}_${timestamp}.csv`;
+    const stamp = new Date().toISOString().split('T')[0];
+    const filename = `${database}_${table}_${stamp}.csv`;
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    
-    // Convert to CSV with only selected attributes and proper timestamp format
+
+    // Stream CSV rows
     if (rows.length > 0) {
       const headers = Object.keys(rows[0]);
       res.write(headers.join(',') + '\n');
-      
-      rows.forEach(row => {
-        const values = headers.map(header => {
-          let value = row[header];
-          
-          // Format TIMESTAMP to match database format (2023-10-20 19:00:00)
-          if (header === 'TIMESTAMP' && value) {
-            if (value instanceof Date) {
-              value = value.toISOString().replace('T', ' ').split('.')[0];
-            } else if (typeof value === 'string') {
-              const date = new Date(value);
-              if (!isNaN(date.getTime())) {
-                value = date.toISOString().replace('T', ' ').split('.')[0];
-              }
-            }
-          }
-          
-          // Handle null values and escape commas
-          if (value === null || value === undefined) return '';
-          if (typeof value === 'string' && value.includes(',')) {
-            return `"${value}"`;
-          }
-          return value;
+
+      rows.forEach((row) => {
+        const values = headers.map((h) => {
+          let v = row[h];
+          if (v === null || v === undefined) return '';
+          const s = String(v);
+          return s.includes(',') ? `"${s}"` : s;
         });
         res.write(values.join(',') + '\n');
       });
     }
-    
+
     connection.release();
     res.end();
   } catch (error) {
