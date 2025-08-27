@@ -15,10 +15,8 @@ let pool;
 // Known database configurations
 const DATABASES = {
   'raw_data': 'CRRELS2S_VTClimateRepository',
-  'cleaned_data': 'CRRELS2S_cleaned_data_seasons', 
-  'processed_data': 'CRRELS2S_ProcessedData',
-  'main_data': 'CRRELS2S_MAIN',
-  'processed_clean': 'CRRELS2S_VTClimateRepository_Processed'
+  'processed_initial': 'CRRELS2S_VTClimateRepository_Processed',
+  'processed_final': 'CRRELS2S_ProcessedData'
 };
 
 // Location metadata with complete information
@@ -270,46 +268,35 @@ app.get('/api/databases', async (req, res) => {
   }
 });
 
-// Get available tables for a database (optimized, per selected DB)
+// Get available tables for a database (only canonical 4 tables per selected DB)
 app.get('/api/databases/:database/tables', async (req, res) => {
   try {
     const { database } = req.params;
     const { connection, databaseName } = await getConnectionWithDB(database);
 
-    // Use INFORMATION_SCHEMA to list all base tables for the selected database
+    const allowedLower = ['table1', 'wind', 'precipitation', 'snowpktempprofile'];
+    const placeholders = allowedLower.map(() => '?').join(',');
+
     const [rows] = await connection.execute(
-      `SELECT TABLE_NAME, TABLE_ROWS, TABLE_TYPE
+      `SELECT TABLE_NAME, TABLE_ROWS
        FROM INFORMATION_SCHEMA.TABLES
-       WHERE TABLE_SCHEMA = ? AND TABLE_TYPE = 'BASE TABLE'`
-      , [databaseName]
+       WHERE TABLE_SCHEMA = ? AND LOWER(TABLE_NAME) IN (${placeholders})
+       ORDER BY FIELD(LOWER(TABLE_NAME), ${placeholders})`,
+      [
+        databaseName,
+        ...allowedLower,
+        // for ORDER BY FIELD
+        ...allowedLower
+      ]
     );
 
-    // Map results to response shape
-    const tablesWithInfo = rows.map((r) => {
-      const tableName = r.TABLE_NAME;
-      return {
-        name: tableName,
-        displayName: getTableDisplayName(tableName),
-        description: getTableDescription(tableName),
-        rowCount: r.TABLE_ROWS ?? 0,
-        primaryAttributes: ['TIMESTAMP', 'Location']
-      };
-    });
-
-    // Fallback to SHOW TABLES if INFORMATION_SCHEMA returns nothing
-    if (tablesWithInfo.length === 0) {
-      const [all] = await connection.execute('SHOW TABLES');
-      all.forEach((t) => {
-        const name = Object.values(t)[0];
-        tablesWithInfo.push({
-          name,
-          displayName: getTableDisplayName(name),
-          description: getTableDescription(name),
-          rowCount: 0,
-          primaryAttributes: ['TIMESTAMP', 'Location']
-        });
-      });
-    }
+    const tablesWithInfo = rows.map((r) => ({
+      name: r.TABLE_NAME,
+      displayName: getTableDisplayName(r.TABLE_NAME),
+      description: getTableDescription(r.TABLE_NAME),
+      rowCount: r.TABLE_ROWS ?? 0,
+      primaryAttributes: ['TIMESTAMP', 'Location']
+    }));
 
     connection.release();
     res.json({ database: databaseName, tables: tablesWithInfo });
@@ -339,7 +326,7 @@ app.get('/api/databases/:database/tables/:table/attributes', async (req, res) =>
       default: col.COLUMN_DEFAULT,
       comment: col.COLUMN_COMMENT || '',
       category: getAttributeCategory(col.COLUMN_NAME),
-      isPrimary: ['TIMESTAMP', 'Location'].includes(col.COLUMN_NAME)
+      isPrimary: ['timestamp', 'location'].includes(String(col.COLUMN_NAME).toLowerCase())
     }));
     
     connection.release();
@@ -827,10 +814,8 @@ app.post('/api/bulk-download/request', async (req, res) => {
 function getDatabaseDescription(key) {
   const descriptions = {
     'raw_data': 'Original unprocessed environmental data from sensors',
-    'cleaned_data': 'Quality-controlled seasonal environmental data',
-    'processed_data': 'Fully processed and analyzed environmental data',
-    'main_data': 'Core environmental monitoring dataset',
-    'processed_clean': 'Enhanced processed environmental measurements'
+    'processed_initial': 'Initial cleaned data from CRRELS2S_VTClimateRepository_Processed',
+    'processed_final': 'Final processed and quality-assured dataset'
   };
   return descriptions[key] || 'Environmental monitoring database';
 }
