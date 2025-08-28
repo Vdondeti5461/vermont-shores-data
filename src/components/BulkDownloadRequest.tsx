@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Mail, User, Building, FileDown, AlertCircle, CheckCircle } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/apiConfig';
 
 const BulkDownloadRequest = () => {
   const { toast } = useToast();
@@ -75,7 +76,7 @@ const BulkDownloadRequest = () => {
     setIsSubmitting(true);
     
     try {
-      const response = await fetch('http://localhost:3001/api/bulk-download/request', {
+      const response = await fetch(`${API_BASE_URL}/api/bulk-download/request`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

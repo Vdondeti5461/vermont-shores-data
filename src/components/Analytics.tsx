@@ -23,6 +23,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLocalDatabaseOverview } from '@/hooks/useLocalDatabase';
 import { Skeleton } from '@/components/ui/skeleton';
+import { API_BASE_URL } from '@/lib/apiConfig';
 
 const Analytics = () => {
   const navigate = useNavigate();

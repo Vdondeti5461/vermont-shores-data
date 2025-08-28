@@ -12,6 +12,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import MetadataDisplay from './MetadataDisplay';
+import { API_BASE_URL } from '@/lib/apiConfig';
 
 interface DatabaseInfo {
   key: string;
@@ -108,7 +109,7 @@ const MultiDatabaseDownload = () => {
   const fetchTables = async (database: string) => {
     try {
       setIsLoadingTables(true);
-      const response = await fetch(`http://localhost:3001/api/databases/${database}/tables`);
+      const response = await fetch(`${API_BASE_URL}/api/databases/${database}/tables`);
       const data = await response.json();
       setTables(data.tables || []);
     } catch (error) {
@@ -125,7 +126,7 @@ const MultiDatabaseDownload = () => {
 
   const fetchAttributes = async (database: string, table: string) => {
     try {
-      const response = await fetch(`http://localhost:3001/api/databases/${database}/tables/${table}/attributes`);
+      const response = await fetch(`${API_BASE_URL}/api/databases/${database}/tables/${table}/attributes`);
       const data = await response.json();
       setAttributes(data.attributes);
       // Auto-select primary attributes
@@ -142,7 +143,7 @@ const MultiDatabaseDownload = () => {
 
   const fetchLocations = async (database: string) => {
     try {
-      const response = await fetch(`http://localhost:3001/api/databases/${database}/locations`);
+      const response = await fetch(`${API_BASE_URL}/api/databases/${database}/locations`);
       const data = await response.json();
       setLocations(data);
     } catch (error) {
@@ -185,7 +186,7 @@ const MultiDatabaseDownload = () => {
         params.append('attributes', selectedAttributes.join(','));
       }
 
-      const url = `http://localhost:3001/api/databases/${selectedDatabase}/download/${selectedTable}?${params}`;
+      const url = `${API_BASE_URL}/api/databases/${selectedDatabase}/download/${selectedTable}?${params}`;
       
       // Create a temporary link and trigger download
       const link = document.createElement('a');

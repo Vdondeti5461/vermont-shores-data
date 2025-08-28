@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useLocalDatabaseOverview, useLocalHealthCheck } from '@/hooks/useLocalDatabase';
 import { RefreshCw, Database, AlertCircle, CheckCircle } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/apiConfig';
 
 const DatabaseStatus = () => {
   const { data: isHealthy, isLoading, refetch } = useLocalHealthCheck();

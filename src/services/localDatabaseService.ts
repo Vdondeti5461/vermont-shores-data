@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '@/lib/apiConfig';
 // Local Database Service for MySQL Integration
 export interface LocationData {
   id: number;
@@ -80,9 +81,10 @@ export interface DatabasesResponse {
 }
 
 export class LocalDatabaseService {
-  private static baseUrl = import.meta.env.DEV 
-    ? 'http://localhost:3001' 
-    : (import.meta.env.VITE_API_URL || 'https://silk.uvm.edu/api'); // Production API URL
+  static get baseUrl() {
+    // Use centralized runtime config
+    return (await import('@/lib/apiConfig')).API_BASE_URL;
+  }
 
   // Available tables in the database
   static readonly TABLES = {
@@ -113,7 +115,7 @@ export class LocalDatabaseService {
 
   static async getLocations(database: string = 'raw_data'): Promise<LocationData[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/databases/${database}/locations`);
+      const response = await fetch(`${(await import('@/lib/apiConfig')).API_BASE_URL}/api/databases/${database}/locations`);
       if (!response.ok) throw new Error('Failed to fetch locations');
       const data = await response.json();
       return data;
@@ -125,7 +127,7 @@ export class LocalDatabaseService {
 
   static async getTables(database: string = 'raw_data'): Promise<any[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/databases/${database}/tables`);
+      const response = await fetch(`${(await import('@/lib/apiConfig')).API_BASE_URL}/api/databases/${database}/tables`);
       if (!response.ok) throw new Error('Failed to fetch tables');
       const data = await response.json();
       return data.tables || [];
@@ -152,7 +154,7 @@ export class LocalDatabaseService {
       if (season) params.append('season', season);
       params.append('limit', limit.toString());
 
-      const response = await fetch(`${this.baseUrl}/api/databases/${database}/data/${table}?${params}`);
+      const response = await fetch(`${(await import('@/lib/apiConfig')).API_BASE_URL}/api/databases/${database}/data/${table}?${params}`);
       if (!response.ok) throw new Error(`Failed to fetch ${table} data`);
       const data = await response.json();
       return data;
@@ -164,7 +166,7 @@ export class LocalDatabaseService {
 
   static async getTableMetadata(table: string, database: string = 'raw_data'): Promise<TableMetadata | null> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/databases/${database}/tables/${table}/attributes`);
+      const response = await fetch(`${(await import('@/lib/apiConfig')).API_BASE_URL}/api/databases/${database}/tables/${table}/attributes`);
       if (!response.ok) throw new Error(`Failed to fetch ${table} metadata`);
       const data = await response.json();
       const columns = (data.attributes || []).map((col: any) => ({
@@ -195,7 +197,7 @@ export class LocalDatabaseService {
       if (endDate) params.append('end_date', endDate);
       if (season) params.append('season', season);
 
-      const response = await fetch(`${this.baseUrl}/api/analytics?${params}`);
+      const response = await fetch(`${(await import('@/lib/apiConfig')).API_BASE_URL}/api/analytics?${params}`);
       if (!response.ok) throw new Error('Failed to fetch analytics');
       const data = await response.json();
       return data;
@@ -229,7 +231,7 @@ export class LocalDatabaseService {
       if (season) params.append('season', season);
       if (columns && columns.length > 0) params.append('attributes', columns.join(','));
 
-      const response = await fetch(`${this.baseUrl}/api/databases/${database}/download/${table}?${params}`);
+      const response = await fetch(`${(await import('@/lib/apiConfig')).API_BASE_URL}/api/databases/${database}/download/${table}?${params}`);
       if (!response.ok) throw new Error(`Failed to download ${table} data`);
       
       const blob = await response.blob();
@@ -250,7 +252,7 @@ export class LocalDatabaseService {
   // Health check to verify server connection
   static async healthCheck(): Promise<boolean> {
     try {
-      const response = await fetch(`${this.baseUrl}/health`);
+      const response = await fetch(`${(await import('@/lib/apiConfig')).API_BASE_URL}/health`);
       return response.ok;
     } catch (error) {
       console.error('Health check failed:', error);

@@ -4,9 +4,10 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Code, Database, FileText, Globe, Key } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/apiConfig';
 
-const APIDocumentation = () => {
-  const baseUrl = 'http://localhost:3001/api';
+  const { API_BASE_URL } = await import('@/lib/apiConfig');
+  const baseUrl = `${API_BASE_URL}/api`;
 
   const endpoints = [
     {
