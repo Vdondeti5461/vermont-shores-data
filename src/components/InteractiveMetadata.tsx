@@ -26,28 +26,28 @@ import {
 
 // Enhanced metadata with visual categorization
 const LOCATION_DATA = [
-  { code: 'RB01', name: 'Mansfield East Ranch Brook 1', lat: 44.2619, lng: -72.8081, elev: 1200, region: 'Mansfield East' },
-  { code: 'RB02', name: 'Mansfield East Ranch Brook 2', lat: 44.2625, lng: -72.8075, elev: 1180, region: 'Mansfield East' },
-  { code: 'RB03', name: 'Mansfield East Ranch Brook 3', lat: 44.2631, lng: -72.8069, elev: 1160, region: 'Mansfield East' },
-  { code: 'RB04', name: 'Mansfield East Ranch Brook 4', lat: 44.2637, lng: -72.8063, elev: 1140, region: 'Mansfield East' },
-  { code: 'RB05', name: 'Mansfield East Ranch Brook 5', lat: 44.2643, lng: -72.8057, elev: 1120, region: 'Mansfield East' },
-  { code: 'RB06', name: 'Mansfield East Ranch Brook 6', lat: 44.2649, lng: -72.8051, elev: 1100, region: 'Mansfield East' },
-  { code: 'RB07', name: 'Mansfield East Ranch Brook 7', lat: 44.2655, lng: -72.8045, elev: 1080, region: 'Mansfield East' },
-  { code: 'RB08', name: 'Mansfield East Ranch Brook 8', lat: 44.2661, lng: -72.8039, elev: 1060, region: 'Mansfield East' },
-  { code: 'RB09', name: 'Mansfield East Ranch Brook 9', lat: 44.2667, lng: -72.8033, elev: 1040, region: 'Mansfield East' },
-  { code: 'RB10', name: 'Mansfield East Ranch Brook 10', lat: 44.2673, lng: -72.8027, elev: 1020, region: 'Mansfield East' },
-  { code: 'RB11', name: 'Mansfield East Ranch Brook 11', lat: 44.2679, lng: -72.8021, elev: 1000, region: 'Mansfield East' },
-  { code: 'RB12', name: 'Mansfield East FEMC', lat: 44.2685, lng: -72.8015, elev: 980, region: 'Mansfield East' },
-  { code: 'SPER', name: 'Spear Street', lat: 44.4759, lng: -73.1959, elev: 120, region: 'Urban' },
-  { code: 'SR01', name: 'Sleepers R3/Main', lat: 44.2891, lng: -72.8211, elev: 900, region: 'Sleepers River' },
-  { code: 'SR11', name: 'Sleepers W1/R11', lat: 44.2885, lng: -72.8205, elev: 920, region: 'Sleepers River' },
-  { code: 'SR25', name: 'Sleepers R25', lat: 44.2879, lng: -72.8199, elev: 940, region: 'Sleepers River' },
-  { code: 'JRCL', name: 'Jericho clearing', lat: 44.4919, lng: -72.9659, elev: 300, region: 'Jericho' },
-  { code: 'JRFO', name: 'Jericho Forest', lat: 44.4925, lng: -72.9665, elev: 320, region: 'Jericho' },
-  { code: 'PROC', name: 'Mansfield West Proctor', lat: 44.2561, lng: -72.8141, elev: 1300, region: 'Mansfield West' },
-  { code: 'PTSH', name: 'Potash Brook', lat: 44.2567, lng: -72.8147, elev: 1280, region: 'Mansfield West' },
-  { code: 'SUMM', name: 'Mansfield SUMMIT', lat: 44.2573, lng: -72.8153, elev: 1339, region: 'Mansfield West' },
-  { code: 'UNDR', name: 'Mansfield West SCAN', lat: 44.2555, lng: -72.8135, elev: 1260, region: 'Mansfield West' }
+  { code: 'RB01', name: 'Mansfield East Ranch Brook 1', lat: 44.5232, lng: -72.8086, elev: 1075, region: 'Mansfield East' },
+  { code: 'RB02', name: 'Mansfield East Ranch Brook 2', lat: 44.5178, lng: -72.8104, elev: 910, region: 'Mansfield East' },
+  { code: 'RB03', name: 'Mansfield East Ranch Brook 3', lat: 44.5148, lng: -72.8091, elev: 795, region: 'Mansfield East' },
+  { code: 'RB04', name: 'Mansfield East Ranch Brook 4', lat: 44.5110, lng: -72.8028, elev: 640, region: 'Mansfield East' },
+  { code: 'RB05', name: 'Mansfield East Ranch Brook 5', lat: 44.5045, lng: -72.7995, elev: 505, region: 'Mansfield East' },
+  { code: 'RB06', name: 'Mansfield East Ranch Brook 6', lat: 44.5037, lng: -72.7835, elev: 414, region: 'Mansfield East' },
+  { code: 'RB07', name: 'Mansfield East Ranch Brook 7', lat: 44.5153, lng: -72.7851, elev: 613, region: 'Mansfield East' },
+  { code: 'RB08', name: 'Mansfield East Ranch Brook 8', lat: 44.5095, lng: -72.7021, elev: 472, region: 'Mansfield East' },
+  { code: 'RB09', name: 'Mansfield East Ranch Brook 9', lat: 44.4891, lng: -72.7929, elev: 847, region: 'Mansfield East' },
+  { code: 'RB10', name: 'Mansfield East Ranch Brook 10', lat: 44.4951, lng: -72.7864, elev: 624, region: 'Mansfield East' },
+  { code: 'RB11', name: 'Mansfield East Ranch Brook 11', lat: 44.5055, lng: -72.7714, elev: 388, region: 'Mansfield East' },
+  { code: 'RB12', name: 'Mansfield East FEMC', lat: 44.5188, lng: -72.7985, elev: 884, region: 'Mansfield East' },
+  { code: 'SPST', name: 'Spear Street', lat: 44.4526, lng: -73.1918, elev: 87, region: 'Urban' },
+  { code: 'SR01', name: 'Sleepers R3/Main', lat: 44.4830, lng: -72.1646, elev: 553, region: 'Sleepers River' },
+  { code: 'SR11', name: 'Sleepers W1/R11', lat: 44.4500, lng: -72.0671, elev: 225, region: 'Sleepers River' },
+  { code: 'SR25', name: 'Sleepers R25', lat: 44.4768, lng: -72.1258, elev: 357, region: 'Sleepers River' },
+  { code: 'JRCL', name: 'Jericho clearing', lat: 44.4479, lng: -73.0023, elev: 199, region: 'Jericho' },
+  { code: 'JRFO', name: 'Jericho Forest', lat: 44.4478, lng: -73.0027, elev: 196, region: 'Jericho' },
+  { code: 'PROC', name: 'Mansfield West Proctor', lat: 44.5286, lng: -72.8867, elev: 418, region: 'Mansfield West' },
+  { code: 'PTSH', name: 'Potash Brook', lat: 44.4449, lng: -73.2143, elev: 45, region: 'Urban' },
+  { code: 'SUMM', name: 'Mansfield SUMMIT', lat: 44.5280, lng: -72.8150, elev: 1169, region: 'Mansfield West' },
+  { code: 'UNDR', name: 'Mansfield West SCAN', lat: 44.5351, lng: -72.8346, elev: 698, region: 'Mansfield West' }
 ];
 
 const TABLE_DATA = {
@@ -293,14 +293,14 @@ const InteractiveMetadata = () => {
         <Card>
           <CardContent className="p-4 text-center">
             <MapPin className="w-8 h-8 mx-auto mb-2 text-green-600" />
-            <div className="text-2xl font-bold">22</div>
+            <div className="text-2xl font-bold">{LOCATION_DATA.length}</div>
             <div className="text-sm text-muted-foreground">Locations</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
             <Database className="w-8 h-8 mx-auto mb-2 text-blue-600" />
-            <div className="text-2xl font-bold">4</div>
+            <div className="text-2xl font-bold">{Object.keys(TABLE_DATA).length}</div>
             <div className="text-sm text-muted-foreground">Data Tables</div>
           </CardContent>
         </Card>
@@ -314,7 +314,7 @@ const InteractiveMetadata = () => {
         <Card>
           <CardContent className="p-4 text-center">
             <TreePine className="w-8 h-8 mx-auto mb-2 text-cyan-600" />
-            <div className="text-2xl font-bold">5</div>
+            <div className="text-2xl font-bold">{regions.length}</div>
             <div className="text-sm text-muted-foreground">Regions</div>
           </CardContent>
         </Card>
