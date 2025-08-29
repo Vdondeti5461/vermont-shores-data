@@ -208,6 +208,7 @@ export class LocalDatabaseService {
     limit: number = 1000
   ): Promise<EnvironmentalData[]> {
     try {
+      const originalKey = this.getOriginalDatabaseKey(database);
       const params = new URLSearchParams();
       if (location) params.append('location', location);
       if (startDate) params.append('start_date', startDate);
@@ -254,6 +255,7 @@ export class LocalDatabaseService {
     season?: string
   ): Promise<AnalyticsData> {
     try {
+      const originalKey = this.getOriginalDatabaseKey(database);
       const params = new URLSearchParams();
       if (location) params.append('location', location);
       if (startDate) params.append('start_date', startDate);
@@ -287,6 +289,7 @@ export class LocalDatabaseService {
     columns?: string[]
   ): Promise<void> {
     try {
+      const originalKey = this.getOriginalDatabaseKey(database);
       const params = new URLSearchParams();
       if (location) params.append('location', location);
       if (startDate) params.append('start_date', startDate);
