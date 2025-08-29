@@ -276,13 +276,14 @@ app.get('/api/databases/:database/locations', async (req, res) => {
       });
     }
 
-    // Normalize aliases to canonical codes and attach metadata
+    // Normalize aliases to canonical codes and attach metadata (restrict to the 22 canonical sites)
     const aliasMap = {
       'SLEEPERS_R25': 'SR25',
       'SLEEPERS_W1': 'SR11',
       'SLEEPERSMAIN_SR01': 'SR01',
       'SPST': 'SPER'
     };
+    const allowedSet = new Set(Object.keys(LOCATION_METADATA));
 
     const seen = new Set();
     const result = [];
@@ -290,6 +291,8 @@ app.get('/api/databases/:database/locations', async (req, res) => {
       let code = String(r.name || '').trim().toUpperCase();
       if (!code) return;
       code = aliasMap[code] || code;
+      // Only include known canonical site codes
+      if (!allowedSet.has(code)) return;
       if (seen.has(code)) return;
       seen.add(code);
       const meta = LOCATION_METADATA[code] || null;
@@ -347,6 +350,24 @@ app.get('/api/databases/:database/data/:table', async (req, res) => {
     const locCandidates = cols.filter((c) => isLocationCol(c.Field));
     const timeCandidates = cols.filter((c) => isTimeCol(c.Field, c.Type));
 
+    const scoreLoc = (name) => {
+      const n = String(name).toLowerCase();
+      if (n === 'location') return 100;
+      if (n.endsWith('location') || n.includes('location')) return 90;
+      if (n === 'site' || n === 'sitename' || n === 'site_code') return 80;
+      if (n === 'station' || n === 'stationname') return 70;
+      return 50;
+    };
+    const scoreTime = (name) => {
+      const n = String(name).toLowerCase();
+      if (n === 'timestamp' || n === 'time' || n === 'datetime') return 100;
+      if (n.includes('timestamp') || n.includes('datetime')) return 95;
+      if (n.includes('date')) return 80;
+      return 50;
+    };
+    locCandidates.sort((a, b) => scoreLoc(b.Field) - scoreLoc(a.Field));
+    timeCandidates.sort((a, b) => scoreTime(b.Field) - scoreTime(a.Field));
+
     const bestLoc = locCandidates[0]?.Field;
     const bestTs = timeCandidates[0]?.Field;
 
@@ -382,6 +403,7 @@ app.get('/api/databases/:database/data/:table', async (req, res) => {
 
     if (conditions.length > 0) query += ' WHERE ' + conditions.join(' AND ');
     const lim = Number(limit) || 1000;
+    if (bestTs) query += ` ORDER BY \`${bestTs}\` ASC`;
     query += ` LIMIT ${lim}`;
 
     const [rows] = await pool.execute(query, params);
@@ -427,6 +449,25 @@ app.get('/api/databases/:database/download/:table', async (req, res) => {
 
     const locCandidates = cols.filter((c) => isLocationCol(c.Field));
     const timeCandidates = cols.filter((c) => isTimeCol(c.Field, c.Type));
+
+    const scoreLoc = (name) => {
+      const n = String(name).toLowerCase();
+      if (n === 'location') return 100;
+      if (n.endsWith('location') || n.includes('location')) return 90;
+      if (n === 'site' || n === 'sitename' || n === 'site_code') return 80;
+      if (n === 'station' || n === 'stationname') return 70;
+      return 50;
+    };
+    const scoreTime = (name) => {
+      const n = String(name).toLowerCase();
+      if (n === 'timestamp' || n === 'time' || n === 'datetime') return 100;
+      if (n.includes('timestamp') || n.includes('datetime')) return 95;
+      if (n.includes('date')) return 80;
+      return 50;
+    };
+    locCandidates.sort((a, b) => scoreLoc(b.Field) - scoreLoc(a.Field));
+    timeCandidates.sort((a, b) => scoreTime(b.Field) - scoreTime(a.Field));
+
     const bestLoc = locCandidates[0]?.Field;
     const bestTs = timeCandidates[0]?.Field;
 
@@ -469,6 +510,7 @@ app.get('/api/databases/:database/download/:table', async (req, res) => {
     
     if (conditions.length > 0) query += ' WHERE ' + conditions.join(' AND ');
     const lim = Number(limit) || 1000;
+    if (bestTs) query += ` ORDER BY \`${bestTs}\` ASC`;
     query += ` LIMIT ${lim}`;
     
     const [rows] = await pool.execute(query, params);
