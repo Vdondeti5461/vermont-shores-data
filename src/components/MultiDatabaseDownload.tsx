@@ -4,14 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { CalendarIcon, Download, Database, Table, FileText, MapPin, Clock, Info } from 'lucide-react';
+import { CalendarIcon, Download, Database, Table, FileText, MapPin, Clock, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
-import MetadataDisplay from './MetadataDisplay';
 import { API_BASE_URL } from '@/lib/apiConfig';
 
 interface DatabaseInfo {
@@ -26,7 +24,6 @@ interface TableInfo {
   displayName: string;
   description: string;
   rowCount: number;
-  primaryAttributes: string[];
 }
 
 interface AttributeInfo {
@@ -38,95 +35,91 @@ interface AttributeInfo {
   comment: string;
 }
 
-interface LocationInfo {
-  id: number;
-  name: string;
-  displayName: string;
-  latitude: number;
-  longitude: number;
-  elevation: number;
-}
-
 const MultiDatabaseDownload = () => {
   const { toast } = useToast();
   
-  // State management
+  // Core state
   const [databases, setDatabases] = useState<DatabaseInfo[]>([]);
-  const [selectedDatabase, setSelectedDatabase] = useState<string>('');
   const [tables, setTables] = useState<TableInfo[]>([]);
-  const [selectedTable, setSelectedTable] = useState<string>('');
   const [attributes, setAttributes] = useState<AttributeInfo[]>([]);
+  const [locationValues, setLocationValues] = useState<string[]>([]);
+  
+  // Selections
+  const [selectedDatabase, setSelectedDatabase] = useState<string>('');
+  const [selectedTable, setSelectedTable] = useState<string>('');
   const [selectedAttributes, setSelectedAttributes] = useState<string[]>([]);
-  const [locations, setLocations] = useState<LocationInfo[]>([]);
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
-  const [isLoading, setIsLoading] = useState(false);
+  
+  // Loading states
+  const [isLoadingDatabases, setIsLoadingDatabases] = useState(false);
   const [isLoadingTables, setIsLoadingTables] = useState(false);
+  const [isLoadingAttributes, setIsLoadingAttributes] = useState(false);
+  const [isLoadingLocations, setIsLoadingLocations] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
-  // Fetch available databases
+  // Step 1: Fetch databases on component mount
   useEffect(() => {
     fetchDatabases();
   }, []);
 
-  // Fetch tables when database changes
+  // Step 2: Fetch tables when database changes
   useEffect(() => {
     if (selectedDatabase) {
       fetchTables(selectedDatabase);
-    } else {
-      setTables([]);
-      setLocations([]);
+      resetTableSelection();
     }
-    setSelectedTable('');
-    setSelectedLocations([]);
   }, [selectedDatabase]);
 
-  // Fetch locations after attributes are loaded (need Location attribute info)
-  useEffect(() => {
-    if (selectedDatabase && selectedTable && attributes.length > 0) {
-      fetchLocations(selectedDatabase, selectedTable);
-    } else {
-      setLocations([]);
-      setSelectedLocations([]);
-    }
-  }, [selectedDatabase, selectedTable, attributes]);
-
-  // Fetch attributes when table changes
+  // Step 3: Fetch attributes when table changes
   useEffect(() => {
     if (selectedDatabase && selectedTable) {
       fetchAttributes(selectedDatabase, selectedTable);
-    } else {
-      setAttributes([]);
-      setSelectedAttributes([]);
+      resetAttributeSelection();
     }
   }, [selectedDatabase, selectedTable]);
 
+  // Step 4: Fetch location values when attributes are loaded
+  useEffect(() => {
+    if (selectedDatabase && selectedTable && attributes.length > 0) {
+      fetchLocationValues(selectedDatabase, selectedTable);
+    }
+  }, [selectedDatabase, selectedTable, attributes]);
+
   const fetchDatabases = async () => {
+    setIsLoadingDatabases(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/databases`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      
       const data = await response.json();
-      setDatabases(data.databases);
+      setDatabases(data.databases || []);
     } catch (error) {
       console.error('Error fetching databases:', error);
       toast({
         title: "Connection Error",
-        description: "Failed to fetch available databases",
+        description: "Failed to fetch available databases. Please check your connection.",
         variant: "destructive"
       });
+    } finally {
+      setIsLoadingDatabases(false);
     }
   };
 
   const fetchTables = async (database: string) => {
+    setIsLoadingTables(true);
     try {
-      setIsLoadingTables(true);
       const response = await fetch(`${API_BASE_URL}/api/databases/${database}/tables`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      
       const data = await response.json();
       setTables(data.tables || []);
     } catch (error) {
       console.error('Error fetching tables:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch tables",
+        description: "Failed to fetch tables for selected database.",
         variant: "destructive"
       });
     } finally {
@@ -135,133 +128,82 @@ const MultiDatabaseDownload = () => {
   };
 
   const fetchAttributes = async (database: string, table: string) => {
+    setIsLoadingAttributes(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/databases/${database}/tables/${table}/attributes`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      
       const data = await response.json();
       setAttributes(data.attributes || []);
-      // Let the user pick after time & location selection
-      setSelectedAttributes([]);
     } catch (error) {
       console.error('Error fetching attributes:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch table attributes",
+        description: "Failed to fetch table attributes.",
         variant: "destructive"
       });
+    } finally {
+      setIsLoadingAttributes(false);
     }
   };
 
-  const fetchLocations = async (database: string, table?: string) => {
+  const fetchLocationValues = async (database: string, table: string) => {
+    setIsLoadingLocations(true);
     try {
-      if (table) {
-        // First, check if Location attribute exists in the fetched attributes
-        const locationAttribute = attributes.find(attr => 
-          attr.name.toLowerCase() === 'location'
-        );
-        
-        if (!locationAttribute) {
-          console.warn('No Location attribute found in table attributes');
-          setLocations([]);
-          return;
-        }
-
-        // Fetch distinct values for the Location attribute
-        const url = `${API_BASE_URL}/api/databases/${database}/tables/${table}/attributes/${locationAttribute.name}/distinct`;
-        const response = await fetch(url);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        // Convert distinct values to location objects with consistent interface
-        const distinctValues = data.values || data.distinct || data || [];
-        const locationObjects = distinctValues.map((value: string) => ({
-          id: value,
-          name: value,
-          displayName: value,
-          latitude: 0,
-          longitude: 0,
-          elevation: 0
-        }));
-        setLocations(locationObjects);
-      } else {
-        // For database-wide locations, we'd need to aggregate across all tables
-        // For now, just clear locations when no table is selected
-        setLocations([]);
+      // Find the Location attribute
+      const locationAttribute = attributes.find(attr => 
+        attr.name.toLowerCase() === 'location'
+      );
+      
+      if (!locationAttribute) {
+        console.warn('No Location attribute found');
+        setLocationValues([]);
+        return;
       }
-    } catch (error: any) {
-      console.error('Error fetching locations:', error);
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/databases/${database}/tables/${table}/attributes/${locationAttribute.name}/distinct`
+      );
+      
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      
+      const data = await response.json();
+      const values = data.values || data.distinct || data || [];
+      setLocationValues(Array.isArray(values) ? values : []);
+    } catch (error) {
+      console.error('Error fetching location values:', error);
       toast({
         title: "Error",
-        description: `Failed to fetch location values: ${error.message}`,
+        description: "Failed to fetch location values.",
         variant: "destructive"
       });
+      setLocationValues([]);
+    } finally {
+      setIsLoadingLocations(false);
     }
   };
-  const handleDownload = async () => {
-    if (!selectedDatabase || !selectedTable) {
-      toast({
-        title: "Selection Required",
-        description: "Please select a database and table",
-        variant: "destructive"
-      });
-      return;
-    }
 
-    // Require timestamp and location selection
-    if (!startDate && !endDate) {
-      toast({
-        title: "Time Range Required",
-        description: "Please select a start and/or end date",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    if (selectedLocations.length === 0) {
-      toast({
-        title: "Location Required",
-        description: "Please select at least one location",
-        variant: "destructive"
-      });
-      return;
-    }
+  const resetTableSelection = () => {
+    setSelectedTable('');
+    setTables([]);
+    resetAttributeSelection();
+  };
 
-    setIsLoading(true);
-    try {
-      const params = new URLSearchParams();
+  const resetAttributeSelection = () => {
+    setAttributes([]);
+    setSelectedAttributes([]);
+    setLocationValues([]);
+    setSelectedLocations([]);
+    setStartDate(undefined);
+    setEndDate(undefined);
+  };
 
-      // Handle multiple locations (join with comma for new API)
-      if (selectedLocations.length > 0) {
-        params.append('location', selectedLocations.join(','));
-      }
+  const handleDatabaseChange = (value: string) => {
+    setSelectedDatabase(value);
+  };
 
-      if (startDate) params.append('start_date', startDate.toISOString().split('T')[0]);
-      if (endDate) params.append('end_date', endDate.toISOString().split('T')[0]);
-      if (selectedAttributes.length > 0) params.append('attributes', selectedAttributes.join(','));
-
-      const url = `${API_BASE_URL}/api/databases/${selectedDatabase}/download/${selectedTable}?${params}`;
-
-      // Build filename: database_table_YYYY-MM-DD.csv
-      const todayStamp = new Date().toISOString().split('T')[0];
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${selectedDatabase}_${selectedTable}_${todayStamp}.csv`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      toast({ 
-        title: "Download Started", 
-        description: `Downloading data for ${selectedLocations.length} location(s)` 
-      });
-    } catch (error) {
-      console.error('Error downloading data:', error);
-      toast({ title: "Download Failed", description: "Failed to download data", variant: "destructive" });
-    } finally {
-      setIsLoading(false);
-    }
+  const handleTableChange = (value: string) => {
+    setSelectedTable(value);
   };
 
   const toggleAttribute = (attributeName: string) => {
@@ -272,15 +214,90 @@ const MultiDatabaseDownload = () => {
     );
   };
 
-  const toggleLocation = (locationName: string) => {
+  const toggleLocation = (location: string) => {
     setSelectedLocations(prev => 
-      prev.includes(locationName)
-        ? prev.filter(loc => loc !== locationName)
-        : [...prev, locationName]
+      prev.includes(location)
+        ? prev.filter(loc => loc !== location)
+        : [...prev, location]
     );
   };
 
-  // Group attributes by category
+  const handleDownload = async () => {
+    // Validation
+    if (!selectedDatabase || !selectedTable) {
+      toast({
+        title: "Selection Required",
+        description: "Please select both database and table.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!startDate && !endDate) {
+      toast({
+        title: "Date Range Required",
+        description: "Please select at least a start or end date.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (selectedLocations.length === 0) {
+      toast({
+        title: "Location Required",
+        description: "Please select at least one location.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsDownloading(true);
+    try {
+      const params = new URLSearchParams();
+      
+      if (selectedLocations.length > 0) {
+        params.append('location', selectedLocations.join(','));
+      }
+      if (startDate) {
+        params.append('start_date', startDate.toISOString().split('T')[0]);
+      }
+      if (endDate) {
+        params.append('end_date', endDate.toISOString().split('T')[0]);
+      }
+      if (selectedAttributes.length > 0) {
+        params.append('attributes', selectedAttributes.join(','));
+      }
+
+      const url = `${API_BASE_URL}/api/databases/${selectedDatabase}/download/${selectedTable}?${params}`;
+      
+      // Create download link
+      const todayStamp = new Date().toISOString().split('T')[0];
+      const filename = `${selectedDatabase}_${selectedTable}_${todayStamp}.csv`;
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast({
+        title: "Download Started",
+        description: `Downloading ${filename}`,
+      });
+    } catch (error) {
+      console.error('Download error:', error);
+      toast({
+        title: "Download Failed",
+        description: "Failed to start download. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  // Group attributes by category for better organization
   const groupedAttributes = attributes.reduce((groups, attr) => {
     const category = attr.category || 'Other';
     if (!groups[category]) groups[category] = [];
@@ -292,40 +309,47 @@ const MultiDatabaseDownload = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center">
-        <h2 className="text-2xl font-bold mb-2">Multi-Database Data Export</h2>
+        <h2 className="text-3xl font-bold mb-2">Environmental Data Export</h2>
         <p className="text-muted-foreground">
-          Select database, tables, and filters to download environmental data
+          Select database, table, and filters to download environmental monitoring data
         </p>
       </div>
 
-      {/* Step 1: Database & Table Selection */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Database className="h-5 w-5" />
-              Step 1: Select Database
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Select value={selectedDatabase} onValueChange={setSelectedDatabase}>
-              <SelectTrigger>
-                <SelectValue placeholder="Choose a database" />
-              </SelectTrigger>
-              <SelectContent>
-                {databases.map((db) => (
-                  <SelectItem key={db.key} value={db.key}>
-                    <div>
-                      <div className="font-medium">{db.displayName}</div>
-                      <div className="text-sm text-muted-foreground">{db.description}</div>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </CardContent>
-        </Card>
+      {/* Step 1: Database Selection */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Database className="h-5 w-5" />
+            Step 1: Select Database
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Select value={selectedDatabase} onValueChange={handleDatabaseChange} disabled={isLoadingDatabases}>
+            <SelectTrigger>
+              <SelectValue placeholder={isLoadingDatabases ? "Loading databases..." : "Choose a database"} />
+            </SelectTrigger>
+            <SelectContent>
+              {databases.map((db) => (
+                <SelectItem key={db.key} value={db.key}>
+                  <div>
+                    <div className="font-medium">{db.displayName}</div>
+                    <div className="text-sm text-muted-foreground">{db.description}</div>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {isLoadingDatabases && (
+            <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading databases...
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
+      {/* Step 2: Table Selection */}
+      {selectedDatabase && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -334,9 +358,9 @@ const MultiDatabaseDownload = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <Select value={selectedTable} onValueChange={setSelectedTable} disabled={!selectedDatabase || isLoadingTables}>
+            <Select value={selectedTable} onValueChange={handleTableChange} disabled={isLoadingTables}>
               <SelectTrigger>
-                <SelectValue placeholder={isLoadingTables ? "Loading tables..." : selectedDatabase ? "Choose a table" : "Select database first"} />
+                <SelectValue placeholder={isLoadingTables ? "Loading tables..." : "Choose a table"} />
               </SelectTrigger>
               <SelectContent>
                 {tables.map((table) => (
@@ -351,201 +375,210 @@ const MultiDatabaseDownload = () => {
                 ))}
               </SelectContent>
             </Select>
+            {isLoadingTables && (
+              <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading tables...
+              </div>
+            )}
           </CardContent>
         </Card>
-      </div>
-
-      {/* Step 2: Primary Filters - TIMESTAMP and Location */}
-      {selectedDatabase && selectedTable && (
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
-            <Badge variant="secondary">Step 3</Badge>
-            Primary Filters: Time & Location
-          </h3>
-          <div className="grid gap-6 lg:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5" />
-                  TIMESTAMP Filter
-                  <Badge variant="outline" className="text-xs">Required</Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <Label>Start Date</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full justify-start text-left font-normal">
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {startDate ? format(startDate, "PPP") : "Select start date"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={startDate}
-                          onSelect={setStartDate}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  <div>
-                    <Label>End Date</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full justify-start text-left font-normal">
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {endDate ? format(endDate, "PPP") : "Select end date"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={endDate}
-                          onSelect={setEndDate}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5" />
-                  Location Filter
-                  <Badge variant="outline" className="text-xs">Required</Badge>
-                </CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  All {locations.length} Vermont monitoring locations available
-                </p>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {locations.length > 0 ? (
-                    locations.map((location) => (
-                      <div key={location.name} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={location.name}
-                          checked={selectedLocations.includes(location.name)}
-                          onCheckedChange={() => toggleLocation(location.name)}
-                        />
-                        <Label htmlFor={location.name} className="text-sm">
-                          <span className="font-medium">{location.name}</span>
-                          {location.displayName && location.displayName !== location.name && (
-                            <span className="text-muted-foreground ml-1">
-                              - {location.displayName}
-                            </span>
-                          )}
-                        </Label>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      Loading locations for selected table...
-                    </p>
-                  )}
-                </div>
-                {selectedLocations.length > 0 && (
-                  <div className="mt-2 pt-2 border-t">
-                    <p className="text-sm text-primary">
-                      {selectedLocations.length} location{selectedLocations.length > 1 ? 's' : ''} selected
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </div>
       )}
 
-      {/* Step 4: Attributes Selection - Only show after TIMESTAMP and Location are selected */}
-      {selectedDatabase && selectedTable && (startDate || endDate) && selectedLocations.length > 0 && attributes.length > 0 && (
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
-            <Badge variant="secondary">Step 4</Badge>
-            Optional: Select Specific Attributes
-          </h3>
+      {/* Step 3: Time & Location Filters */}
+      {selectedDatabase && selectedTable && attributes.length > 0 && (
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Date Range Filter */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Choose Data Attributes to Export
+                <Clock className="h-5 w-5" />
+                Step 3a: Time Filter
+                <Badge variant="outline" className="text-xs">Required</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label>Start Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full justify-start text-left font-normal">
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {startDate ? format(startDate, "PPP") : "Select start date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={startDate}
+                        onSelect={setStartDate}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div>
+                  <Label>End Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full justify-start text-left font-normal">
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {endDate ? format(endDate, "PPP") : "Select end date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={endDate}
+                        onSelect={setEndDate}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Location Filter */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="h-5 w-5" />
+                Step 3b: Location Filter
+                <Badge variant="outline" className="text-xs">Required</Badge>
               </CardTitle>
               <p className="text-sm text-muted-foreground">
-                Leave unselected to download all available attributes
+                {locationValues.length} monitoring locations available
               </p>
             </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {Object.entries(groupedAttributes).map(([category, attrs]) => (
-                <div key={category} className="space-y-2">
-                  <h4 className="font-medium text-sm text-primary">{category}</h4>
-                  {attrs.map((attr) => (
-                    <div key={attr.name} className="flex items-center space-x-2">
+            <CardContent>
+              {isLoadingLocations ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading location values...
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {locationValues.map((location) => (
+                    <div key={location} className="flex items-center space-x-2">
                       <Checkbox
-                        id={attr.name}
-                        checked={selectedAttributes.includes(attr.name)}
-                        onCheckedChange={() => toggleAttribute(attr.name)}
+                        id={location}
+                        checked={selectedLocations.includes(location)}
+                        onCheckedChange={() => toggleLocation(location)}
                       />
-                      <Label htmlFor={attr.name} className="text-sm">
-                        {attr.name}
-                        {attr.isPrimary && <Badge variant="secondary" className="ml-1 text-xs">Primary</Badge>}
+                      <Label htmlFor={location} className="text-sm font-medium">
+                        {location}
                       </Label>
                     </div>
                   ))}
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+              )}
+              {selectedLocations.length > 0 && (
+                <div className="mt-3 pt-3 border-t">
+                  <p className="text-sm text-primary font-medium">
+                    {selectedLocations.length} location{selectedLocations.length > 1 ? 's' : ''} selected
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       )}
 
-      {/* Download Summary and Action */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium">Download Summary</h3>
-              <div className="text-sm text-muted-foreground space-y-1">
-                <p>Database: {selectedDatabase ? databases.find(db => db.key === selectedDatabase)?.displayName : 'None selected'}</p>
-                <p>Table: {selectedTable ? tables.find(t => t.name === selectedTable)?.displayName : 'None selected'}</p>
-                <p>Attributes: {selectedAttributes.length} selected</p>
-                <p>Locations: {selectedLocations.length > 0 ? `${selectedLocations.join(', ')} (${selectedLocations.length} selected)` : 'None selected'}</p>
-                <p>Date Range: {startDate && endDate ? `${format(startDate, 'PP')} - ${format(endDate, 'PP')}` : 'All dates'}</p>
+      {/* Step 4: Optional Attribute Selection */}
+      {selectedDatabase && selectedTable && attributes.length > 0 && (startDate || endDate) && selectedLocations.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Step 4: Select Attributes (Optional)
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Leave unselected to download all available attributes
+            </p>
+          </CardHeader>
+          <CardContent>
+            {isLoadingAttributes ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading attributes...
               </div>
-            </div>
-            <Button 
-              onClick={handleDownload} 
-              disabled={!selectedDatabase || !selectedTable || isLoading}
-              className="min-w-[120px]"
-            >
-              <Download className="h-4 w-4 mr-2" />
-              {isLoading ? 'Preparing...' : 'Download CSV'}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {Object.entries(groupedAttributes).map(([category, attrs]) => (
+                  <div key={category} className="space-y-3">
+                    <h4 className="font-semibold text-primary">{category}</h4>
+                    <div className="space-y-2">
+                      {attrs.map((attr) => (
+                        <div key={attr.name} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={attr.name}
+                            checked={selectedAttributes.includes(attr.name)}
+                            onCheckedChange={() => toggleAttribute(attr.name)}
+                          />
+                          <Label htmlFor={attr.name} className="text-sm">
+                            {attr.name}
+                            {attr.isPrimary && (
+                              <Badge variant="secondary" className="ml-2 text-xs">Primary</Badge>
+                            )}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Metadata Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Info className="h-5 w-5" />
-            Project Metadata & Documentation
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <MetadataDisplay />
-        </CardContent>
-      </Card>
+      {/* Download Summary & Action */}
+      {selectedDatabase && selectedTable && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <h3 className="font-semibold">Download Summary</h3>
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <p><strong>Database:</strong> {databases.find(db => db.key === selectedDatabase)?.displayName || 'None'}</p>
+                  <p><strong>Table:</strong> {tables.find(t => t.name === selectedTable)?.displayName || 'None'}</p>
+                  <p><strong>Attributes:</strong> {selectedAttributes.length > 0 ? `${selectedAttributes.length} selected` : 'All attributes'}</p>
+                  <p><strong>Locations:</strong> {selectedLocations.length > 0 ? `${selectedLocations.length} selected` : 'None selected'}</p>
+                  <p><strong>Date Range:</strong> {
+                    startDate && endDate 
+                      ? `${format(startDate, 'PP')} - ${format(endDate, 'PP')}` 
+                      : startDate 
+                        ? `From ${format(startDate, 'PP')}` 
+                        : endDate 
+                          ? `Until ${format(endDate, 'PP')}` 
+                          : 'No date filter'
+                  }</p>
+                </div>
+              </div>
+              <Button 
+                onClick={handleDownload} 
+                disabled={!selectedDatabase || !selectedTable || (!startDate && !endDate) || selectedLocations.length === 0 || isDownloading}
+                className="min-w-[140px]"
+              >
+                {isDownloading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Preparing...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4 mr-2" />
+                    Download CSV
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
