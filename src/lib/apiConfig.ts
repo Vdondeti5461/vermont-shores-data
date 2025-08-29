@@ -8,19 +8,29 @@ export const getApiBaseUrl = (): string => {
   const cfg = w?.__APP_CONFIG__?.API_BASE_URL as string | undefined;
   if (cfg) return cfg.replace(/\/$/, '');
 
-  // 2) Optional Vite env for local builds only
+  // 2) Production server for UVM deployment
+  if (w && w.location.hostname.includes('uvm.edu')) {
+    return 'https://vdondeti.w3.uvm.edu';
+  }
+
+  // 3) Production server for any non-localhost deployment
+  if (w && w.location.hostname !== 'localhost' && w.location.hostname !== '127.0.0.1') {
+    return 'https://vdondeti.w3.uvm.edu';
+  }
+
+  // 4) Optional Vite env for local builds only
   const envUrl = (import.meta as any)?.env?.VITE_API_URL as string | undefined;
   if (envUrl && w && (w.location.hostname === 'localhost' || w.location.hostname === '127.0.0.1')) {
     return envUrl.replace(/\/$/, '');
   }
 
-  // 3) Local dev fallback
+  // 5) Local dev fallback
   if (w && (w.location.hostname === 'localhost' || w.location.hostname === '127.0.0.1')) {
     return 'http://localhost:3001';
   }
 
-  // 4) Production default: same-origin (expects web server to reverse-proxy /api to backend)
-  return w ? w.location.origin : '';
+  // 6) Ultimate fallback to production server
+  return 'https://vdondeti.w3.uvm.edu';
 };
 
 export const API_BASE_URL = getApiBaseUrl();
