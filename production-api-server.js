@@ -168,138 +168,138 @@ app.get('/api/databases/:database/tables/:table/attributes', async (req, res) =>
 app.get('/api/databases/:database/locations', async (req, res) => {
   try {
     const { database } = req.params;
-    const { tables } = req.query; // comma-separated table names
     const dbName = getDatabaseName(database);
 
-    let tableList = [];
-    if (tables) {
-      tableList = tables.split(',');
-    } else {
-      // Get all tables if none specified
-      const [allTables] = await pool.execute(`SHOW TABLES FROM \`${dbName}\``);
-      tableList = allTables.map(table => Object.values(table)[0]);
-    }
+    const tablesParam = String(req.query.tables || '').trim();
+    const requestedTables = tablesParam ? new Set(tablesParam.split(',').map((t) => t.trim())) : null;
+    const debugMode = String(req.query.debug || '').toLowerCase() === '1' || String(req.query.debug || '').toLowerCase() === 'true';
 
-    // Use information_schema to find tables that contain a Location column (case-insensitive)
-    const [locCols] = await pool.execute(
-      `SELECT TABLE_NAME, COLUMN_NAME 
-       FROM INFORMATION_SCHEMA.COLUMNS 
-       WHERE TABLE_SCHEMA = ? AND (
-         LOWER(COLUMN_NAME) = 'location' OR
-         LOWER(COLUMN_NAME) LIKE 'location_%' OR
-         LOWER(COLUMN_NAME) LIKE '%_location' OR
-         LOWER(COLUMN_NAME) LIKE '%location%' OR
-         LOWER(COLUMN_NAME) IN (
-           'locationid','location_id','locationcode','location_code','locationname','location_name',
-           'site','sitename','site_id','siteid','sitecode','site_code',
-           'station','stationname','station_id','stationid','stationcode','station_code',
-           'loc','loc_id','locid'
-         ) OR
-         LOWER(COLUMN_NAME) LIKE 'site_%' OR LOWER(COLUMN_NAME) LIKE '%_site' OR
-         LOWER(COLUMN_NAME) LIKE 'station_%' OR LOWER(COLUMN_NAME) LIKE '%_station' OR
-         LOWER(COLUMN_NAME) LIKE 'loc_%' OR LOWER(COLUMN_NAME) LIKE '%_loc'
-       )`,
+    // Discover ALL columns up-front so we can select tables that have BOTH a location-like and a timestamp-like column
+    const [colRows] = await pool.execute(
+      `SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE
+       FROM INFORMATION_SCHEMA.COLUMNS
+       WHERE TABLE_SCHEMA = ?`,
       [dbName]
     );
-    // Build best location column per table using a heuristic
-    const candidates = new Map();
-    for (const r of locCols) {
-      const arr = candidates.get(r.TABLE_NAME) || [];
-      arr.push(r.COLUMN_NAME);
-      candidates.set(r.TABLE_NAME, arr);
+
+    // Group columns by table
+    const byTable = new Map();
+    for (const r of colRows) {
+      if (requestedTables && !requestedTables.has(r.TABLE_NAME)) continue;
+      const arr = byTable.get(r.TABLE_NAME) || [];
+      arr.push(r);
+      byTable.set(r.TABLE_NAME, arr);
     }
-    function scoreCol(name) {
+
+    function isLocationCol(name) {
+      const n = String(name).toLowerCase();
+      return (
+        n === 'location' ||
+        n.endsWith('location') || n.includes('location') ||
+        n === 'site' || n === 'sitename' || n.includes('site_') || n.endsWith('_site') ||
+        n === 'station' || n === 'stationname' || n.includes('station_') || n.endsWith('_station') ||
+        [
+          'locationid','location_id','locationcode','location_code','locationname','location_name',
+          'site_id','siteid','sitecode','site_code',
+          'station_id','stationid','stationcode','station_code',
+          'loc','loc_id','locid'
+        ].includes(n)
+      );
+    }
+
+    function isTimeCol(name, dataType) {
+      const n = String(name).toLowerCase();
+      const t = String(dataType || '').toLowerCase();
+      return (
+        n === 'timestamp' || n === 'datetime' || n === 'time' ||
+        n.includes('timestamp') || n.includes('datetime') || n.includes('date') || n.endsWith('time') ||
+        t.includes('timestamp') || t.includes('datetime') || t.includes('date') || t.includes('time')
+      );
+    }
+
+    function scoreLoc(name) {
       const n = String(name).toLowerCase();
       if (n === 'location') return 100;
       if (n.endsWith('location') || n.includes('location')) return 90;
       if (n === 'site' || n === 'sitename' || n === 'site_code') return 80;
       if (n === 'station' || n === 'stationname') return 70;
-      return 0;
-    }
-    const tableLocMap = {};
-    for (const [table, cols] of candidates.entries()) {
-      cols.sort((a, b) => scoreCol(b) - scoreCol(a));
-      tableLocMap[table] = cols[0];
-    }
-    let validTables = Object.keys(tableLocMap);
-
-    // If specific tables were requested, intersect with valid tables
-    if (tables) {
-      const requested = new Set(tableList);
-      validTables = validTables.filter((t) => requested.has(t));
+      return 50;
     }
 
-    // Additional filtering for season-based databases
-    if (database === 'seasonal_clean_data') {
-      validTables = validTables.filter((t) => t.startsWith('cleaned_data_season_'));
+    function scoreTime(name) {
+      const n = String(name).toLowerCase();
+      if (n === 'timestamp' || n === 'time' || n === 'datetime') return 100;
+      if (n.includes('timestamp') || n.includes('datetime')) return 95;
+      if (n.includes('date')) return 80;
+      return 50;
     }
 
-    if (validTables.length === 0) {
+    const tableSelections = [];
+    const debugInfo = [];
+
+    for (const [table, cols] of byTable.entries()) {
+      // For seasonal database, keep only cleaned_data_season_* tables as before
+      if (database === 'seasonal_clean_data' && !String(table).startsWith('cleaned_data_season_')) continue;
+
+      const locs = cols.filter((c) => isLocationCol(c.COLUMN_NAME));
+      const times = cols.filter((c) => isTimeCol(c.COLUMN_NAME, c.DATA_TYPE));
+
+      // We need BOTH Location and Timestamp in the same table
+      if (locs.length === 0 || times.length === 0) continue;
+
+      locs.sort((a, b) => scoreLoc(b.COLUMN_NAME) - scoreLoc(a.COLUMN_NAME));
+      times.sort((a, b) => scoreTime(b.COLUMN_NAME) - scoreTime(a.COLUMN_NAME));
+
+      const locCol = locs[0].COLUMN_NAME;
+      const tsCol = times[0].COLUMN_NAME;
+      debugInfo.push({ table, locCol, tsCol });
+
+      tableSelections.push(
+        `(SELECT DISTINCT UPPER(TRIM(\`${locCol}\`)) AS name FROM \`${dbName}\`.\`${table}\` WHERE \`${locCol}\` IS NOT NULL AND \`${locCol}\` <> '' AND \`${tsCol}\` IS NOT NULL)`
+      );
+    }
+
+    if (tableSelections.length === 0) {
       return res.json([]);
     }
 
-    // Build union across ALL candidate location-like columns per table
-    const tableQueries = [];
-    const debugMode = String(req.query.debug || '').toLowerCase() === '1' || String(req.query.debug || '').toLowerCase() === 'true';
-    const debugInfo = [];
-
-    for (const [table, cols] of candidates.entries()) {
-      const colSelects = cols.map((col) => {
-        const sel = `(SELECT DISTINCT TRIM(\`${col}\`) AS name FROM \`${dbName}\`.\`${table}\` WHERE \`${col}\` IS NOT NULL AND \`${col}\` <> '')`;
-        return sel;
-      });
-      if (debugMode) {
-        for (const col of cols) {
-          try {
-            const [r] = await pool.execute(`SELECT COUNT(DISTINCT TRIM(\`${col}\`)) AS cnt FROM \`${dbName}\`.\`${table}\` WHERE \`${col}\` IS NOT NULL AND \`${col}\` <> ''`);
-            debugInfo.push({ table, column: col, distinct: r[0]?.cnt || 0 });
-          } catch (e) {
-            debugInfo.push({ table, column: col, error: e.message });
-          }
-        }
-      }
-      tableQueries.push(colSelects.join(' UNION ALL '));
-    }
-
-    const query = `SELECT DISTINCT name FROM (${tableQueries.join(' UNION ALL ')}) AS combined_locations ORDER BY name`;
-    const [rows] = await pool.execute(query);
+    const unionQuery = `SELECT DISTINCT name FROM (${tableSelections.join(' UNION ALL ')}) AS all_locs ORDER BY name`;
+    const [rows] = await pool.execute(unionQuery);
 
     if (debugMode) {
       return res.json({
         database: dbName,
-        tables_scanned: candidates.size,
-        candidates: Array.from(candidates.entries()).map(([t, cs]) => ({ table: t, columns: cs })),
-        debug_counts: debugInfo.sort((a,b) => (b.distinct||0)-(a.distinct||0)),
-        locations: rows.map(r => r.name)
+        tables_considered: byTable.size,
+        tables_used: tableSelections.length,
+        selections: debugInfo,
+        locations: rows.map((r) => r.name)
       });
     }
 
-    const [rows] = await pool.execute(query);
-
     // Normalize aliases to canonical codes and attach metadata
     const aliasMap = {
-      'Sleepers_R25': 'SR25',
-      'Sleepers_W1': 'SR11',
-      'SleepersMain_SR01': 'SR01',
+      'SLEEPERS_R25': 'SR25',
+      'SLEEPERS_W1': 'SR11',
+      'SLEEPERSMAIN_SR01': 'SR01',
       'SPST': 'SPER'
     };
 
     const seen = new Set();
     const result = [];
-    rows.forEach((loc, idx) => {
-      const raw = String(loc.name || '').trim();
-      if (!raw) return;
-      const code = aliasMap[raw] || raw;
+    rows.forEach((r, idx) => {
+      let code = String(r.name || '').trim().toUpperCase();
+      if (!code) return;
+      code = aliasMap[code] || code;
       if (seen.has(code)) return;
       seen.add(code);
-      const meta = LOCATION_METADATA[code] || LOCATION_METADATA[raw];
+      const meta = LOCATION_METADATA[code] || null;
       result.push({
         id: result.length + 1,
         name: code,
-        displayName: meta?.name || raw,
-        latitude: meta?.latitude ?? 44.0 + (idx * 0.01),
-        longitude: meta?.longitude ?? -72.5 - (idx * 0.01),
-        elevation: meta?.elevation ?? 1000 + (idx * 10)
+        displayName: meta?.name || code,
+        latitude: meta?.latitude ?? 44.0 + idx * 0.01,
+        longitude: meta?.longitude ?? -72.5 - idx * 0.01,
+        elevation: meta?.elevation ?? 1000 + idx * 10
       });
     });
 
