@@ -82,10 +82,10 @@ const MultiDatabaseDownload = () => {
 
   // Step 4: Fetch location values when attributes are loaded
   useEffect(() => {
-    if (selectedDatabase && selectedTable && attributes.length > 0) {
+    if (selectedDatabase && selectedTable) {
       fetchLocationValues(selectedDatabase, selectedTable);
     }
-  }, [selectedDatabase, selectedTable, attributes]);
+  }, [selectedDatabase, selectedTable]);
 
   const fetchDatabases = async () => {
     setIsLoadingDatabases(true);
@@ -150,23 +150,8 @@ const MultiDatabaseDownload = () => {
   const fetchLocationValues = async (database: string, table: string) => {
     setIsLoadingLocations(true);
     try {
-      // Find the Location attribute
-      const locationAttribute = attributes.find(attr => 
-        attr.name.toLowerCase() === 'location'
-      );
-      
-      if (!locationAttribute) {
-        console.warn('No Location attribute found');
-        setLocationValues([]);
-        return;
-      }
-
-      const response = await fetch(
-        `${API_BASE_URL}/api/databases/${database}/tables/${table}/attributes/${locationAttribute.name}/distinct`
-      );
-      
+      const response = await fetch(`${API_BASE_URL}/api/databases/${database}/tables/${table}/locations`);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      
       const data = await response.json();
       const values = data.values || data.distinct || data || [];
       setLocationValues(Array.isArray(values) ? values : []);
