@@ -354,14 +354,57 @@ const DynamicDataBrowser = () => {
       
       const response = await fetch(downloadUrl);
       
+      // If backend returns 404 for multi-location, fall back to per-location aggregation
+      let blob: Blob;
       if (!response.ok) {
+        const status = response.status;
         const errorText = await response.text();
         console.error('[Download Error Response]', errorText);
-        throw new Error(`Download failed: ${response.status} ${response.statusText}`);
-      }
 
-      // Create and trigger download
-      const blob = await response.blob();
+        if (status === 404 && selectedLocations.length > 1) {
+          console.warn('[Fallback] Aggregating CSV by fetching each location separately');
+
+          // Helper to aggregate CSVs without heavy parsing (assumes same header)
+          const aggregatePerLocation = async (): Promise<Blob> => {
+            let header = '';
+            const rows: string[] = [];
+            let success = 0;
+
+            for (const loc of selectedLocations) {
+              const p = new URLSearchParams(params.toString());
+              p.set('location', loc);
+              const url = `${API_BASE_URL}/api/databases/${selectedDatabase}/download/${selectedTable}?${p.toString()}`;
+              const res = await fetch(url);
+              if (!res.ok) {
+                console.warn(`[Fallback] Skipping location ${loc} due to status ${res.status}`);
+                continue;
+              }
+              const text = await res.text();
+              const lines = text.split(/\r?\n/);
+              if (lines.length === 0) continue;
+              if (!header && lines[0]) header = lines[0];
+              const body = lines.slice(1).filter((l) => l.trim().length > 0);
+              if (body.length > 0) {
+                rows.push(...body);
+                success++;
+              }
+            }
+
+            if (!header || rows.length === 0 || success === 0) {
+              throw new Error('No data found for the selected locations and date range');
+            }
+            const combined = [header, ...rows].join('\n');
+            return new Blob([combined], { type: 'text/csv;charset=utf-8;' });
+          };
+
+          blob = await aggregatePerLocation();
+        } else {
+          throw new Error(`Download failed: ${status} ${response.statusText}`);
+        }
+      } else {
+        // Normal single request success
+        blob = await response.blob();
+      }
       console.log('[Downloaded Blob Size]', blob.size, 'bytes');
       
       if (blob.size === 0) {
@@ -388,7 +431,7 @@ const DynamicDataBrowser = () => {
       URL.revokeObjectURL(url);
       
       toast({
-        title: "Download Started",
+        title: 'Download Started',
         description: `Downloaded ${selectedTable} data with original timestamps preserved`,
       });
       
