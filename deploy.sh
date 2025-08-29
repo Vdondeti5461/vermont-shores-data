@@ -6,6 +6,7 @@ cd ~/site-src
 
 # Pull latest changes from GitHub
 echo "🔄 Pulling latest changes from GitHub..."
+git config pull.rebase true
 git pull origin main
 
 # Check if package.json changed and install dependencies if needed
