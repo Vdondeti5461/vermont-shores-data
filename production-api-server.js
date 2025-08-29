@@ -317,36 +317,72 @@ app.get('/api/databases/:database/data/:table', async (req, res) => {
     const { location, start_date, end_date, limit = 1000 } = req.query;
     const dbName = getDatabaseName(database);
 
+    // Discover columns for robust detection
+    const [cols] = await pool.execute(`DESCRIBE \`${dbName}\`.\`${table}\``);
+
+    const isLocationCol = (name) => {
+      const n = String(name).toLowerCase();
+      return (
+        n === 'location' || n.endsWith('location') || n.includes('location') ||
+        n === 'site' || n === 'sitename' || n.includes('site_') || n.endsWith('_site') ||
+        n === 'station' || n === 'stationname' || n.includes('station_') || n.endsWith('_station') ||
+        [
+          'locationid','location_id','locationcode','location_code','locationname','location_name',
+          'site_id','siteid','sitecode','site_code',
+          'station_id','stationid','stationcode','station_code',
+          'loc','loc_id','locid'
+        ].includes(n)
+      );
+    };
+    const isTimeCol = (name, type) => {
+      const n = String(name).toLowerCase();
+      const t = String(type || '').toLowerCase();
+      return (
+        n === 'timestamp' || n === 'datetime' || n === 'time' ||
+        n.includes('timestamp') || n.includes('datetime') || n.includes('date') || n.endsWith('time') ||
+        t.includes('timestamp') || t.includes('datetime') || t.includes('date') || t.includes('time')
+      );
+    };
+
+    const locCandidates = cols.filter((c) => isLocationCol(c.Field));
+    const timeCandidates = cols.filter((c) => isTimeCol(c.Field, c.Type));
+
+    const bestLoc = locCandidates[0]?.Field;
+    const bestTs = timeCandidates[0]?.Field;
+
     let query = `SELECT * FROM \`${dbName}\`.\`${table}\``;
     const conditions = [];
     const params = [];
 
-    if (location) {
-      const [columns] = await pool.execute(`SHOW COLUMNS FROM \`${dbName}\`.\`${table}\` LIKE '%location%'`);
-      if (columns.length > 0) {
-        conditions.push(`\`${columns[0].Field}\` = ?`);
-        params.push(location);
+    if (location && bestLoc) {
+      // Alias handling so canonical names match stored variants
+      const aliasMap = { 'SPST': 'SPER', 'Sleepers_R25': 'SR25', 'Sleepers_W1': 'SR11', 'SleepersMain_SR01': 'SR01' };
+      const locUpper = String(location).toUpperCase();
+      const synonyms = new Set([locUpper]);
+      for (const [k, v] of Object.entries(aliasMap)) {
+        if (locUpper === k.toUpperCase() || locUpper === v.toUpperCase()) {
+          synonyms.add(k.toUpperCase());
+          synonyms.add(v.toUpperCase());
+        }
       }
+      const placeholders = Array.from(synonyms).map(() => '?').join(',');
+      conditions.push(`UPPER(TRIM(\`${bestLoc}\`)) IN (${placeholders})`);
+      params.push(...Array.from(synonyms));
     }
 
-    if (start_date) {
-      const [columns] = await pool.execute(`SHOW COLUMNS FROM \`${dbName}\`.\`${table}\` WHERE Type LIKE '%timestamp%' OR Type LIKE '%datetime%' OR Field LIKE '%time%'`);
-      if (columns.length > 0) {
-        conditions.push(`\`${columns[0].Field}\` >= ?`);
-        params.push(start_date);
-      }
+    if (start_date && bestTs) {
+      conditions.push(`\`${bestTs}\` >= ?`);
+      params.push(start_date);
     }
 
-    if (end_date) {
-      const [columns] = await pool.execute(`SHOW COLUMNS FROM \`${dbName}\`.\`${table}\` WHERE Type LIKE '%timestamp%' OR Type LIKE '%datetime%' OR Field LIKE '%time%'`);
-      if (columns.length > 0) {
-        conditions.push(`\`${columns[0].Field}\` <= ?`);
-        params.push(end_date);
-      }
+    if (end_date && bestTs) {
+      conditions.push(`\`${bestTs}\` <= ?`);
+      params.push(end_date);
     }
 
     if (conditions.length > 0) query += ' WHERE ' + conditions.join(' AND ');
-    query += ` LIMIT ${parseInt(limit)}`;
+    const lim = Number(limit) || 1000;
+    query += ` LIMIT ${lim}`;
 
     const [rows] = await pool.execute(query, params);
     res.json(rows);
@@ -363,36 +399,77 @@ app.get('/api/databases/:database/download/:table', async (req, res) => {
     const { location, start_date, end_date, attributes, limit = 1000 } = req.query;
     const dbName = getDatabaseName(database);
     
-    let query = `SELECT * FROM \`${dbName}\`.\`${table}\``;
+    // Column discovery
+    const [cols] = await pool.execute(`DESCRIBE \`${dbName}\`.\`${table}\``);
+    const isLocationCol = (name) => {
+      const n = String(name).toLowerCase();
+      return (
+        n === 'location' || n.endsWith('location') || n.includes('location') ||
+        n === 'site' || n === 'sitename' || n.includes('site_') || n.endsWith('_site') ||
+        n === 'station' || n === 'stationname' || n.includes('station_') || n.endsWith('_station') ||
+        [
+          'locationid','location_id','locationcode','location_code','locationname','location_name',
+          'site_id','siteid','sitecode','site_code',
+          'station_id','stationid','stationcode','station_code',
+          'loc','loc_id','locid'
+        ].includes(n)
+      );
+    };
+    const isTimeCol = (name, type) => {
+      const n = String(name).toLowerCase();
+      const t = String(type || '').toLowerCase();
+      return (
+        n === 'timestamp' || n === 'datetime' || n === 'time' ||
+        n.includes('timestamp') || n.includes('datetime') || n.includes('date') || n.endsWith('time') ||
+        t.includes('timestamp') || t.includes('datetime') || t.includes('date') || t.includes('time')
+      );
+    };
+
+    const locCandidates = cols.filter((c) => isLocationCol(c.Field));
+    const timeCandidates = cols.filter((c) => isTimeCol(c.Field, c.Type));
+    const bestLoc = locCandidates[0]?.Field;
+    const bestTs = timeCandidates[0]?.Field;
+
+    // Select columns (attributes) if provided and valid; otherwise '*'
+    let selectCols = '*';
+    if (attributes) {
+      const reqAttrs = String(attributes).split(',').map((a) => a.trim()).filter(Boolean);
+      const valid = reqAttrs.filter((a) => cols.some((c) => c.Field === a));
+      if (valid.length > 0) selectCols = valid.map((v) => `\`${v}\``).join(',');
+    }
+
+    let query = `SELECT ${selectCols} FROM \`${dbName}\`.\`${table}\``;
     const conditions = [];
     const params = [];
     
-    if (location) { 
-      const [columns] = await pool.execute(`SHOW COLUMNS FROM \`${dbName}\`.\`${table}\` LIKE '%location%'`);
-      if (columns.length > 0) {
-        conditions.push(`\`${columns[0].Field}\` = ?`); 
-        params.push(location); 
+    if (location && bestLoc) {
+      const aliasMap = { 'SPST': 'SPER', 'Sleepers_R25': 'SR25', 'Sleepers_W1': 'SR11', 'SleepersMain_SR01': 'SR01' };
+      const locUpper = String(location).toUpperCase();
+      const synonyms = new Set([locUpper]);
+      for (const [k, v] of Object.entries(aliasMap)) {
+        if (locUpper === k.toUpperCase() || locUpper === v.toUpperCase()) {
+          synonyms.add(k.toUpperCase());
+          synonyms.add(v.toUpperCase());
+        }
       }
+      const placeholders = Array.from(synonyms).map(() => '?').join(',');
+      conditions.push(`UPPER(TRIM(\`${bestLoc}\`)) IN (${placeholders})`);
+      params.push(...Array.from(synonyms));
     }
     
-    if (start_date) { 
-      const [columns] = await pool.execute(`SHOW COLUMNS FROM \`${dbName}\`.\`${table}\` WHERE Type LIKE '%timestamp%' OR Type LIKE '%datetime%' OR Field LIKE '%time%'`);
-      if (columns.length > 0) {
-        conditions.push(`\`${columns[0].Field}\` >= ?`); 
-        params.push(start_date); 
-      }
+    if (start_date && bestTs) {
+      conditions.push(`\`${bestTs}\` >= ?`); 
+      params.push(start_date); 
     }
     
-    if (end_date) { 
-      const [columns] = await pool.execute(`SHOW COLUMNS FROM \`${dbName}\`.\`${table}\` WHERE Type LIKE '%timestamp%' OR Type LIKE '%datetime%' OR Field LIKE '%time%'`);
-      if (columns.length > 0) {
-        conditions.push(`\`${columns[0].Field}\` <= ?`); 
-        params.push(end_date); 
-      }
+    if (end_date && bestTs) {
+      conditions.push(`\`${bestTs}\` <= ?`); 
+      params.push(end_date); 
     }
     
     if (conditions.length > 0) query += ' WHERE ' + conditions.join(' AND ');
-    query += ` LIMIT ${parseInt(limit)}`;
+    const lim = Number(limit) || 1000;
+    query += ` LIMIT ${lim}`;
     
     const [rows] = await pool.execute(query, params);
     
