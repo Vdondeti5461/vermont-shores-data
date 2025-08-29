@@ -157,12 +157,18 @@ const DynamicDataBrowser = () => {
     
     try {
       const data = await apiCall(`/api/databases/${databaseKey}/locations`, `Load locations for ${databaseKey}`);
-      setLocations(Array.isArray(data) ? data : data.locations || []);
+      const raw = Array.isArray(data) ? data : data.locations || [];
+      // Normalize to LocationInfo objects if API returns array of strings
+      const normalized = raw.map((item: any, idx: number) =>
+        typeof item === 'string'
+          ? { id: idx + 1, name: item, displayName: item, latitude: 0, longitude: 0, elevation: 0 }
+          : item
+      );
+      setLocations(normalized);
     } catch (error) {
       setLocations([]);
     }
   };
-
   // Load attributes for selected table
   const loadAttributes = async (databaseKey: string, tableName: string) => {
     if (!databaseKey || !tableName) return;
