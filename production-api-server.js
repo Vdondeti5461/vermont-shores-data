@@ -13,6 +13,12 @@ app.use(cors({
 
 app.use(express.json());
 
+// Simple API request logger to verify routing in production
+app.use('/api', (req, _res, next) => {
+  console.log('[API]', req.method, req.originalUrl);
+  next();
+});
+
 // Database connection pool (no specific database - switch per request)
 let pool;
 
