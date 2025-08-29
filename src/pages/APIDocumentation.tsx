@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Code, Database, FileText, Globe, Key } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/apiConfig';
 
-  const { API_BASE_URL } = await import('@/lib/apiConfig');
+const APIDocumentation = () => {
   const baseUrl = `${API_BASE_URL}/api`;
 
   const endpoints = [
