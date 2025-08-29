@@ -25,30 +25,30 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
   const mapRef = useRef<any>(null);
   const mapInstanceRef = useRef<any>(null);
 
-  // Default sites matching exactly with Network page data
+  // Default sites with exact coordinates and elevations from survey data
   const defaultSites: NetworkSite[] = [
-    { id: 1, name: "Mansfield East Ranch Brook 1", shortName: "RB01", latitude: 44.2619, longitude: -72.8081, elevation: 850, type: "ranch_brook", status: "active" },
-    { id: 2, name: "Mansfield East Ranch Brook 2", shortName: "RB02", latitude: 44.2625, longitude: -72.8075, elevation: 875, type: "ranch_brook", status: "active" },
-    { id: 3, name: "Mansfield East Ranch Brook 3", shortName: "RB03", latitude: 44.2631, longitude: -72.8069, elevation: 900, type: "ranch_brook", status: "active" },
-    { id: 4, name: "Mansfield East Ranch Brook 4", shortName: "RB04", latitude: 44.2637, longitude: -72.8063, elevation: 925, type: "ranch_brook", status: "active" },
-    { id: 5, name: "Mansfield East Ranch Brook 5", shortName: "RB05", latitude: 44.2643, longitude: -72.8057, elevation: 950, type: "ranch_brook", status: "active" },
-    { id: 6, name: "Mansfield East Ranch Brook 6", shortName: "RB06", latitude: 44.2649, longitude: -72.8051, elevation: 975, type: "ranch_brook", status: "active" },
-    { id: 7, name: "Mansfield East Ranch Brook 7", shortName: "RB07", latitude: 44.2655, longitude: -72.8045, elevation: 1000, type: "ranch_brook", status: "active" },
-    { id: 8, name: "Mansfield East Ranch Brook 8", shortName: "RB08", latitude: 44.2661, longitude: -72.8039, elevation: 1025, type: "ranch_brook", status: "active" },
-    { id: 9, name: "Mansfield East Ranch Brook 9", shortName: "RB09", latitude: 44.2667, longitude: -72.8033, elevation: 1050, type: "ranch_brook", status: "active" },
-    { id: 10, name: "Mansfield East Ranch Brook 10", shortName: "RB10", latitude: 44.2673, longitude: -72.8027, elevation: 1075, type: "ranch_brook", status: "active" },
-    { id: 11, name: "Mansfield East Ranch Brook 11", shortName: "RB11", latitude: 44.2679, longitude: -72.8021, elevation: 1100, type: "ranch_brook", status: "active" },
-    { id: 12, name: "Mansfield East FEMC", shortName: "RB12", latitude: 44.2685, longitude: -72.8015, elevation: 1125, type: "ranch_brook", status: "active" },
-    { id: 13, name: "Spear Street", shortName: "SPER", latitude: 44.4759, longitude: -73.1959, elevation: 95, type: "distributed", status: "active" },
-    { id: 14, name: "Sleepers R3/Main", shortName: "SR01", latitude: 44.2891, longitude: -72.8211, elevation: 680, type: "distributed", status: "active" },
-    { id: 15, name: "Sleepers W1/R11", shortName: "SR11", latitude: 44.2885, longitude: -72.8205, elevation: 705, type: "distributed", status: "active" },
-    { id: 16, name: "Sleepers R25", shortName: "SR25", latitude: 44.2879, longitude: -72.8199, elevation: 730, type: "distributed", status: "maintenance" },
-    { id: 17, name: "Jericho clearing", shortName: "JRCL", latitude: 44.4919, longitude: -72.9659, elevation: 195, type: "distributed", status: "active" },
-    { id: 18, name: "Jericho Forest", shortName: "JRFO", latitude: 44.4925, longitude: -72.9665, elevation: 215, type: "distributed", status: "active" },
-    { id: 19, name: "Mansfield West Proctor", shortName: "PROC", latitude: 44.2561, longitude: -72.8141, elevation: 1200, type: "ranch_brook", status: "active" },
-    { id: 20, name: "Potash Brook", shortName: "PTSH", latitude: 44.2567, longitude: -72.8147, elevation: 1225, type: "ranch_brook", status: "active" },
-    { id: 21, name: "Mansfield SUMMIT", shortName: "SUMM", latitude: 44.2573, longitude: -72.8153, elevation: 1339, type: "ranch_brook", status: "active" },
-    { id: 22, name: "Mansfield West SCAN", shortName: "UNDR", latitude: 44.2555, longitude: -72.8135, elevation: 1175, type: "ranch_brook", status: "maintenance" }
+    { id: 1, name: "Mansfield East Ranch Brook 1", shortName: "RB01", latitude: 44.52322238, longitude: -72.80863215, elevation: 1075, type: "ranch_brook", status: "active" },
+    { id: 2, name: "Mansfield East Ranch Brook 2", shortName: "RB02", latitude: 44.51775982, longitude: -72.81039188, elevation: 910, type: "ranch_brook", status: "active" },
+    { id: 3, name: "Mansfield East Ranch Brook 3", shortName: "RB03", latitude: 44.51481829, longitude: -72.80905263, elevation: 795, type: "ranch_brook", status: "active" },
+    { id: 4, name: "Mansfield East Ranch Brook 4", shortName: "RB04", latitude: 44.51097861, longitude: -72.80281519, elevation: 640, type: "ranch_brook", status: "active" },
+    { id: 5, name: "Mansfield East Ranch Brook 5", shortName: "RB05", latitude: 44.5044967, longitude: -72.79947434, elevation: 505, type: "ranch_brook", status: "active" },
+    { id: 6, name: "Mansfield East Ranch Brook 6", shortName: "RB06", latitude: 44.50370289, longitude: -72.78352521, elevation: 414, type: "ranch_brook", status: "active" },
+    { id: 7, name: "Mansfield East Ranch Brook 7", shortName: "RB07", latitude: 44.51528492, longitude: -72.78513705, elevation: 613, type: "ranch_brook", status: "active" },
+    { id: 8, name: "Mansfield East Ranch Brook 8", shortName: "RB08", latitude: 44.50953955, longitude: -72.70208484, elevation: 472, type: "ranch_brook", status: "active" },
+    { id: 9, name: "Mansfield East Ranch Brook 9", shortName: "RB09", latitude: 44.48905, longitude: -72.79285, elevation: 847, type: "ranch_brook", status: "active" },
+    { id: 10, name: "Mansfield East Ranch Brook 10", shortName: "RB10", latitude: 44.49505, longitude: -72.78639, elevation: 624, type: "ranch_brook", status: "active" },
+    { id: 11, name: "Mansfield East Ranch Brook 11", shortName: "RB11", latitude: 44.50545202, longitude: -72.7713791, elevation: 388, type: "ranch_brook", status: "active" },
+    { id: 12, name: "Mansfield East FEMC", shortName: "RB12", latitude: 44.51880228, longitude: -72.79853548, elevation: 884, type: "ranch_brook", status: "active" },
+    { id: 13, name: "Spear Street", shortName: "SPST", latitude: 44.45258109, longitude: -73.19181715, elevation: 87, type: "distributed", status: "active" },
+    { id: 14, name: "Sleepers R3/Main", shortName: "SR01", latitude: 44.48296257, longitude: -72.16464901, elevation: 553, type: "distributed", status: "active" },
+    { id: 15, name: "Sleepers W1/R11", shortName: "SR11", latitude: 44.45002119, longitude: -72.06714939, elevation: 225, type: "distributed", status: "active" },
+    { id: 16, name: "Sleepers R25", shortName: "SR25", latitude: 44.47682346, longitude: -72.12582909, elevation: 357, type: "distributed", status: "maintenance" },
+    { id: 17, name: "Jericho clearing", shortName: "JRCL", latitude: 44.447894, longitude: -73.00228357, elevation: 199, type: "distributed", status: "active" },
+    { id: 18, name: "Jericho Forest", shortName: "JRFO", latitude: 44.44780437, longitude: -73.00270872, elevation: 196, type: "distributed", status: "active" },
+    { id: 19, name: "Mansfield West Proctor", shortName: "PROC", latitude: 44.5285819, longitude: -72.886737, elevation: 418, type: "ranch_brook", status: "active" },
+    { id: 20, name: "Potash Brook", shortName: "PTSH", latitude: 44.44489861, longitude: -73.21425398, elevation: 45, type: "distributed", status: "active" },
+    { id: 21, name: "Mansfield SUMMIT", shortName: "SUMM", latitude: 44.52796261, longitude: -72.81496117, elevation: 1169, type: "ranch_brook", status: "active" },
+    { id: 22, name: "Mansfield West SCAN", shortName: "UNDR", latitude: 44.53511455, longitude: -72.83462236, elevation: 698, type: "ranch_brook", status: "maintenance" }
   ];
 
   const mapSites = sites.length > 0 ? sites : defaultSites;
