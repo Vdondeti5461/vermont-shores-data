@@ -238,13 +238,16 @@ app.get('/api/databases/:database/locations', async (req, res) => {
       return res.json([]);
     }
 
-    // Build union query with schema-qualified tables and exact Location column per table
-    const unionQueries = validTables.map((table) => {
-      const col = tableLocMap[table];
-      return `(SELECT DISTINCT TRIM(\`${col}\`) AS name FROM \`${dbName}\`.\`${table}\` WHERE \`${col}\` IS NOT NULL AND \`${col}\` <> '')`;
-    });
+    // Build union across ALL candidate location-like columns per table
+    const tableQueries = [];
+    for (const [table, cols] of candidates.entries()) {
+      const colSelects = cols.map((col) =>
+        `(SELECT DISTINCT TRIM(\`${col}\`) AS name FROM \`${dbName}\`.\`${table}\` WHERE \`${col}\` IS NOT NULL AND \`${col}\` <> '')`
+      );
+      tableQueries.push(colSelects.join(' UNION ALL '));
+    }
 
-    const query = `SELECT DISTINCT name FROM (${unionQueries.join(' UNION ALL ')}) AS combined_locations ORDER BY name`;
+    const query = `SELECT DISTINCT name FROM (${tableQueries.join(' UNION ALL ')}) AS combined_locations ORDER BY name`;
 
     const [rows] = await pool.execute(query);
 
