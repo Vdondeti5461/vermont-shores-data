@@ -340,6 +340,33 @@ app.get('/api/databases/:database/tables/:table/attributes', async (req, res) =>
   }
 });
 
+// Get distinct locations for a specific table
+app.get('/api/databases/:database/tables/:table/locations', async (req, res) => {
+  try {
+    const { database, table } = req.params;
+    const { connection } = await getConnectionWithDB(database);
+
+    // Case-safe column discovery
+    const [cols] = await connection.query(`SHOW COLUMNS FROM \`${table}\``);
+    const colMap = new Map(cols.map(c => [c.Field.toLowerCase(), c.Field]));
+    const locCol = colMap.get('location') || 'Location';
+
+    const [rows] = await connection.execute(
+      `SELECT DISTINCT \`${locCol}\` AS name FROM \`${table}\` 
+       WHERE \`${locCol}\` IS NOT NULL AND \`${locCol}\` <> '' 
+       ORDER BY \`${locCol}\``
+    );
+
+    connection.release();
+
+    // Return array of strings (matches UI expectation)
+    res.json(rows.map(r => r.name));
+  } catch (error) {
+    console.error('Error fetching table locations:', error);
+    res.status(500).json({ error: 'Failed to fetch table locations' });
+  }
+});
+
 // Get unique locations from specific database and tables
 app.get('/api/databases/:database/locations', async (req, res) => {
   try {
@@ -394,38 +421,6 @@ app.get('/api/databases/:database/locations', async (req, res) => {
   } catch (error) {
     console.error('Error fetching locations:', error);
     res.status(500).json({ error: 'Failed to fetch locations' });
-  }
-});
-
-// Get location values from a specific table
-app.get('/api/databases/:database/tables/:table/locations', async (req, res) => {
-  try {
-    const { database, table } = req.params;
-    const { connection, databaseName } = await getConnectionWithDB(database);
-    
-    // Simple query to get distinct location values from the specified table
-    const query = `SELECT DISTINCT Location as name FROM \`${table}\` WHERE Location IS NOT NULL AND Location != '' ORDER BY Location`;
-    
-    const [rows] = await connection.execute(query);
-    
-    // Use actual location metadata with proper coordinates
-    const locationsWithCoords = rows.map((loc, index) => {
-      const metadata = LOCATION_METADATA[loc.name];
-      return {
-        id: index + 1,
-        name: loc.name,
-        displayName: metadata ? metadata.name : loc.name,
-        latitude: metadata ? metadata.latitude : 44.0 + (index * 0.01),
-        longitude: metadata ? metadata.longitude : -72.5 - (index * 0.01),
-        elevation: metadata ? metadata.elevation : 1000 + (index * 10)
-      };
-    });
-    
-    connection.release();
-    res.json(locationsWithCoords);
-  } catch (error) {
-    console.error('Error fetching table locations:', error);
-    res.status(500).json({ error: 'Failed to fetch table locations' });
   }
 });
 
