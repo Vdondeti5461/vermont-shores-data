@@ -12,33 +12,43 @@ const APIDocumentation = () => {
   const endpoints = [
     {
       method: 'GET',
+      path: '/health',
+      description: 'Check API server health and availability',
+      response: `{
+  "status": "healthy",
+  "timestamp": "2024-01-15T10:30:00Z",
+  "version": "1.0.0"
+}`
+    },
+    {
+      method: 'GET',
       path: '/databases',
-      description: 'Get all available databases',
+      description: 'Get all available databases with metadata',
       response: `{
   "databases": [
     {
       "key": "raw_data",
       "name": "CRRELS2S_VTClimateRepository",
-      "displayName": "Raw Data",
-      "description": "Raw data"
-    },
-    {
-      "key": "initial_clean_data",
-      "name": "CRRELS2S_VTClimateRepository_Processed",
-      "displayName": "Initial Clean_data",
-      "description": "Initial clean data"
+      "display_name": "Raw Environmental Data",
+      "description": "Unprocessed environmental sensor data",
+      "category": "raw",
+      "order": 1
     },
     {
       "key": "final_clean_data",
       "name": "CRRELS2S_ProcessedData",
-      "displayName": "Final Clean_data",
-      "description": "Final Clean Data"
+      "display_name": "Processed Environmental Data",
+      "description": "Quality-controlled and validated measurements",
+      "category": "processed",
+      "order": 2
     },
     {
       "key": "seasonal_clean_data",
       "name": "CRRELS2S_cleaned_data_seasons",
-      "displayName": "Seasonal Clean_data",
-      "description": "Season wise final clean data"
+      "display_name": "Seasonal Environmental Data",
+      "description": "Seasonally aggregated climate data",
+      "category": "aggregated",
+      "order": 3
     }
   ]
 }`
@@ -46,7 +56,7 @@ const APIDocumentation = () => {
     {
       method: 'GET',
       path: '/databases/:database/tables',
-      description: 'Get all tables for a specific database',
+      description: 'Get all tables for a specific database with metadata',
       parameters: [
         { name: 'database', description: 'Database key (e.g., raw_data, final_clean_data, seasonal_clean_data)' }
       ],
@@ -55,24 +65,24 @@ const APIDocumentation = () => {
   "tables": [
     {
       "name": "table1",
-      "displayName": "Primary Environmental Data",
-      "description": "Primary environmental measurements including temperature, humidity, and soil data",
-      "rowCount": 927399,
-      "primaryAttributes": ["TIMESTAMP", "Location"]
+      "display_name": "Primary Environmental Data",
+      "description": "Comprehensive environmental measurements from all monitoring stations",
+      "row_count": 1247892,
+      "columns": ["TIMESTAMP", "Location", "AirTC_Avg", "RH", "SWE", "Soil_Temperature_C"]
     },
     {
-      "name": "LocationMax",
-      "displayName": "Location Max",
-      "description": "Environmental data measurements",
-      "rowCount": 44,
-      "primaryAttributes": ["TIMESTAMP", "Location"]
+      "name": "station_metadata",
+      "display_name": "Station Metadata",
+      "description": "Geographic and technical information for monitoring stations",
+      "row_count": 22,
+      "columns": ["Station_ID", "Name", "Latitude", "Longitude", "Elevation"]
     },
     {
-      "name": "calibration_table",
-      "displayName": "calibration_table",
-      "description": "Environmental data measurements",
-      "rowCount": 43,
-      "primaryAttributes": ["TIMESTAMP", "Location"]
+      "name": "calibration_data",
+      "display_name": "Sensor Calibration Records",
+      "description": "Calibration coefficients and validation data for sensors",
+      "row_count": 156,
+      "columns": ["Station_ID", "Sensor_Type", "Calibration_Date", "Coefficients"]
     }
   ]
 }`
@@ -80,7 +90,7 @@ const APIDocumentation = () => {
     {
       method: 'GET',
       path: '/databases/:database/tables/:table/attributes',
-      description: 'Get attributes/columns for a specific table',
+      description: 'Get detailed attribute/column information for a specific table',
       parameters: [
         { name: 'database', description: 'Database key' },
         { name: 'table', description: 'Table name' }
@@ -92,67 +102,50 @@ const APIDocumentation = () => {
     {
       "name": "TIMESTAMP",
       "type": "datetime",
+      "category": "timestamp",
+      "isPrimary": true,
       "nullable": false,
-      "category": "Time",
-      "isPrimary": true
+      "comment": "Measurement timestamp in UTC"
     },
     {
       "name": "Location",
-      "type": "varchar",
+      "type": "varchar(50)",
+      "category": "location",
+      "isPrimary": true,
       "nullable": false,
-      "category": "Location",
-      "isPrimary": true
+      "comment": "Monitoring station identifier"
     },
     {
       "name": "AirTC_Avg",
       "type": "float",
+      "category": "temperature",
+      "isPrimary": false,
       "nullable": true,
-      "category": "Temperature",
-      "isPrimary": false
+      "comment": "Average air temperature (°C)"
     },
     {
       "name": "RH",
       "type": "float",
+      "category": "humidity",
+      "isPrimary": false,
       "nullable": true,
-      "category": "Humidity",
-      "isPrimary": false
-    },
-    {
-      "name": "Soil_Moisture",
-      "type": "float",
-      "nullable": true,
-      "category": "Soil",
-      "isPrimary": false
+      "comment": "Relative humidity (%)"
     },
     {
       "name": "SWE",
       "type": "float",
+      "category": "snow",
+      "isPrimary": false,
       "nullable": true,
-      "category": "Snow",
-      "isPrimary": false
+      "comment": "Snow water equivalent (mm)"
     },
     {
-      "name": "SW_in",
-      "type": "int",
+      "name": "Soil_Temperature_C",
+      "type": "float",
+      "category": "temperature",
+      "isPrimary": false,
       "nullable": true,
-      "category": "Radiation",
-      "isPrimary": false
-    }
-  ],
-  "primaryAttributes": [
-    {
-      "name": "TIMESTAMP",
-      "type": "datetime",
-      "nullable": false,
-      "category": "Time",
-      "isPrimary": true
-    },
-    {
-      "name": "Location",
-      "type": "varchar",
-      "nullable": false,
-      "category": "Location",
-      "isPrimary": true
+      "comment": "Soil temperature at 5cm depth (°C)"
     }
   ]
 }`
@@ -160,97 +153,135 @@ const APIDocumentation = () => {
     {
       method: 'GET',
       path: '/databases/:database/locations',
-      description: 'Get all unique locations for a database',
+      description: 'Get all monitoring locations with geographic information',
       parameters: [
         { name: 'database', description: 'Database key' },
-        { name: 'tables', description: 'Optional: comma-separated table names to filter' }
+        { name: 'tables', description: 'Optional: comma-separated table names to filter locations' }
       ],
       response: `[
   {
     "id": 1,
-    "name": "Station_001",
-    "latitude": 44.0,
-    "longitude": -72.5,
-    "elevation": 1000
+    "name": "Mansfield_Ridge",
+    "display_name": "Mansfield Ridge Station",
+    "latitude": 44.5267,
+    "longitude": -72.8092,
+    "elevation": 1339
+  },
+  {
+    "id": 2,
+    "name": "Shelburne_Farm",
+    "display_name": "Shelburne Farms Research Station",
+    "latitude": 44.4108,
+    "longitude": -73.2267,
+    "elevation": 95
   }
 ]`
     },
     {
       method: 'GET',
       path: '/databases/:database/data/:table',
-      description: 'Get filtered data from a specific table',
+      description: 'Retrieve filtered environmental data with comprehensive querying options',
       parameters: [
-        { name: 'database', description: 'Database key' },
-        { name: 'table', description: 'Table name' },
-        { name: 'location', description: 'Filter by location name (optional)' },
-        { name: 'start_date', description: 'Start date (ISO format, optional)' },
-        { name: 'end_date', description: 'End date (ISO format, optional)' },
-        { name: 'attributes', description: 'Comma-separated attribute names (optional)' },
-        { name: 'limit', description: 'Maximum records to return (default: 1000)' }
+        { name: 'database', description: 'Database key (required)' },
+        { name: 'table', description: 'Table name (required)' },
+        { name: 'location', description: 'Filter by location name(s) - comma-separated for multiple (optional)' },
+        { name: 'start_date', description: 'Start date in ISO format (YYYY-MM-DDTHH:mm:ssZ) (optional)' },
+        { name: 'end_date', description: 'End date in ISO format (YYYY-MM-DDTHH:mm:ssZ) (optional)' },
+        { name: 'attributes', description: 'Comma-separated attribute names to include (optional)' },
+        { name: 'season', description: 'Filter by season: spring, summer, fall, winter (optional)' },
+        { name: 'limit', description: 'Maximum records to return (default: 1000, max: 10000)' }
       ],
       response: `{
-  "database": "CRRELS2S_VTClimateRepository",
+  "database": "final_clean_data",
   "table": "table1",
-  "data": [...],
+  "data": [
+    {
+      "TIMESTAMP": "2024-01-15T12:00:00Z",
+      "Location": "Mansfield_Ridge",
+      "AirTC_Avg": -5.2,
+      "RH": 78.5,
+      "SWE": 245.7
+    }
+  ],
   "count": 1000,
+  "total_available": 125340,
   "query_params": {
-    "location": "Station_001",
+    "location": "Mansfield_Ridge",
     "start_date": "2024-01-01T00:00:00Z",
-    "end_date": "2024-01-31T23:59:59Z"
+    "end_date": "2024-01-31T23:59:59Z",
+    "attributes": "TIMESTAMP,Location,AirTC_Avg,RH,SWE"
   }
 }`
     },
     {
       method: 'GET',
       path: '/databases/:database/download/:table',
-      description: 'Download data as CSV file',
+      description: 'Download filtered environmental data as CSV with intelligent chunking for large datasets',
       parameters: [
-        { name: 'database', description: 'Database key' },
-        { name: 'table', description: 'Table name' },
-        { name: 'location', description: 'Filter by location name (optional)' },
-        { name: 'start_date', description: 'Start date (ISO format, optional)' },
-        { name: 'end_date', description: 'End date (ISO format, optional)' },
-        { name: 'attributes', description: 'Comma-separated attribute names (optional)' }
+        { name: 'database', description: 'Database key (required)' },
+        { name: 'table', description: 'Table name (required)' },
+        { name: 'location', description: 'Filter by location name(s) - comma-separated for multiple (optional)' },
+        { name: 'start_date', description: 'Start date in ISO format (optional)' },
+        { name: 'end_date', description: 'End date in ISO format (optional)' },
+        { name: 'attributes', description: 'Comma-separated attribute names to include (optional)' },
+        { name: 'season', description: 'Filter by season: spring, summer, fall, winter (optional)' }
       ],
-      response: 'CSV file download'
+      response: `CSV file download with headers:
+TIMESTAMP,Location,AirTC_Avg,RH,SWE
+2024-01-15T12:00:00Z,Mansfield_Ridge,-5.2,78.5,245.7
+...
+
+Filename format: {database}_{table}_{locations}_{timestamp}.csv
+Content-Type: text/csv
+Content-Disposition: attachment`
     }
   ];
 
   const exampleRequests = [
     {
+      title: 'Check API Health',
+      url: `${baseUrl}/health`,
+      description: 'Verify API server status and availability before making data requests'
+    },
+    {
       title: 'Get All Available Databases',
       url: `${baseUrl}/databases`,
-      description: 'Fetch all available databases including raw, processed, and seasonal data'
+      description: 'Retrieve all environmental databases with metadata and processing levels'
     },
     {
-      title: 'Get Final Clean Data Tables',
+      title: 'Get Processed Data Tables',
       url: `${baseUrl}/databases/final_clean_data/tables`,
-      description: 'Get all tables available in the final clean data database'
+      description: 'List all data tables in the quality-controlled environmental dataset'
     },
     {
-      title: 'Get Table Attributes',
-      url: `${baseUrl}/databases/final_clean_data/tables/table1/attributes`,
-      description: 'Get all available attributes/columns for the primary environmental data table'
-    },
-    {
-      title: 'Get Locations from Database',
+      title: 'Get Monitoring Station Locations',
       url: `${baseUrl}/databases/final_clean_data/locations`,
-      description: 'Fetch all monitoring locations from the final clean data database'
+      description: 'Fetch all monitoring station locations with coordinates and elevation data'
     },
     {
-      title: 'Get Temperature Data for Specific Location',
-      url: `${baseUrl}/databases/final_clean_data/data/table1?location=Station_001&start_date=2024-01-01&attributes=TIMESTAMP,Location,AirTC_Avg,Soil_Temperature_C`,
-      description: 'Get temperature data from a specific station for January 2024'
+      title: 'Get Detailed Table Schema',
+      url: `${baseUrl}/databases/final_clean_data/tables/table1/attributes`,
+      description: 'Retrieve complete attribute information including data types and categories'
     },
     {
-      title: 'Download Environmental Data CSV',
-      url: `${baseUrl}/databases/final_clean_data/download/table1?start_date=2024-01-01&end_date=2024-01-31&attributes=TIMESTAMP,Location,AirTC_Avg,RH,SWE`,
-      description: 'Download environmental data for January 2024 as CSV'
+      title: 'Get Winter Temperature Data',
+      url: `${baseUrl}/databases/final_clean_data/data/table1?location=Mansfield_Ridge&season=winter&attributes=TIMESTAMP,Location,AirTC_Avg,Soil_Temperature_C`,
+      description: 'Retrieve winter temperature measurements from Mt. Mansfield monitoring station'
     },
     {
-      title: 'Get Snow and Radiation Data',
-      url: `${baseUrl}/databases/final_clean_data/data/table1?attributes=TIMESTAMP,Location,SWE,SW_in,SW_out,LW_in,LW_out&start_date=2024-01-01`,
-      description: 'Get snow water equivalent and radiation measurements'
+      title: 'Get Multi-Location Snow Data',
+      url: `${baseUrl}/databases/final_clean_data/data/table1?location=Mansfield_Ridge,Shelburne_Farm&attributes=TIMESTAMP,Location,SWE,Snow_Depth&start_date=2024-01-01&end_date=2024-03-31`,
+      description: 'Compare snow measurements between mountain and valley locations for winter season'
+    },
+    {
+      title: 'Download Complete Weather Dataset',
+      url: `${baseUrl}/databases/final_clean_data/download/table1?start_date=2024-01-01&end_date=2024-12-31&attributes=TIMESTAMP,Location,AirTC_Avg,RH,WS_ms_Avg,Rain_mm`,
+      description: 'Download full-year weather data including temperature, humidity, wind, and precipitation'
+    },
+    {
+      title: 'Preview Soil Data Sample',
+      url: `${baseUrl}/databases/final_clean_data/data/table1?attributes=TIMESTAMP,Location,Soil_Temperature_C,Soil_Moisture&limit=100`,
+      description: 'Preview first 100 records of soil monitoring data for data exploration'
     }
   ];
 
@@ -398,36 +429,67 @@ const APIDocumentation = () => {
                     </CardHeader>
                     <CardContent>
                       <pre className="bg-muted p-4 rounded-lg text-sm overflow-x-auto">
-                        <code>{`// Fetch all available databases
+                        <code>{`// Check API health first
+const healthResponse = await fetch('${baseUrl}/health');
+const isHealthy = healthResponse.ok;
+console.log('API Status:', isHealthy ? 'Healthy' : 'Unavailable');
+
+// Fetch all available databases with metadata
 const dbResponse = await fetch('${baseUrl}/databases');
-const databases = await dbResponse.json();
-console.log('Available databases:', databases.databases);
+const { databases } = await dbResponse.json();
+console.log('Available databases:', databases);
 
-// Get tables from final clean data
-const tablesResponse = await fetch('${baseUrl}/databases/final_clean_data/tables');
+// Get tables and locations for processed data
+const [tablesResponse, locationsResponse] = await Promise.all([
+  fetch('${baseUrl}/databases/final_clean_data/tables'),
+  fetch('${baseUrl}/databases/final_clean_data/locations')
+]);
+
 const tables = await tablesResponse.json();
-console.log('Available tables:', tables.tables);
-
-// Get locations from final clean data database
-const locationsResponse = await fetch('${baseUrl}/databases/final_clean_data/locations');
 const locations = await locationsResponse.json();
 
-// Get environmental data with filters
+// Get table schema with attribute categories
+const attributesResponse = await fetch(
+  '${baseUrl}/databases/final_clean_data/tables/table1/attributes'
+);
+const { attributes } = await attributesResponse.json();
+
+// Build comprehensive data query
 const params = new URLSearchParams({
-  location: 'Station_001',
+  location: 'Mansfield_Ridge,Shelburne_Farm', // Multiple locations
   start_date: '2024-01-01T00:00:00Z',
-  end_date: '2024-01-31T23:59:59Z',
-  attributes: 'TIMESTAMP,Location,AirTC_Avg,RH,SWE,Soil_Temperature_C'
+  end_date: '2024-03-31T23:59:59Z',
+  attributes: 'TIMESTAMP,Location,AirTC_Avg,RH,SWE,Soil_Temperature_C',
+  season: 'winter'
 });
 
-const dataResponse = await fetch(
-  \`${baseUrl}/databases/final_clean_data/data/table1?\${params}\`
+// Preview data first (recommended for large queries)
+const previewResponse = await fetch(
+  \`${baseUrl}/databases/final_clean_data/data/table1?\${params}&limit=10\`
 );
-const data = await dataResponse.json();
+const previewData = await previewResponse.json();
+console.log('Data preview:', previewData);
 
-// Download data as CSV
+// Download complete dataset as CSV
 const downloadUrl = \`${baseUrl}/databases/final_clean_data/download/table1?\${params}\`;
-window.open(downloadUrl, '_blank');`}</code>
+
+// Trigger download with proper error handling
+try {
+  const downloadResponse = await fetch(downloadUrl);
+  if (!downloadResponse.ok) throw new Error('Download failed');
+  
+  const blob = await downloadResponse.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'environmental_data.csv';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+} catch (error) {
+  console.error('Download error:', error);
+}`}</code>
                       </pre>
                     </CardContent>
                   </Card>
@@ -442,40 +504,79 @@ window.open(downloadUrl, '_blank');`}</code>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                      <h4 className="font-semibold text-green-800 mb-2">Open Access</h4>
+                      <h4 className="font-semibold text-green-800 mb-2">Open Access Policy</h4>
                       <p className="text-green-700 text-sm">
-                        Currently, the API is open access and does not require authentication. 
-                        All endpoints can be accessed without API keys or tokens.
+                        The Summit-to-Shore API is currently open access for research and educational purposes. 
+                        No API keys or authentication tokens are required to access environmental datasets.
                       </p>
                     </div>
-                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                      <h4 className="font-semibold text-blue-800 mb-2">Future Plans</h4>
-                      <p className="text-blue-700 text-sm">
-                        We plan to implement API key authentication in the future for:
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                      <h4 className="font-semibold text-amber-800 mb-2">Fair Use Guidelines</h4>
+                      <p className="text-amber-700 text-sm mb-2">
+                        To ensure data availability for all users, please follow these guidelines:
                       </p>
-                      <ul className="text-blue-700 text-sm mt-2 list-disc list-inside">
-                        <li>Rate limiting and usage tracking</li>
-                        <li>Access to premium datasets</li>
-                        <li>Bulk download capabilities</li>
-                        <li>Real-time data streaming</li>
+                      <ul className="text-amber-700 text-sm list-disc list-inside space-y-1">
+                        <li>Use the <code>/health</code> endpoint to verify server availability</li>
+                        <li>Implement appropriate request timeouts and error handling</li>
+                        <li>Cache responses when possible to reduce repeated queries</li>
+                        <li>Use data preview with <code>limit</code> parameter for exploration</li>
+                        <li>Contact us for bulk data needs or high-frequency access patterns</li>
                       </ul>
                     </div>
-                    <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                      <h4 className="font-semibold text-yellow-800 mb-2">Fair Use Policy & Contact</h4>
-                      <p className="text-yellow-700 text-sm">
-                        Please use the API responsibly:
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <h4 className="font-semibold text-blue-800 mb-2">Future Enhancements</h4>
+                      <p className="text-blue-700 text-sm mb-2">
+                        Planned API improvements include:
                       </p>
-                      <ul className="text-yellow-700 text-sm mt-2 list-disc list-inside">
-                        <li>Limit requests to reasonable intervals</li>
-                        <li>Use appropriate date ranges and limits</li>
-                        <li>Cache responses when possible</li>
-                        <li>For bulk downloads, use the request form</li>
-                        <li>Contact s2s@uvm.edu for high-volume usage or questions</li>
-                        <li>Phone: (802) 656-2215 for technical support</li>
+                      <ul className="text-blue-700 text-sm list-disc list-inside space-y-1">
+                        <li>API key authentication for enhanced rate limits</li>
+                        <li>WebSocket connections for real-time data streaming</li>
+                        <li>GraphQL endpoint for flexible data queries</li>
+                        <li>Geospatial querying with bounding box filters</li>
+                        <li>Data export in multiple formats (NetCDF, Parquet, GeoJSON)</li>
+                        <li>Metadata catalog with DOI integration</li>
+                      </ul>
+                    </div>
+                    <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+                      <h4 className="font-semibold text-indigo-800 mb-2">Data Attribution & Citation</h4>
+                      <p className="text-indigo-700 text-sm mb-2">
+                        When using Summit-to-Shore data in publications or presentations, please cite:
+                      </p>
+                      <div className="bg-indigo-100 p-3 rounded text-indigo-800 text-xs font-mono">
+                        "Summit-to-Shore Environmental Observatory, University of Vermont. 
+                        Accessed via API at {window.location.origin} on {new Date().toISOString().split('T')[0]}."
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                      <h4 className="font-semibold text-purple-800 mb-2">Support & Collaboration</h4>
+                      <p className="text-purple-700 text-sm mb-2">
+                        Get help or discuss collaboration opportunities:
+                      </p>
+                      <ul className="text-purple-700 text-sm list-disc list-inside space-y-1">
+                        <li>Technical Support: <a href="mailto:summit2shore@uvm.edu" className="underline font-medium">summit2shore@uvm.edu</a></li>
+                        <li>Research Collaboration: <a href="/about" className="underline font-medium">Meet Our Team</a></li>
+                        <li>Documentation: <a href="/documentation" className="underline font-medium">Complete Project Docs</a></li>
+                        <li>Data Portal: <a href="/download" className="underline font-medium">Interactive Data Browser</a></li>
+                      </ul>
+                    </div>
+
+                    <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <h4 className="font-semibold text-yellow-800 mb-2">Fair Use Policy & Production API</h4>
+                      <p className="text-yellow-700 text-sm mb-2">
+                        Please use the API responsibly for research and educational purposes:
+                      </p>
+                      <ul className="text-yellow-700 text-sm list-disc list-inside space-y-1">
+                        <li>Use <code>/health</code> endpoint to check server availability</li>
+                        <li>Implement appropriate request timeouts and error handling</li>
+                        <li>Cache responses when possible to reduce repeated queries</li>
+                        <li>Use data preview with <code>limit</code> parameter for exploration</li>
+                        <li>Contact us for bulk data needs: <a href="mailto:s2s@uvm.edu" className="underline">s2s@uvm.edu</a></li>
+                        <li>Phone support: (802) 656-2215 for technical assistance</li>
                       </ul>
                       <div className="mt-3 p-2 bg-yellow-100 rounded">
                         <p className="text-yellow-800 text-sm font-medium">
-                          🌐 Production API Base URL: https://vdondeti.w3.uvm.edu/api
+                          🌐 Production API Base: <code className="bg-yellow-200 px-1 rounded">https://vdondeti.w3.uvm.edu/api</code>
                         </p>
                       </div>
                     </div>
