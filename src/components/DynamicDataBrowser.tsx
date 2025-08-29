@@ -349,22 +349,41 @@ const DynamicDataBrowser = () => {
       const joinCsvLine = (cols: string[]): string =>
         cols.map((v) => (v.includes(',') || v.includes('"') ? '"' + v.replace(/"/g, '""') + '"' : v)).join(',');
 
-      // Helper: normalize TIMESTAMP column to "YYYY-MM-DD HH:mm:ss"
-      const normalizeTimestamps = (csv: string): string => {
+      // Helper: normalize TIMESTAMP column to "YYYY-MM-DD HH:mm:ss" and filter to selected attributes
+      const normalizeAndFilter = (csv: string): string => {
         const lines = csv.split(/\r?\n/);
         if (lines.length === 0) return csv;
         const header = lines[0];
         const rows = lines.slice(1);
         const headerCols = splitCsvLine(header).map((h) => h.replace(/^"|"$/g, ''));
-        const tsIdx = headerCols.findIndex((h) => h.trim().toUpperCase() === 'TIMESTAMP');
-        if (tsIdx === -1) return csv; // nothing to normalize
+        
+        // Filter columns to only selected attributes (if any selected)
+        let colIndices: number[] = [];
+        if (selectedAttributes.length > 0) {
+          colIndices = selectedAttributes.map(attr => headerCols.findIndex(h => h.trim() === attr.trim())).filter(idx => idx !== -1);
+        } else {
+          colIndices = headerCols.map((_, idx) => idx);
+        }
+        
+        // Filter header
+        const filteredHeader = joinCsvLine(colIndices.map(idx => headerCols[idx]));
+        
+        // Find timestamp index in filtered columns
+        const filteredHeaderCols = colIndices.map(idx => headerCols[idx]);
+        const tsIdx = filteredHeaderCols.findIndex((h) => h.trim().toUpperCase() === 'TIMESTAMP');
+        
         const outRows: string[] = [];
         for (const r of rows) {
           const trimmed = r.trim();
           if (!trimmed) continue;
           const cols = splitCsvLine(r);
-          if (cols[tsIdx] !== undefined) {
-            const raw = cols[tsIdx].replace(/^"|"$/g, '');
+          
+          // Filter columns first
+          const filteredCols = colIndices.map(idx => cols[idx] || '');
+          
+          // Normalize timestamp if exists
+          if (tsIdx !== -1 && filteredCols[tsIdx] !== undefined) {
+            const raw = filteredCols[tsIdx].replace(/^"|"$/g, '');
             const isoLike = /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(?:\.\d+Z)?$/;
             const dbLike = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
             let out = raw;
@@ -377,11 +396,11 @@ const DynamicDataBrowser = () => {
                 if (!isNaN(d2.getTime())) out = format(d2, 'yyyy-MM-dd HH:mm:ss');
               }
             }
-            cols[tsIdx] = out;
+            filteredCols[tsIdx] = out;
           }
-          outRows.push(joinCsvLine(cols));
+          outRows.push(joinCsvLine(filteredCols));
         }
-        return [header, ...outRows].join('\n');
+        return [filteredHeader, ...outRows].join('\n');
       };
 
       // Recursive fetch that splits time ranges until server cap (~1000 rows) is avoided
@@ -442,10 +461,10 @@ const DynamicDataBrowser = () => {
         throw new Error('No data found for the selected criteria');
       }
 
-      // Combine and normalize timestamp column to DB-like format
+      // Combine, normalize timestamps, and filter to selected attributes
       const combinedCsv = [finalHeader, ...allRows].join('\n');
-      const normalizedCsv = normalizeTimestamps(combinedCsv);
-      const blob = new Blob([normalizedCsv], { type: 'text/csv;charset=utf-8;' });
+      const processedCsv = normalizeAndFilter(combinedCsv);
+      const blob = new Blob([processedCsv], { type: 'text/csv;charset=utf-8;' });
 
       console.log('[Downloaded Blob Size]', blob.size, 'bytes');
       if (blob.size === 0) throw new Error('No data found for the selected criteria');
@@ -501,18 +520,6 @@ const DynamicDataBrowser = () => {
 
   return (
     <div className="space-y-6">
-      {/* API Health Status */}
-      <Alert className={apiHealth === 'healthy' ? 'border-green-200 bg-green-50' : apiHealth === 'unhealthy' ? 'border-red-200 bg-red-50' : ''}>
-        <div className="flex items-center gap-2">
-          {apiHealth === 'healthy' && <CheckCircle2 className="h-4 w-4 text-green-600" />}
-          {apiHealth === 'unhealthy' && <AlertCircle className="h-4 w-4 text-red-600" />}
-          {apiHealth === 'unknown' && <Loader2 className="h-4 w-4 animate-spin" />}
-          <AlertDescription>
-            API Status: {apiHealth === 'healthy' ? 'Connected' : apiHealth === 'unhealthy' ? 'Connection Failed' : 'Checking...'}
-            {apiHealth === 'unhealthy' && ' - Please ensure the production server is running'}
-          </AlertDescription>
-        </div>
-      </Alert>
 
       <Tabs defaultValue="select" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
