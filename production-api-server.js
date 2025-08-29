@@ -174,201 +174,65 @@ app.get('/api/databases/:database/locations', async (req, res) => {
   try {
     const { database } = req.params;
     const dbName = getDatabaseName(database);
-    
-    console.log(`[DEBUG] Processing locations for database: ${database} -> ${dbName}`);
 
-    const tablesParam = String(req.query.tables || '').trim();
-    const requestedTables = tablesParam ? new Set(tablesParam.split(',').map((t) => t.trim())) : null;
-    const debugMode = String(req.query.debug || '').toLowerCase() === '1' || String(req.query.debug || '').toLowerCase() === 'true';
-    const forceCanonical = String(req.query.canonical || '').toLowerCase() === '1' || String(req.query.canonical || '').toLowerCase() === 'true';
-
-    // Always return canonical 22 sites for raw_data unless debugging is requested
-    if ((database === 'raw_data' && !debugMode) || forceCanonical) {
-      const canonical = Object.keys(LOCATION_METADATA).filter((k) => k !== 'SPST').map((code, idx) => {
-        const meta = LOCATION_METADATA[code] || null;
-        return {
-          id: idx + 1,
-          name: code,
-          displayName: meta?.name || code,
-          latitude: meta?.latitude ?? 44.0,
-          longitude: meta?.longitude ?? -72.5,
-          elevation: meta?.elevation ?? 1000
-        };
-      });
-      return res.json(canonical);
-    }
-
-    // Discover ALL columns up-front so we can select tables that have BOTH a location-like and a timestamp-like column
-    console.log(`[DEBUG] Querying columns for schema: ${dbName}`);
-    const [colRows] = await pool.execute(
-      `SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE
+    // Find all tables that have a Location column (case-insensitive)
+    const [locTables] = await pool.execute(
+      `SELECT TABLE_NAME, COLUMN_NAME
        FROM INFORMATION_SCHEMA.COLUMNS
-       WHERE TABLE_SCHEMA = ?`,
+       WHERE TABLE_SCHEMA = ? AND LOWER(COLUMN_NAME) = 'location'`,
       [dbName]
     );
-    console.log(`[DEBUG] Found ${colRows.length} columns across tables`);
 
-    // Group columns by table
-    const byTable = new Map();
-    for (const r of colRows) {
-      if (requestedTables && !requestedTables.has(r.TABLE_NAME)) continue;
-      const arr = byTable.get(r.TABLE_NAME) || [];
-      arr.push(r);
-      byTable.set(r.TABLE_NAME, arr);
-    }
-
-    function isLocationCol(name) {
-      const n = String(name).toLowerCase();
-      return (
-        n === 'location' ||
-        n.endsWith('location') || n.includes('location') ||
-        n === 'site' || n === 'sitename' || n.includes('site_') || n.endsWith('_site') ||
-        n === 'station' || n === 'stationname' || n.includes('station_') || n.endsWith('_station') ||
-        [
-          'locationid','location_id','locationcode','location_code','locationname','location_name',
-          'site_id','siteid','sitecode','site_code',
-          'station_id','stationid','stationcode','station_code',
-          'loc','loc_id','locid'
-        ].includes(n)
-      );
-    }
-
-    function isTimeCol(name, dataType) {
-      const n = String(name).toLowerCase();
-      const t = String(dataType || '').toLowerCase();
-      return (
-        n === 'timestamp' || n === 'datetime' || n === 'time' ||
-        n.includes('timestamp') || n.includes('datetime') || n.includes('date') || n.endsWith('time') ||
-        t.includes('timestamp') || t.includes('datetime') || t.includes('date') || t.includes('time')
-      );
-    }
-
-    function scoreLoc(name) {
-      const n = String(name).toLowerCase();
-      if (n === 'location') return 100;
-      if (n.endsWith('location') || n.includes('location')) return 90;
-      if (n === 'site' || n === 'sitename' || n === 'site_code') return 80;
-      if (n === 'station' || n === 'stationname') return 70;
-      return 50;
-    }
-
-    function scoreTime(name) {
-      const n = String(name).toLowerCase();
-      if (n === 'timestamp' || n === 'time' || n === 'datetime') return 100;
-      if (n.includes('timestamp') || n.includes('datetime')) return 95;
-      if (n.includes('date')) return 80;
-      return 50;
-    }
-
-    const tableSelections = [];
-    const debugInfo = [];
-
-    for (const [table, cols] of byTable.entries()) {
-      const tableLower = String(table).toLowerCase();
-      if (!CORE_TABLES.has(tableLower)) continue;
-      // For seasonal database, keep only cleaned_data_season_* tables as before
-      if (database === 'seasonal_clean_data' && !String(table).startsWith('cleaned_data_season_')) continue;
-
-      const locs = cols.filter((c) => isLocationCol(c.COLUMN_NAME));
-      const times = cols.filter((c) => isTimeCol(c.COLUMN_NAME, c.DATA_TYPE));
-
-      // For raw_data we only require a Location column; for others require both Location and Time
-      const requireTime = database !== 'raw_data';
-      if (locs.length === 0) continue;
-      if (requireTime && times.length === 0) continue;
-
-      locs.sort((a, b) => scoreLoc(b.COLUMN_NAME) - scoreLoc(a.COLUMN_NAME));
-      if (times.length > 0) times.sort((a, b) => scoreTime(b.COLUMN_NAME) - scoreTime(a.COLUMN_NAME));
-
-      const locCol = locs[0].COLUMN_NAME;
-      const tsCol = times[0]?.COLUMN_NAME || null;
-      debugInfo.push({ table, locCol, tsCol });
-
-      const baseWhere = `\`${locCol}\` IS NOT NULL AND \`${locCol}\` <> ''`;
-      const timeClause = tsCol ? ` AND \`${tsCol}\` IS NOT NULL` : '';
-      tableSelections.push(
-        `(SELECT DISTINCT UPPER(TRIM(\`${locCol}\`)) AS name FROM \`${dbName}\`.\`${table}\` WHERE ${baseWhere}${timeClause})`
-      );
-    }
-
-    if (tableSelections.length === 0) {
-      console.log(`[DEBUG] No valid tables found for ${database} (${dbName})`);
+    if (!locTables || locTables.length === 0) {
       return res.json([]);
     }
-    
-    console.log(`[DEBUG] Found ${tableSelections.length} valid tables with both location and timestamp columns`);
 
-    const unionQuery = `SELECT DISTINCT name FROM (${tableSelections.join(' UNION ALL ')}) AS all_locs ORDER BY name`;
-    console.log(`[DEBUG] Executing union query for ${database}`);
-    const [rows] = await pool.execute(unionQuery);
-    console.log(`[DEBUG] Found ${rows.length} distinct locations before filtering`);
+    const aliasMap = { SPST: 'SPER', SLEEPERS_R25: 'SR25', SLEEPERS_W1: 'SR11', SLEEPERSMAIN_SR01: 'SR01' };
+    const seen = new Set();
+    const names = [];
 
-    if (debugMode) {
-      return res.json({
-        database: dbName,
-        database_key: database,
-        tables_considered: byTable.size,
-        tables_used: tableSelections.length,
-        selections: debugInfo,
-        all_tables: Array.from(byTable.keys()),
-        sample_columns: Array.from(byTable.entries()).slice(0, 3).map(([table, cols]) => ({
-          table,
-          columns: cols.map(c => c.COLUMN_NAME)
-        })),
-        locations: rows.map((r) => r.name),
-        union_query: unionQuery
-      });
+    for (const row of locTables) {
+      const table = row.TABLE_NAME;
+      try {
+        const [rows] = await pool.execute(
+          `SELECT DISTINCT Location AS name FROM \`${dbName}\`.\`${table}\`
+           WHERE Location IS NOT NULL AND Location <> ''`
+        );
+        for (const r of rows) {
+          if (!r?.name) continue;
+          let code = String(r.name).trim().toUpperCase();
+          code = aliasMap[code] || code;
+          const key = code;
+          if (!seen.has(key)) {
+            seen.add(key);
+            names.push(code);
+          }
+        }
+      } catch (e) {
+        // ignore table-level errors and continue
+        continue;
+      }
     }
 
-    // Normalize aliases to canonical codes and attach metadata (restrict to the 22 canonical sites)
-    const aliasMap = {
-      'SLEEPERS_R25': 'SR25',
-      'SLEEPERS_W1': 'SR11',
-      'SLEEPERSMAIN_SR01': 'SR01',
-      'SPST': 'SPER'
-    };
-    const allowedSet = new Set(Object.keys(LOCATION_METADATA));
-
-    const seen = new Set();
-    const result = [];
-    rows.forEach((r, idx) => {
-      let code = String(r.name || '').trim().toUpperCase();
-      if (!code) return;
-      code = aliasMap[code] || code;
-      // Only include known canonical site codes
-      if (!allowedSet.has(code)) return;
-      if (seen.has(code)) return;
-      seen.add(code);
+    // Map to response with real metadata when available
+    const locations = names.map((code, idx) => {
       const meta = LOCATION_METADATA[code] || null;
-      result.push({
-        id: result.length + 1,
+      return {
+        id: idx + 1,
         name: code,
         displayName: meta?.name || code,
-        latitude: meta?.latitude ?? 44.0 + idx * 0.01,
-        longitude: meta?.longitude ?? -72.5 - idx * 0.01,
-        elevation: meta?.elevation ?? 1000 + idx * 10
-      });
+        latitude: meta?.latitude ?? 44.25 + (idx * 0.001),
+        longitude: meta?.longitude ?? -72.58 - (idx * 0.001),
+        elevation: meta?.elevation ?? 500
+      };
     });
 
-    // Fallback to canonical 22 locations for raw_data if fewer were discovered
-    if (database === 'raw_data' && result.length < 22) {
-      const canonical = Object.keys(LOCATION_METADATA).filter((k) => k !== 'SPST');
-      const canonicalResult = canonical.map((code, idx) => {
-        const meta = LOCATION_METADATA[code] || null;
-        return {
-          id: idx + 1,
-          name: code,
-          displayName: meta?.name || code,
-          latitude: meta?.latitude ?? 44.0,
-          longitude: meta?.longitude ?? -72.5,
-          elevation: meta?.elevation ?? 1000
-        };
-      });
-      return res.json(canonicalResult);
-    }
-
-    return res.json(result);
-
+    return res.json(locations);
+  } catch (error) {
+    console.error('Error fetching locations:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
 // JSON data endpoint
 app.get('/api/databases/:database/data/:table', async (req, res) => {
   try {
