@@ -263,7 +263,8 @@ export class LocalDatabaseService {
       if (endDate) params.append('end_date', endDate);
       if (season) params.append('season', season);
 
-      const response = await fetch(`${this.baseUrl}/api/analytics?${params}`);
+      const originalKey = this.getOriginalDatabaseKey(database);
+      const response = await fetch(`${this.baseUrl}/api/databases/${originalKey}/analytics?${params}`);
       if (!response.ok) throw new Error('Failed to fetch analytics');
       const data = await response.json();
       return data;

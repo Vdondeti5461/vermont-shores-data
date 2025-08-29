@@ -144,36 +144,72 @@ app.get('/api/databases/:database/tables/:table/attributes', async (req, res) =>
 app.get('/api/databases/:database/locations', async (req, res) => {
   try {
     const { database } = req.params;
-    
-    // Try to find locations from a locations table or extract from data tables
+
+    // Try to detect a table and column that represents location
+    const [candidate] = await pool.execute(
+      `SELECT TABLE_NAME, COLUMN_NAME
+       FROM information_schema.COLUMNS
+       WHERE TABLE_SCHEMA = ?
+         AND COLUMN_NAME IN ('location','site','site_name','station','station_id')
+       ORDER BY CASE COLUMN_NAME
+                  WHEN 'location' THEN 1
+                  WHEN 'site' THEN 2
+                  WHEN 'station' THEN 3
+                  ELSE 4
+                END
+       LIMIT 1`,
+      [database]
+    );
+
     let locations = [];
-    
-    try {
-      // First, try to get from a locations table
-      const [locationRows] = await pool.execute(
-        `SELECT DISTINCT location as name, location as displayName FROM \`${database}\`.\`table1\` WHERE location IS NOT NULL LIMIT 50`
+
+    if (candidate.length > 0) {
+      const tableName = candidate[0].TABLE_NAME;
+      const colName = candidate[0].COLUMN_NAME;
+      const [rows] = await pool.execute(
+        `SELECT DISTINCT \`${colName}\` AS name, \`${colName}\` AS displayName
+         FROM \`${database}\`.\`${tableName}\`
+         WHERE \`${colName}\` IS NOT NULL AND \`${colName}\` <> ''
+         LIMIT 200`
       );
-      locations = locationRows.map((row, index) => ({
-        id: index + 1,
+      locations = rows.map((row, i) => ({
+        id: i + 1,
         name: row.name,
         displayName: row.displayName,
-        latitude: 44.26 + (Math.random() - 0.5) * 0.1, // Vermont approximate coordinates
+        latitude: 44.26 + (Math.random() - 0.5) * 0.1,
         longitude: -72.58 + (Math.random() - 0.5) * 0.1,
         elevation: 300 + Math.random() * 1000
       }));
-    } catch (err) {
-      console.error('Error fetching locations from table1:', err);
-      // Fallback to dummy locations
-      locations = [
-        { id: 1, name: 'MountMansfield', displayName: 'Mount Mansfield', latitude: 44.5439, longitude: -72.8142, elevation: 1339 },
-        { id: 2, name: 'Burlington', displayName: 'Burlington', latitude: 44.4759, longitude: -73.2121, elevation: 61 },
-        { id: 3, name: 'Montpelier', displayName: 'Montpelier', latitude: 44.2601, longitude: -72.5806, elevation: 182 }
-      ];
     }
-    
+
     res.json(locations);
   } catch (error) {
     console.error('Error fetching locations:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// JSON data endpoint
+app.get('/api/databases/:database/data/:table', async (req, res) => {
+  try {
+    const { database, table } = req.params;
+    const { location, start_date, end_date, limit = 1000 } = req.query;
+
+    let query = `SELECT * FROM \`${database}\`.\`${table}\``;
+    const conditions = [];
+    const params = [];
+
+    if (location) { conditions.push('location = ?'); params.push(location); }
+    if (start_date) { conditions.push('timestamp >= ?'); params.push(start_date); }
+    if (end_date) { conditions.push('timestamp <= ?'); params.push(end_date); }
+
+    if (conditions.length > 0) query += ' WHERE ' + conditions.join(' AND ');
+    query += ` LIMIT ${parseInt(limit)}`;
+
+    const [rows] = await pool.execute(query, params);
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching table data:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -188,25 +224,11 @@ app.get('/api/databases/:database/download/:table', async (req, res) => {
     const conditions = [];
     const params = [];
     
-    if (location) {
-      conditions.push('location = ?');
-      params.push(location);
-    }
+    if (location) { conditions.push('location = ?'); params.push(location); }
+    if (start_date) { conditions.push('timestamp >= ?'); params.push(start_date); }
+    if (end_date) { conditions.push('timestamp <= ?'); params.push(end_date); }
     
-    if (start_date) {
-      conditions.push('timestamp >= ?');
-      params.push(start_date);
-    }
-    
-    if (end_date) {
-      conditions.push('timestamp <= ?');
-      params.push(end_date);
-    }
-    
-    if (conditions.length > 0) {
-      query += ' WHERE ' + conditions.join(' AND ');
-    }
-    
+    if (conditions.length > 0) query += ' WHERE ' + conditions.join(' AND ');
     query += ` LIMIT ${parseInt(limit)}`;
     
     const [rows] = await pool.execute(query, params);
@@ -224,7 +246,7 @@ app.get('/api/databases/:database/download/:table', async (req, res) => {
         const value = row[header];
         if (value === null) return '';
         if (typeof value === 'string' && value.includes(',')) {
-          return `"${value.replace(/"/g, '""')}"`;
+          return `"${value.replace(/\"/g, '""')}"`;
         }
         return value;
       });
@@ -232,7 +254,7 @@ app.get('/api/databases/:database/download/:table', async (req, res) => {
     }
     
     res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename="${database}_${table}_data.csv"`);
+    res.setHeader('Content-Disposition', `attachment; filename=\"${database}_${table}_data.csv\"`);
     res.send(csv);
     
   } catch (error) {
