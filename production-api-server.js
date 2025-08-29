@@ -1,9 +1,9 @@
 
+require('dotenv').config();
 const express = require('express');
 const mysql = require('mysql2/promise');
 const cors = require('cors');
 const path = require('path');
-
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -15,32 +15,31 @@ app.use(cors({
 
 app.use(express.json());
 
-// Database configuration - using only the main database that we have access to
+// Database configuration - pool without default database; switch per request
 const dbConfig = {
-  host: 'webdb5.uvm.edu',
-  user: 'crrels2s_admin',
-  password: 'y0m5dxldXSLP',
-  database: 'CRRELS2S_VTClimateRepository', // Main database we have access to
-  port: 3306,
-  connectTimeout: 60000,
-  acquireTimeout: 60000,
-  reconnect: true
+  host: process.env.MYSQL_HOST || 'webdb5.uvm.edu',
+  user: process.env.MYSQL_USER || 'crrels2s_admin',
+  password: process.env.MYSQL_PASSWORD || 'y0m5dxldXSLP',
+  port: Number(process.env.MYSQL_PORT) || 3306,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
 };
 
 // Create connection pool
 const pool = mysql.createPool(dbConfig);
 
-// Database mapping - only include databases we actually have access to
-const DATABASE_MAPPING = {
-  'crrels2s_vtclimaterepository': {
-    id: 'raw_data',
-    name: 'Raw Data',
-    displayName: 'Raw Environmental Data',
-    category: 'raw',
-    order: 1,
-    actualDatabase: 'CRRELS2S_VTClimateRepository'
-  }
+// Known database configurations (keys used by UI -> actual MySQL schema names)
+const DATABASES = {
+  raw_data: 'CRRELS2S_VTClimateRepository',
+  initial_clean_data: 'CRRELS2S_VTClimateRepository_Processed',
+  final_clean_data: 'CRRELS2S_ProcessedData',
+  seasonal_clean_data: 'CRRELS2S_cleaned_data_seasons'
 };
+
+function getDatabaseName(key) {
+  return DATABASES[key] || DATABASES.raw_data;
+}
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
@@ -68,24 +67,19 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// Get all available databases - return only what we have access to
+// Get all available databases - expose the 4 categories
 app.get('/api/databases', async (req, res) => {
   try {
-    // Return our mapped databases that we know work
-    const databases = [
-      {
-        key: 'crrels2s_vtclimaterepository',
-        name: 'CRRELS2S_VTClimateRepository',
-        displayName: 'Raw Environmental Data',
-        description: 'Main environmental monitoring database'
-      }
-    ];
+    const databases = Object.entries(DATABASES).map(([key, name]) => ({
+      key,
+      name,
+      displayName: key.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
+      description: key
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, (l) => l.toUpperCase())
+    }));
 
-    res.json({
-      databases: databases,
-      seasons: [],
-      tables: []
-    });
+    res.json({ databases, seasons: [], tables: [] });
   } catch (error) {
     console.error('Error fetching databases:', error);
     res.status(500).json({ error: error.message });
@@ -96,39 +90,22 @@ app.get('/api/databases', async (req, res) => {
 app.get('/api/databases/:database/tables', async (req, res) => {
   try {
     const { database } = req.params;
-    
-    // Use the main database we have access to
-    const dbName = 'CRRELS2S_VTClimateRepository';
-    const [tables] = await pool.execute(`SHOW TABLES FROM \`${dbName}\``);
-    
-    const tableList = [];
-    for (const tableRow of tables) {
-      const tableName = Object.values(tableRow)[0];
-      
-      try {
-        const [countResult] = await pool.execute(`SELECT COUNT(*) as count FROM \`${dbName}\`.\`${tableName}\``);
-        const rowCount = countResult[0].count;
-        
-        tableList.push({
-          name: tableName,
-          displayName: tableName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-          description: `${tableName} environmental data table`,
-          rowCount: parseInt(rowCount),
-          primaryAttributes: ['timestamp', 'location']
-        });
-      } catch (err) {
-        console.error(`Error getting count for table ${tableName}:`, err);
-        tableList.push({
-          name: tableName,
-          displayName: tableName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-          description: `${tableName} environmental data table`,
-          rowCount: 0,
-          primaryAttributes: ['timestamp', 'location']
-        });
-      }
-    }
-    
-    res.json({ tables: tableList });
+    const dbName = getDatabaseName(database);
+
+    const [infoRows] = await pool.execute(
+      'SELECT TABLE_NAME, TABLE_ROWS FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? ORDER BY TABLE_NAME',
+      [dbName]
+    );
+
+    const tables = infoRows.map((r) => ({
+      name: r.TABLE_NAME,
+      displayName: r.TABLE_NAME.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
+      description: `${r.TABLE_NAME} environmental data table`,
+      rowCount: Number(r.TABLE_ROWS) || 0,
+      primaryAttributes: ['TIMESTAMP', 'Location']
+    }));
+
+    res.json({ database: dbName, tables });
   } catch (error) {
     console.error('Error fetching tables:', error);
     res.status(500).json({ error: error.message });
@@ -138,29 +115,22 @@ app.get('/api/databases/:database/tables', async (req, res) => {
 // Get table attributes/columns
 app.get('/api/databases/:database/tables/:table/attributes', async (req, res) => {
   try {
-    const { table } = req.params;
-    const dbName = 'CRRELS2S_VTClimateRepository';
-    
+    const { database, table } = req.params;
+    const dbName = getDatabaseName(database);
     const [columns] = await pool.execute(`DESCRIBE \`${dbName}\`.\`${table}\``);
-    
-    const attributes = columns.map(col => ({
+
+    const attributes = columns.map((col) => ({
       name: col.Field,
       type: col.Type,
       nullable: col.Null === 'YES',
       category: getCategoryFromColumnName(col.Field),
-      isPrimary: col.Key === 'PRI',
+      isPrimary: col.Key === 'PRI' || ['TIMESTAMP', 'Location'].includes(col.Field),
       comment: col.Comment || ''
     }));
 
-    const primaryAttributes = attributes.filter(attr => 
-      attr.isPrimary || 
-      ['timestamp', 'location', 'id', 'record'].includes(attr.name.toLowerCase())
-    );
+    const primaryAttributes = attributes.filter((attr) => attr.isPrimary || ['timestamp', 'location', 'id', 'record'].includes(attr.name.toLowerCase()));
 
-    res.json({
-      attributes,
-      primaryAttributes
-    });
+    res.json({ database: dbName, table, attributes, primaryAttributes });
   } catch (error) {
     console.error('Error fetching table attributes:', error);
     res.status(500).json({ error: error.message });
@@ -170,45 +140,36 @@ app.get('/api/databases/:database/tables/:table/attributes', async (req, res) =>
 // Get locations for a database
 app.get('/api/databases/:database/locations', async (req, res) => {
   try {
-    const dbName = 'CRRELS2S_VTClimateRepository';
+    const { database } = req.params;
+    const dbName = getDatabaseName(database);
 
-    // Try to find location data from available tables
     let locations = [];
-    
+
     try {
-      // First try to get tables
-      const [tables] = await pool.execute(`SHOW TABLES FROM \`${dbName}\``);
-      
-      for (const tableRow of tables) {
-        const tableName = Object.values(tableRow)[0];
-        
+      const [locTableRows] = await pool.execute(
+        `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+         WHERE TABLE_SCHEMA = ? AND COLUMN_NAME IN ('Location','location')`,
+        [dbName]
+      );
+      const tablesWithLocation = locTableRows.map((r) => r.TABLE_NAME);
+
+      for (const tableName of tablesWithLocation) {
         try {
-          // Check if table has location column
-          const [columns] = await pool.execute(`SHOW COLUMNS FROM \`${dbName}\`.\`${tableName}\` LIKE '%location%'`);
-          
-          if (columns.length > 0) {
-            const locationCol = columns[0].Field;
-            const [rows] = await pool.execute(
-              `SELECT DISTINCT \`${locationCol}\` AS name 
-               FROM \`${dbName}\`.\`${tableName}\` 
-               WHERE \`${locationCol}\` IS NOT NULL AND \`${locationCol}\` <> '' 
-               LIMIT 50`
-            );
-            
-            const tableLocations = rows.map((row, i) => ({
-              id: i + 1,
-              name: row.name,
-              displayName: row.name,
-              latitude: 44.26 + (Math.random() - 0.5) * 0.1,
-              longitude: -72.58 + (Math.random() - 0.5) * 0.1,
-              elevation: 300 + Math.random() * 1000
-            }));
-            
-            locations = [...locations, ...tableLocations];
-            break; // Use first table with location data
-          }
-        } catch (tableErr) {
-          // Skip tables we can't access
+          const [rows] = await pool.execute(
+            `SELECT DISTINCT \`Location\` AS name FROM \`${dbName}\`.\`${tableName}\` 
+             WHERE \`Location\` IS NOT NULL AND \`Location\` <> '' LIMIT 100`
+          );
+          const tableLocations = rows.map((row, i) => ({
+            id: i + 1,
+            name: row.name,
+            displayName: row.name,
+            latitude: 44.26 + (Math.random() - 0.5) * 0.1,
+            longitude: -72.58 + (Math.random() - 0.5) * 0.1,
+            elevation: 300 + Math.random() * 1000
+          }));
+          locations = [...locations, ...tableLocations];
+          if (locations.length > 0) break;
+        } catch (_) {
           continue;
         }
       }
@@ -216,17 +177,9 @@ app.get('/api/databases/:database/locations', async (req, res) => {
       console.error('Error finding locations:', err);
     }
 
-    // If no locations found, return sample data
     if (locations.length === 0) {
       locations = [
-        {
-          id: 1,
-          name: 'Station_001',
-          displayName: 'Station 001',
-          latitude: 44.26,
-          longitude: -72.58,
-          elevation: 400
-        }
+        { id: 1, name: 'Station_001', displayName: 'Station 001', latitude: 44.26, longitude: -72.58, elevation: 400 }
       ];
     }
 
@@ -240,38 +193,35 @@ app.get('/api/databases/:database/locations', async (req, res) => {
 // JSON data endpoint
 app.get('/api/databases/:database/data/:table', async (req, res) => {
   try {
-    const { table } = req.params;
+    const { database, table } = req.params;
     const { location, start_date, end_date, limit = 1000 } = req.query;
-    const dbName = 'CRRELS2S_VTClimateRepository';
+    const dbName = getDatabaseName(database);
 
     let query = `SELECT * FROM \`${dbName}\`.\`${table}\``;
     const conditions = [];
     const params = [];
 
-    if (location) { 
-      // Try to find location column
+    if (location) {
       const [columns] = await pool.execute(`SHOW COLUMNS FROM \`${dbName}\`.\`${table}\` LIKE '%location%'`);
       if (columns.length > 0) {
-        conditions.push(`\`${columns[0].Field}\` = ?`); 
-        params.push(location); 
+        conditions.push(`\`${columns[0].Field}\` = ?`);
+        params.push(location);
       }
     }
-    
-    if (start_date) { 
-      // Try to find timestamp column
+
+    if (start_date) {
       const [columns] = await pool.execute(`SHOW COLUMNS FROM \`${dbName}\`.\`${table}\` WHERE Type LIKE '%timestamp%' OR Type LIKE '%datetime%' OR Field LIKE '%time%'`);
       if (columns.length > 0) {
-        conditions.push(`\`${columns[0].Field}\` >= ?`); 
-        params.push(start_date); 
+        conditions.push(`\`${columns[0].Field}\` >= ?`);
+        params.push(start_date);
       }
     }
-    
-    if (end_date) { 
-      // Try to find timestamp column
+
+    if (end_date) {
       const [columns] = await pool.execute(`SHOW COLUMNS FROM \`${dbName}\`.\`${table}\` WHERE Type LIKE '%timestamp%' OR Type LIKE '%datetime%' OR Field LIKE '%time%'`);
       if (columns.length > 0) {
-        conditions.push(`\`${columns[0].Field}\` <= ?`); 
-        params.push(end_date); 
+        conditions.push(`\`${columns[0].Field}\` <= ?`);
+        params.push(end_date);
       }
     }
 
@@ -289,9 +239,9 @@ app.get('/api/databases/:database/data/:table', async (req, res) => {
 // Download data as CSV
 app.get('/api/databases/:database/download/:table', async (req, res) => {
   try {
-    const { table } = req.params;
+    const { database, table } = req.params;
     const { location, start_date, end_date, attributes, limit = 1000 } = req.query;
-    const dbName = 'CRRELS2S_VTClimateRepository';
+    const dbName = getDatabaseName(database);
     
     let query = `SELECT * FROM \`${dbName}\`.\`${table}\``;
     const conditions = [];
@@ -359,31 +309,26 @@ app.get('/api/databases/:database/download/:table', async (req, res) => {
 // Get analytics data
 app.get('/api/databases/:database/analytics', async (req, res) => {
   try {
+    const { database } = req.params;
     const { location, start_date, end_date } = req.query;
-    const dbName = 'CRRELS2S_VTClimateRepository';
+    const dbName = getDatabaseName(database);
     
-    // Get total records from available tables
     let totalRecords = 0;
     try {
       const [tables] = await pool.execute(`SHOW TABLES FROM \`${dbName}\``);
       if (tables.length > 0) {
         const firstTable = Object.values(tables[0])[0];
         let countQuery = `SELECT COUNT(*) as total_records FROM \`${dbName}\`.\`${firstTable}\``;
-        
+        let params = [];
         if (location) {
           const [columns] = await pool.execute(`SHOW COLUMNS FROM \`${dbName}\`.\`${firstTable}\` LIKE '%location%'`);
           if (columns.length > 0) {
             countQuery += ` WHERE \`${columns[0].Field}\` = ?`;
-            const [result] = await pool.execute(countQuery, [location]);
-            totalRecords = result[0].total_records;
-          } else {
-            const [result] = await pool.execute(countQuery);
-            totalRecords = result[0].total_records;
+            params = [location];
           }
-        } else {
-          const [result] = await pool.execute(countQuery);
-          totalRecords = result[0].total_records;
         }
+        const [result] = await pool.execute(countQuery, params);
+        totalRecords = result[0].total_records;
       }
     } catch (err) {
       console.error('Error getting analytics:', err);

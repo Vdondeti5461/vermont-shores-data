@@ -105,29 +105,49 @@ export class LocalDatabaseService {
     PRECIPITATION: 'Precipitation'
   } as const;
 
-  // Simplified database mapping - only show what we have access to
+  // Database mapping - expose 4 categories used earlier
   static readonly DATABASE_MAPPING = {
-    'crrels2s_vtclimaterepository': {
+    raw_data: {
       id: 'raw_data',
       name: 'Raw Data',
       displayName: 'Raw Environmental Data',
       category: 'raw',
       order: 1
+    },
+    initial_clean_data: {
+      id: 'initial_clean_data',
+      name: 'Initial Clean Data',
+      displayName: 'Initial Clean Data',
+      category: 'processed',
+      order: 2
+    },
+    final_clean_data: {
+      id: 'final_clean_data',
+      name: 'Final Clean Data',
+      displayName: 'Final Clean Data',
+      category: 'processed',
+      order: 3
+    },
+    seasonal_clean_data: {
+      id: 'seasonal_clean_data',
+      name: 'Seasonal Clean Data',
+      displayName: 'Seasonal Clean Data',
+      category: 'seasonal',
+      order: 4
     }
-  };
+  } as const;
 
   static async getDatabasesInfo(): Promise<DatabasesResponse> {
     try {
       const response = await fetch(`${this.baseUrl}/api/databases`);
       if (!response.ok) throw new Error('Failed to fetch databases info');
       const data = await response.json();
-      
-      // Map the databases we have access to
+
+      // Map to our UI shape while preserving known order
       const databases: DatabaseInfo[] = (data.databases || [])
         .map((d: any) => {
-          const mapping = this.DATABASE_MAPPING[d.key as keyof typeof this.DATABASE_MAPPING];
+          const mapping = this.DATABASE_MAPPING[d.key as keyof typeof this.DATABASE_MAPPING] || null;
           if (!mapping) return null;
-          
           return {
             id: mapping.id,
             name: mapping.displayName,
@@ -139,10 +159,8 @@ export class LocalDatabaseService {
         })
         .filter(Boolean)
         .sort((a: any, b: any) => a.order - b.order);
-      
-      const seasons: SeasonInfo[] = data.seasons || [];
-      const tables: string[] = data.tables || [];
-      return { databases, seasons, tables };
+
+      return { databases, seasons: data.seasons || [], tables: data.tables || [] };
     } catch (error) {
       console.error('Error fetching databases info:', error);
       return { databases: [], seasons: [], tables: [] };
@@ -150,10 +168,8 @@ export class LocalDatabaseService {
   }
 
   static getOriginalDatabaseKey(mappedId: string): string {
-    const mapping = Object.values(this.DATABASE_MAPPING).find(m => m.id === mappedId);
-    return mapping ? Object.keys(this.DATABASE_MAPPING).find(key => 
-      this.DATABASE_MAPPING[key as keyof typeof this.DATABASE_MAPPING] === mapping
-    ) || mappedId : mappedId;
+    const mapping = this.DATABASE_MAPPING[mappedId as keyof typeof this.DATABASE_MAPPING];
+    return mapping ? mappedId : 'raw_data';
   }
 
   static async getLocations(database: string = 'raw_data'): Promise<LocationData[]> {
@@ -175,7 +191,7 @@ export class LocalDatabaseService {
       const response = await fetch(`${this.baseUrl}/api/databases/${originalKey}/tables`);
       if (!response.ok) throw new Error('Failed to fetch tables');
       const data = await response.json();
-      return data.tables || [];
+      return data.tables || data || [];
     } catch (error) {
       console.error('Error fetching tables:', error);
       return [];
@@ -199,11 +215,11 @@ export class LocalDatabaseService {
       if (season) params.append('season', season);
       params.append('limit', limit.toString());
 
-      const originalKey = this.getOriginalDatabaseKey(database);
       const response = await fetch(`${this.baseUrl}/api/databases/${originalKey}/data/${table}?${params}`);
       if (!response.ok) throw new Error(`Failed to fetch ${table} data`);
       const data = await response.json();
-      return data;
+      // Some endpoints may return { data: [] }
+      return Array.isArray(data) ? data : data.data || [];
     } catch (error) {
       console.error(`Error fetching ${table} data:`, error);
       return [];
@@ -244,7 +260,6 @@ export class LocalDatabaseService {
       if (endDate) params.append('end_date', endDate);
       if (season) params.append('season', season);
 
-      const originalKey = this.getOriginalDatabaseKey(database);
       const response = await fetch(`${this.baseUrl}/api/databases/${originalKey}/analytics?${params}`);
       if (!response.ok) throw new Error('Failed to fetch analytics');
       const data = await response.json();
@@ -279,7 +294,6 @@ export class LocalDatabaseService {
       if (season) params.append('season', season);
       if (columns && columns.length > 0) params.append('attributes', columns.join(','));
 
-      const originalKey = this.getOriginalDatabaseKey(database);
       const response = await fetch(`${this.baseUrl}/api/databases/${originalKey}/download/${table}?${params}`);
       if (!response.ok) throw new Error(`Failed to download ${table} data`);
       
