@@ -404,6 +404,32 @@ const DynamicDataBrowser = () => {
                     ))}
                   </SelectContent>
                 </Select>
+
+                {/* Show available attributes immediately after table selection */}
+                {selectedTable && attributes.length > 0 && (
+                  <div className="mt-4 p-4 border rounded-lg bg-muted/50">
+                    <h4 className="font-medium mb-2 flex items-center gap-2">
+                      Available Attributes
+                      <Badge variant="secondary">{attributes.length} total</Badge>
+                    </h4>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
+                      {attributes.slice(0, 12).map((attr) => (
+                        <div key={attr.name} className="flex items-center gap-1">
+                          <div className="w-2 h-2 rounded-full bg-primary/60"></div>
+                          <span className="truncate">{attr.name}</span>
+                        </div>
+                      ))}
+                      {attributes.length > 12 && (
+                        <div className="text-muted-foreground italic">
+                          +{attributes.length - 12} more...
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Go to "Filters & Attributes" tab to select specific attributes for download
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
