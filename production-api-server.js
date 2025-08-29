@@ -269,10 +269,17 @@ app.get('/api/databases/:database/locations', async (req, res) => {
     if (debugMode) {
       return res.json({
         database: dbName,
+        database_key: database,
         tables_considered: byTable.size,
         tables_used: tableSelections.length,
         selections: debugInfo,
-        locations: rows.map((r) => r.name)
+        all_tables: Array.from(byTable.keys()),
+        sample_columns: Array.from(byTable.entries()).slice(0, 3).map(([table, cols]) => ({
+          table,
+          columns: cols.map(c => c.COLUMN_NAME)
+        })),
+        locations: rows.map((r) => r.name),
+        union_query: unionQuery
       });
     }
 
