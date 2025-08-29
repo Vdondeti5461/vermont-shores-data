@@ -320,158 +320,140 @@ const DynamicDataBrowser = () => {
 
     setLoading(true);
     try {
-      // Build query parameters
-      const params = new URLSearchParams();
-      
-      // Handle multiple locations correctly
-      if (selectedLocations.length > 0) {
-        console.log('[Selected Locations]', selectedLocations);
-        params.append('location', selectedLocations.join(','));
-      }
-      
-      // Format dates with full timestamp range for better filtering
-      if (startDate) {
-        params.append('start_date', format(startDate, 'yyyy-MM-dd 00:00:00'));
-      }
-      if (endDate) {
-        params.append('end_date', format(endDate, 'yyyy-MM-dd 23:59:59'));
-      }
-      
-      if (selectedAttributes.length > 0) {
-        params.append('attributes', selectedAttributes.join(','));
-      }
+      // Build base query parameters (without location so we can override per call)
+      const baseParams = new URLSearchParams();
 
-      const downloadUrl = `${API_BASE_URL}/api/databases/${selectedDatabase}/download/${selectedTable}?${params.toString()}`;
-      console.log('[Download URL]', downloadUrl);
-      console.log('[Download Params]', {
-        database: selectedDatabase,
-        table: selectedTable,
-        locations: selectedLocations,
-        startDate: startDate ? format(startDate, 'yyyy-MM-dd 00:00:00') : null,
-        endDate: endDate ? format(endDate, 'yyyy-MM-dd 23:59:59') : null,
-        attributes: selectedAttributes
-      });
-      
-      const response = await fetch(downloadUrl);
-      
-      // If backend returns 404 for multi-location, fall back to per-location aggregation
-      let blob: Blob;
-      if (!response.ok) {
-        const status = response.status;
-        const errorText = await response.text();
-        console.error('[Download Error Response]', errorText);
+      if (startDate) baseParams.append('start_date', format(startDate, 'yyyy-MM-dd 00:00:00'));
+      if (endDate) baseParams.append('end_date', format(endDate, 'yyyy-MM-dd 23:59:59'));
+      if (selectedAttributes.length > 0) baseParams.append('attributes', selectedAttributes.join(','));
 
-        if (status === 404 && selectedLocations.length > 1) {
-          console.warn('[Fallback] Aggregating CSV by fetching each location separately');
-
-          // Helper to aggregate CSVs without heavy parsing (assumes same header)
-          const aggregatePerLocation = async (): Promise<Blob> => {
-            let header = '';
-            const rows: string[] = [];
-            let success = 0;
-
-            for (const loc of selectedLocations) {
-              const p = new URLSearchParams(params.toString());
-              p.set('location', loc);
-              const url = `${API_BASE_URL}/api/databases/${selectedDatabase}/download/${selectedTable}?${p.toString()}`;
-              const res = await fetch(url);
-              if (!res.ok) {
-                console.warn(`[Fallback] Skipping location ${loc} due to status ${res.status}`);
-                continue;
-              }
-              const text = await res.text();
-              const lines = text.split(/\r?\n/);
-              if (lines.length === 0) continue;
-              if (!header && lines[0]) header = lines[0];
-              const body = lines.slice(1).filter((l) => l.trim().length > 0);
-              if (body.length > 0) {
-                rows.push(...body);
-                success++;
-              }
-            }
-
-            if (!header || rows.length === 0 || success === 0) {
-              throw new Error('No data found for the selected locations and date range');
-            }
-            const combined = [header, ...rows].join('\n');
-            return new Blob([combined], { type: 'text/csv;charset=utf-8;' });
-          };
-
-          blob = await aggregatePerLocation();
-        } else {
-          throw new Error(`Download failed: ${status} ${response.statusText}`);
+      // Helper: safe CSV split/join for a single line (minimal but robust for quotes)
+      const splitCsvLine = (line: string): string[] => {
+        const out: string[] = [];
+        let cur = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+          const ch = line[i];
+          if (ch === '"') {
+            if (inQuotes && line[i + 1] === '"') { cur += '"'; i++; }
+            else { inQuotes = !inQuotes; }
+          } else if (ch === ',' && !inQuotes) {
+            out.push(cur); cur = '';
+          } else {
+            cur += ch;
+          }
         }
-      } else {
-        // Normal success: read text so we can detect potential row caps and optionally chunk by month
-        const initialText = await response.text();
-        const initialLines = initialText.split(/\r?\n/);
-        let header = initialLines[0] ?? '';
-        const initialBody = initialLines.slice(1).filter((l) => l.trim().length > 0);
+        out.push(cur);
+        return out;
+      };
+      const joinCsvLine = (cols: string[]): string =>
+        cols.map((v) => (v.includes(',') || v.includes('"') ? '"' + v.replace(/"/g, '""') + '"' : v)).join(',');
 
-        const needsChunking = initialBody.length >= 1000 && startDate && endDate;
-        if (needsChunking) {
-          console.warn('[Chunking] ~1000 rows detected. Fetching monthly chunks per location.');
-
-          const chunkRanges: { start: Date; end: Date }[] = [];
-          if (startDate && endDate) {
-            let cursor = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
-            while (cursor <= endDate) {
-              const monthStart = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
-              const monthEnd = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0);
-              const rangeStart = new Date(Math.max(monthStart.getTime(), startDate.getTime()));
-              const rangeEnd = new Date(Math.min(monthEnd.getTime(), endDate.getTime()))
-              chunkRanges.push({ start: rangeStart, end: rangeEnd });
-              cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
-            }
-          }
-
-          const rows: string[] = [];
-          let success = 0;
-          const locs = selectedLocations.length > 0 ? selectedLocations : [undefined];
-
-          for (const loc of locs) {
-            for (const chunk of chunkRanges) {
-              const p = new URLSearchParams(params.toString());
-              if (loc) p.set('location', loc);
-              p.set('start_date', format(chunk.start, 'yyyy-MM-dd 00:00:00'));
-              p.set('end_date', format(chunk.end, 'yyyy-MM-dd 23:59:59'));
-              const url = `${API_BASE_URL}/api/databases/${selectedDatabase}/download/${selectedTable}?${p.toString()}`;
-              const res = await fetch(url);
-              if (!res.ok) {
-                console.warn(`[Chunking] Skipping chunk ${format(chunk.start, 'yyyy-MM-dd')} to ${format(chunk.end, 'yyyy-MM-dd')} for ${loc ?? 'all locations'} - status ${res.status}`);
-                continue;
-              }
-              const text = await res.text();
-              const lines = text.split(/\r?\n/);
-              if (!header && lines[0]) header = lines[0];
-              const body = lines.slice(1).filter((l) => l.trim().length > 0);
-              if (body.length > 0) {
-                rows.push(...body);
-                success++;
+      // Helper: normalize TIMESTAMP column to "YYYY-MM-DD HH:mm:ss"
+      const normalizeTimestamps = (csv: string): string => {
+        const lines = csv.split(/\r?\n/);
+        if (lines.length === 0) return csv;
+        const header = lines[0];
+        const rows = lines.slice(1);
+        const headerCols = splitCsvLine(header).map((h) => h.replace(/^"|"$/g, ''));
+        const tsIdx = headerCols.findIndex((h) => h.trim().toUpperCase() === 'TIMESTAMP');
+        if (tsIdx === -1) return csv; // nothing to normalize
+        const outRows: string[] = [];
+        for (const r of rows) {
+          const trimmed = r.trim();
+          if (!trimmed) continue;
+          const cols = splitCsvLine(r);
+          if (cols[tsIdx] !== undefined) {
+            const raw = cols[tsIdx].replace(/^"|"$/g, '');
+            const isoLike = /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(?:\.\d+Z)?$/;
+            const dbLike = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
+            let out = raw;
+            if (!dbLike.test(raw)) {
+              const d = new Date(raw);
+              if (!isNaN(d.getTime())) {
+                out = format(d, 'yyyy-MM-dd HH:mm:ss');
+              } else if (isoLike.test(raw)) {
+                const d2 = new Date(raw);
+                if (!isNaN(d2.getTime())) out = format(d2, 'yyyy-MM-dd HH:mm:ss');
               }
             }
+            cols[tsIdx] = out;
           }
-
-          if (!header || rows.length === 0 || success === 0) {
-            throw new Error('No data found for the selected criteria');
-          }
-          const combined = [header, ...rows].join('\n');
-          blob = new Blob([combined], { type: 'text/csv;charset=utf-8;' });
-        } else {
-          blob = new Blob([initialText], { type: 'text/csv;charset=utf-8;' });
+          outRows.push(joinCsvLine(cols));
         }
+        return [header, ...outRows].join('\n');
+      };
+
+      // Recursive fetch that splits time ranges until server cap (~1000 rows) is avoided
+      const fetchRange = async (
+        p: URLSearchParams,
+        loc: string | undefined,
+        rangeStart?: Date,
+        rangeEnd?: Date
+      ): Promise<{ header: string; rows: string[] }> => {
+        const q = new URLSearchParams(p.toString());
+        if (loc) q.set('location', loc);
+        if (rangeStart) q.set('start_date', format(rangeStart, 'yyyy-MM-dd HH:mm:ss'));
+        if (rangeEnd) q.set('end_date', format(rangeEnd, 'yyyy-MM-dd HH:mm:ss'));
+
+        const url = `${API_BASE_URL}/api/databases/${selectedDatabase}/download/${selectedTable}?${q.toString()}`;
+        const res = await fetch(url);
+        if (!res.ok) {
+          console.warn('[FetchRange] Non-OK response', res.status, res.statusText, 'for', loc, rangeStart, rangeEnd);
+          return { header: '', rows: [] };
+        }
+        const text = await res.text();
+        const lines = text.split(/\r?\n/);
+        const header = lines[0] ?? '';
+        const body = lines.slice(1).filter((l) => l.trim().length > 0);
+
+        // If we hit the cap, split the interval and fetch recursively
+        const canSplit = !!(rangeStart && rangeEnd && rangeEnd.getTime() > rangeStart.getTime());
+        if (canSplit && body.length >= 1000) {
+          const startMs = rangeStart!.getTime();
+          const endMs = rangeEnd!.getTime();
+          const mid = new Date(Math.floor((startMs + endMs) / 2));
+          if (endMs - startMs < 60 * 60 * 1000) {
+            // If interval <= 1 hour and still capped, still split to force smaller windows
+            const left = await fetchRange(p, loc, rangeStart, mid);
+            const right = await fetchRange(p, loc, new Date(mid.getTime() + 1000), rangeEnd);
+            return { header: left.header || header, rows: [...left.rows, ...right.rows] };
+          }
+          const left = await fetchRange(p, loc, rangeStart, mid);
+          const right = await fetchRange(p, loc, new Date(mid.getTime() + 1000), rangeEnd);
+          return { header: left.header || header, rows: [...left.rows, ...right.rows] };
+        }
+
+        return { header, rows: body };
+      };
+
+      // Strategy: Always aggregate per-location to avoid multi-location 404s and caps
+      const targets = selectedLocations.length > 0 ? selectedLocations : [undefined];
+      let finalHeader = '';
+      const allRows: string[] = [];
+
+      for (const loc of targets) {
+        const { header, rows } = await fetchRange(baseParams, loc, startDate, endDate);
+        if (!finalHeader && header) finalHeader = header;
+        if (rows.length > 0) allRows.push(...rows);
       }
-      console.log('[Downloaded Blob Size]', blob.size, 'bytes');
-      
-      if (blob.size === 0) {
+
+      if (!finalHeader || allRows.length === 0) {
         throw new Error('No data found for the selected criteria');
       }
-      
+
+      // Combine and normalize timestamp column to DB-like format
+      const combinedCsv = [finalHeader, ...allRows].join('\n');
+      const normalizedCsv = normalizeTimestamps(combinedCsv);
+      const blob = new Blob([normalizedCsv], { type: 'text/csv;charset=utf-8;' });
+
+      console.log('[Downloaded Blob Size]', blob.size, 'bytes');
+      if (blob.size === 0) throw new Error('No data found for the selected criteria');
+
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      
-      // Generate filename with better location handling
+
       const timestamp = format(new Date(), 'yyyy-MM-dd_HH-mm-ss');
       const locationStr = selectedLocations.length > 0 
         ? `_${selectedLocations.length > 3 ? selectedLocations.length + '-locations' : selectedLocations.join('-')}` 
@@ -480,12 +462,12 @@ const DynamicDataBrowser = () => {
         ? `_${format(startDate, 'yyyy-MM-dd')}_to_${format(endDate, 'yyyy-MM-dd')}` 
         : '';
       link.download = `${selectedDatabase}_${selectedTable}${locationStr}${dateStr}_${timestamp}.csv`;
-      
+
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      
+
       toast({
         title: 'Download Started',
         description: `Downloaded ${selectedTable} data with original timestamps preserved`,
