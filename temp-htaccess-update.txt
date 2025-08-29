@@ -1,0 +1,17 @@
+RewriteEngine On
+RewriteBase /
+
+# Proxy API requests to Node.js backend (port 3001)
+RewriteCond %{REQUEST_URI} ^/api/(.*)$
+RewriteRule ^api/(.*)$ http://127.0.0.1:3001/api/$1 [P,L]
+
+# Proxy health check to Node.js backend
+RewriteCond %{REQUEST_URI} ^/health$
+RewriteRule ^health$ http://127.0.0.1:3001/health [P,L]
+
+# Client-side routing for React (must come after API rules)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} !^/api/
+RewriteCond %{REQUEST_URI} !^/health$
+RewriteRule . /index.html [L]
