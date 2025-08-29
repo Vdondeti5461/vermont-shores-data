@@ -169,7 +169,7 @@ app.get('/api/databases/:database/tables/:table/attributes', async (req, res) =>
   }
 });
 
-// Get locations for a database
+// Get locations for a database (aggregate across all tables, canonicalize names)
 app.get('/api/databases/:database/locations', async (req, res) => {
   try {
     const { database } = req.params;
@@ -187,7 +187,29 @@ app.get('/api/databases/:database/locations', async (req, res) => {
       return res.json([]);
     }
 
-    const aliasMap = { SPST: 'SPER', SLEEPERS_R25: 'SR25', SLEEPERS_W1: 'SR11', SLEEPERSMAIN_SR01: 'SR01' };
+    // Canonicalization helpers
+    const aliasMap = {
+      SPST: 'SPER',
+      SLEEPERS_R25: 'SR25',
+      SLEEPERSR25: 'SR25',
+      SLEEPERS_W1: 'SR11',
+      SLEEPERSW1: 'SR11',
+      SLEEPERSMAIN_SR01: 'SR01',
+      SLEEPERSMAINSR01: 'SR01'
+    };
+    const canonicalize = (val) => {
+      if (!val) return null;
+      let s = String(val).trim().toUpperCase();
+      // Remove spaces, hyphens, and extra underscores for matching
+      const compact = s.replace(/[\s\-]+/g, '').replace(/_{2,}/g, '_');
+      if (aliasMap[compact]) return aliasMap[compact];
+      if (aliasMap[s]) return aliasMap[s];
+      // RB codes like RB1, RB01, RB-01 -> RB01
+      const rb = compact.match(/^RB(\d{1,2})$/);
+      if (rb) return `RB${rb[1].padStart(2, '0')}`;
+      return s;
+    };
+
     const seen = new Set();
     const names = [];
 
@@ -199,13 +221,11 @@ app.get('/api/databases/:database/locations', async (req, res) => {
            WHERE Location IS NOT NULL AND Location <> ''`
         );
         for (const r of rows) {
-          if (!r?.name) continue;
-          let code = String(r.name).trim().toUpperCase();
-          code = aliasMap[code] || code;
-          const key = code;
-          if (!seen.has(key)) {
-            seen.add(key);
-            names.push(code);
+          const canon = canonicalize(r?.name);
+          if (!canon) continue;
+          if (!seen.has(canon)) {
+            seen.add(canon);
+            names.push(canon);
           }
         }
       } catch (e) {
