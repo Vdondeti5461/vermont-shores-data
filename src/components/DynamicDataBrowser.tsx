@@ -266,6 +266,47 @@ const DynamicDataBrowser = () => {
     );
   };
 
+  // Time preset functions
+  const setTimePreset = (preset: string) => {
+    const now = new Date();
+    let start: Date | undefined = undefined;
+    let end: Date | undefined = undefined;
+
+    switch (preset) {
+      case 'last_7_days':
+        start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        end = now;
+        break;
+      case 'last_30_days':
+        start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        end = now;
+        break;
+      case 'last_month':
+        start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        end = new Date(now.getFullYear(), now.getMonth(), 0);
+        break;
+      case 'this_month':
+        start = new Date(now.getFullYear(), now.getMonth(), 1);
+        end = now;
+        break;
+      case 'last_year':
+        start = new Date(now.getFullYear() - 1, 0, 1);
+        end = new Date(now.getFullYear() - 1, 11, 31);
+        break;
+      case 'this_year':
+        start = new Date(now.getFullYear(), 0, 1);
+        end = now;
+        break;
+      case 'all_time':
+        start = undefined;
+        end = undefined;
+        break;
+    }
+
+    setStartDate(start);
+    setEndDate(end);
+  };
+
   // Download data
   const handleDownload = async () => {
     if (!selectedDatabase || !selectedTable) {
@@ -282,38 +323,64 @@ const DynamicDataBrowser = () => {
       // Build query parameters
       const params = new URLSearchParams();
       
+      // Handle multiple locations correctly
       if (selectedLocations.length > 0) {
+        console.log('[Selected Locations]', selectedLocations);
         params.append('location', selectedLocations.join(','));
       }
+      
+      // Format dates with full timestamp range for better filtering
       if (startDate) {
-        params.append('start_date', format(startDate, 'yyyy-MM-dd'));
+        params.append('start_date', format(startDate, 'yyyy-MM-dd 00:00:00'));
       }
       if (endDate) {
-        params.append('end_date', format(endDate, 'yyyy-MM-dd'));
+        params.append('end_date', format(endDate, 'yyyy-MM-dd 23:59:59'));
       }
+      
       if (selectedAttributes.length > 0) {
         params.append('attributes', selectedAttributes.join(','));
       }
 
       const downloadUrl = `${API_BASE_URL}/api/databases/${selectedDatabase}/download/${selectedTable}?${params.toString()}`;
       console.log('[Download URL]', downloadUrl);
+      console.log('[Download Params]', {
+        database: selectedDatabase,
+        table: selectedTable,
+        locations: selectedLocations,
+        startDate: startDate ? format(startDate, 'yyyy-MM-dd 00:00:00') : null,
+        endDate: endDate ? format(endDate, 'yyyy-MM-dd 23:59:59') : null,
+        attributes: selectedAttributes
+      });
       
       const response = await fetch(downloadUrl);
       
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[Download Error Response]', errorText);
         throw new Error(`Download failed: ${response.status} ${response.statusText}`);
       }
 
       // Create and trigger download
       const blob = await response.blob();
+      console.log('[Downloaded Blob Size]', blob.size, 'bytes');
+      
+      if (blob.size === 0) {
+        throw new Error('No data found for the selected criteria');
+      }
+      
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       
-      // Generate filename
+      // Generate filename with better location handling
       const timestamp = format(new Date(), 'yyyy-MM-dd_HH-mm-ss');
-      const locationStr = selectedLocations.length > 0 ? `_${selectedLocations.slice(0, 3).join('-')}` : '';
-      link.download = `${selectedDatabase}_${selectedTable}${locationStr}_${timestamp}.csv`;
+      const locationStr = selectedLocations.length > 0 
+        ? `_${selectedLocations.length > 3 ? selectedLocations.length + '-locations' : selectedLocations.join('-')}` 
+        : '_all-locations';
+      const dateStr = startDate && endDate 
+        ? `_${format(startDate, 'yyyy-MM-dd')}_to_${format(endDate, 'yyyy-MM-dd')}` 
+        : '';
+      link.download = `${selectedDatabase}_${selectedTable}${locationStr}${dateStr}_${timestamp}.csv`;
       
       document.body.appendChild(link);
       link.click();
@@ -322,7 +389,7 @@ const DynamicDataBrowser = () => {
       
       toast({
         title: "Download Started",
-        description: `Downloading ${selectedTable} data from ${selectedDatabase}`,
+        description: `Downloaded ${selectedTable} data with original timestamps preserved`,
       });
       
     } catch (error) {
@@ -526,11 +593,89 @@ const DynamicDataBrowser = () => {
                 <CalendarIcon className="h-5 w-5" />
                 Date Range Selection
               </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Select date range or use quick presets. Timestamps will be preserved in original format.
+              </p>
             </CardHeader>
             <CardContent>
+              {/* Time Presets */}
+              <div className="mb-4">
+                <Label className="text-sm font-medium">Quick Presets</Label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setTimePreset('last_7_days')}
+                    className="text-xs"
+                  >
+                    Last 7 Days
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setTimePreset('last_30_days')}
+                    className="text-xs"
+                  >
+                    Last 30 Days
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setTimePreset('last_month')}
+                    className="text-xs"
+                  >
+                    Last Month
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setTimePreset('this_month')}
+                    className="text-xs"
+                  >
+                    This Month
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setTimePreset('last_year')}
+                    className="text-xs"
+                  >
+                    Last Year
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setTimePreset('this_year')}
+                    className="text-xs"
+                  >
+                    This Year
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setTimePreset('all_time')}
+                    className="text-xs"
+                  >
+                    All Time
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setStartDate(undefined);
+                      setEndDate(undefined);
+                    }}
+                    className="text-xs"
+                  >
+                    Clear
+                  </Button>
+                </div>
+              </div>
+
+              {/* Custom Date Selection */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label>Start Date</Label>
+                  <Label>Start Date (Custom)</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button variant="outline" className="w-full justify-start text-left font-normal">
@@ -549,7 +694,7 @@ const DynamicDataBrowser = () => {
                   </Popover>
                 </div>
                 <div>
-                  <Label>End Date</Label>
+                  <Label>End Date (Custom)</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button variant="outline" className="w-full justify-start text-left font-normal">
@@ -568,6 +713,17 @@ const DynamicDataBrowser = () => {
                   </Popover>
                 </div>
               </div>
+
+              {/* Current Selection Display */}
+              {(startDate || endDate) && (
+                <div className="mt-4 p-3 bg-muted rounded-lg">
+                  <p className="text-sm">
+                    <strong>Selected Range:</strong>{' '}
+                    {startDate ? format(startDate, 'MMM d, yyyy') : 'Beginning'} -{' '}
+                    {endDate ? format(endDate, 'MMM d, yyyy') : 'Now'}
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
