@@ -38,7 +38,9 @@ const DATABASES = {
 };
 
 function getDatabaseName(key) {
-  return DATABASES[key] || DATABASES.raw_data;
+  if (!key) return DATABASES.raw_data;
+  const normalized = String(key).toLowerCase().replace(/[\s-]/g, '_');
+  return DATABASES[normalized] || DATABASES.raw_data;
 }
 
 // Health check endpoint
