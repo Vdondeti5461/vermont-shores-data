@@ -55,7 +55,6 @@ const LOCATION_METADATA = {
   'RB11': { name: 'Mansfield East Ranch Brook 11', latitude: 44.2679, longitude: -72.8021, elevation: 1000 },
   'RB12': { name: 'Mansfield East FEMC', latitude: 44.2685, longitude: -72.8015, elevation: 980 },
   'SPER': { name: 'Spear Street', latitude: 44.4759, longitude: -73.1959, elevation: 120 },
-  
   'SR01': { name: 'Sleepers R3/Main', latitude: 44.2891, longitude: -72.8211, elevation: 900 },
   'SR11': { name: 'Sleepers W1/R11', latitude: 44.2885, longitude: -72.8205, elevation: 920 },
   'SR25': { name: 'Sleepers R25', latitude: 44.2879, longitude: -72.8199, elevation: 940 },
@@ -186,26 +185,86 @@ app.get('/api/databases/:database/locations', async (req, res) => {
       return res.json([]);
     }
 
-    // Canonicalization helpers
+    // Canonicalization helpers - expanded to handle all variations seen in raw data
     const aliasMap = {
       SPST: 'SPER',
+      SPEAR: 'SPER',
+      SPEARSTREET: 'SPER',
+      'SPEAR STREET': 'SPER',
+      
+      // Sleepers variations
       SLEEPERS_R25: 'SR25',
       SLEEPERSR25: 'SR25',
+      'SLEEPERS R25': 'SR25',
+      
       SLEEPERS_W1: 'SR11',
-      SLEEPERSW1: 'SR11',
+      SLEEPERSW1: 'SR11', 
+      'SLEEPERS W1': 'SR11',
+      SLEEPERS_R11: 'SR11',
+      SLEEPERSR11: 'SR11',
+      'SLEEPERS R11': 'SR11',
+      
       SLEEPERSMAIN_SR01: 'SR01',
-      SLEEPERSMAINSR01: 'SR01'
+      SLEEPERSMAINSR01: 'SR01',
+      'SLEEPERS MAIN': 'SR01',
+      SLEEPERSMAIN: 'SR01',
+      'SLEEPERS R3': 'SR01',
+      'SLEEPERS_R3': 'SR01',
+      SLEEPERSR3: 'SR01',
+      
+      // Jericho variations
+      JERICHO: 'JRCL',
+      JERICHOCLEARING: 'JRCL',
+      'JERICHO CLEARING': 'JRCL',
+      JERICHOFORES: 'JRFO',
+      JERICHOFOREST: 'JRFO',
+      'JERICHO FOREST': 'JRFO',
+      
+      // Mansfield variations  
+      MANSFIELDWEST: 'PROC',
+      'MANSFIELD WEST': 'PROC',
+      MANSFIELDWESTPROCTOR: 'PROC',
+      'MANSFIELD WEST PROCTOR': 'PROC',
+      PROCTOR: 'PROC',
+      
+      POTASH: 'PTSH',
+      POTASHBROOK: 'PTSH',
+      'POTASH BROOK': 'PTSH',
+      
+      SUMMIT: 'SUMM',
+      MANSFIELDSUMMIT: 'SUMM',
+      'MANSFIELD SUMMIT': 'SUMM',
+      
+      UNDER: 'UNDR',
+      MANSFIELDWESTSCAN: 'UNDR',
+      'MANSFIELD WEST SCAN': 'UNDR',
+      SCAN: 'UNDR'
     };
     const canonicalize = (val) => {
       if (!val) return null;
       let s = String(val).trim().toUpperCase();
-      // Remove spaces, hyphens, and extra underscores for matching
-      const compact = s.replace(/[\s\-]+/g, '').replace(/_{2,}/g, '_');
-      if (aliasMap[compact]) return aliasMap[compact];
+      
+      // Try exact match first
       if (aliasMap[s]) return aliasMap[s];
+      
+      // Remove spaces, hyphens, underscores, and special chars for fuzzy matching
+      const compact = s.replace(/[\s\-_\.]+/g, '').replace(/[^A-Z0-9]/g, '');
+      if (aliasMap[compact]) return aliasMap[compact];
+      
       // RB codes like RB1, RB01, RB-01 -> RB01
       const rb = compact.match(/^RB(\d{1,2})$/);
       if (rb) return `RB${rb[1].padStart(2, '0')}`;
+      
+      // Handle specific patterns from the database
+      if (compact.includes('SLEEPERSMAIN') || compact.includes('SLEEPERSRMAIN')) return 'SR01';
+      if (compact.includes('SLEEPERSW') || compact.includes('SLEEPERSW1') || compact.includes('SLEEPERSR11')) return 'SR11';  
+      if (compact.includes('SLEEPERSR25')) return 'SR25';
+      
+      // Direct location code matching (some may be stored as-is)
+      const knownCodes = ['RB01','RB02','RB03','RB04','RB05','RB06','RB07','RB08','RB09','RB10','RB11','RB12','SPER','SR01','SR11','SR25','JRCL','JRFO','PROC','PTSH','SUMM','UNDR'];
+      if (knownCodes.includes(s)) return s;
+      if (knownCodes.includes(compact)) return compact;
+      
       return s;
     };
 
