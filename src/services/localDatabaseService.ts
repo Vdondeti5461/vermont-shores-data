@@ -105,35 +105,14 @@ export class LocalDatabaseService {
     PRECIPITATION: 'Precipitation'
   } as const;
 
-  // Database mapping configuration - only show 4 main databases
+  // Simplified database mapping - only show what we have access to
   static readonly DATABASE_MAPPING = {
-    'crrels2s_main': {
+    'crrels2s_vtclimaterepository': {
       id: 'raw_data',
       name: 'Raw Data',
       displayName: 'Raw Environmental Data',
       category: 'raw',
       order: 1
-    },
-    'crrels2s_processeddata': {
-      id: 'initial_clean',
-      name: 'Initial Clean Data',
-      displayName: 'Initially Processed Data',
-      category: 'processed',
-      order: 2
-    },
-    'crrels2s_vtclimaterepository_processed': {
-      id: 'final_clean',
-      name: 'Final Clean Data', 
-      displayName: 'Final Processed Data',
-      category: 'clean',
-      order: 3
-    },
-    'crrels2s_cleaned_data_seasons': {
-      id: 'season_data',
-      name: 'Season Data',
-      displayName: 'Seasonal Analysis Data',
-      category: 'seasonal',
-      order: 4
     }
   };
 
@@ -143,11 +122,12 @@ export class LocalDatabaseService {
       if (!response.ok) throw new Error('Failed to fetch databases info');
       const data = await response.json();
       
-      // Filter and map only the databases we want to expose
+      // Map the databases we have access to
       const databases: DatabaseInfo[] = (data.databases || [])
-        .filter((d: any) => this.DATABASE_MAPPING[d.key as keyof typeof this.DATABASE_MAPPING])
         .map((d: any) => {
           const mapping = this.DATABASE_MAPPING[d.key as keyof typeof this.DATABASE_MAPPING];
+          if (!mapping) return null;
+          
           return {
             id: mapping.id,
             name: mapping.displayName,
@@ -157,6 +137,7 @@ export class LocalDatabaseService {
             order: mapping.order
           };
         })
+        .filter(Boolean)
         .sort((a: any, b: any) => a.order - b.order);
       
       const seasons: SeasonInfo[] = data.seasons || [];
