@@ -134,11 +134,12 @@ async function connectDB() {
       host: process.env.MYSQL_HOST,
       user: process.env.MYSQL_USER,
       password: process.env.MYSQL_PASSWORD,
+      port: process.env.MYSQL_PORT || 3306,
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0,
       multipleStatements: false,
-      ssl: process.env.MYSQL_SSL_MODE === 'DISABLED' ? undefined : { rejectUnauthorized: false }
+      ssl: { rejectUnauthorized: false } // Handle SSL without CA verification
     });
     
     // Test connection
@@ -626,9 +627,12 @@ app.get('/api/databases/:database/download/:table', async (req, res) => {
     const { location, start_date, end_date, attributes } = req.query;
     const { connection, databaseName } = await getConnectionWithDB(database);
 
-    // Discover actual column names (preserve case) and identify TIMESTAMP/Location columns
-    const [colRows] = await connection.query(`SHOW COLUMNS FROM \`${table}\``);
-    const allCols = colRows.map((c) => c.Field);
+    // Discover actual column names (preserve case) and identify TIMESTAMP/Location columns  
+    const [colRows] = await connection.execute(
+      `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? ORDER BY ORDINAL_POSITION`,
+      [databaseName, table]
+    );
+    const allCols = colRows.map((c) => c.COLUMN_NAME);
     const colMap = new Map(allCols.map((c) => [c.toLowerCase(), c]));
     const tsCol = colMap.get('timestamp') || 'TIMESTAMP';
     const locCol = colMap.get('location') || 'Location';
