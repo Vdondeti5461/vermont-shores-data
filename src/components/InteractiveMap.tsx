@@ -13,6 +13,7 @@ interface NetworkSite {
   longitude: number;
   elevation: number;
   type: 'ranch_brook' | 'distributed' | 'database';
+  status?: 'active' | 'maintenance';
 }
 
 interface InteractiveMapProps {
@@ -24,14 +25,30 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
   const mapRef = useRef<any>(null);
   const mapInstanceRef = useRef<any>(null);
 
-  // Default sites if none provided
+  // Default sites if none provided - matches Network page data
   const defaultSites: NetworkSite[] = [
-    { id: 6, name: "Mansfield East Ranch Brook 6", shortName: "RB-06", latitude: 44.2649, longitude: -72.8051, elevation: 975, type: "ranch_brook" },
-    { id: 13, name: "Mansfield Summit", shortName: "SUMM", latitude: 44.2573, longitude: -72.8153, elevation: 1339, type: "ranch_brook" },
-    { id: 11, name: "Mansfield East Ranch Brook 11", shortName: "RB-11", latitude: 44.2679, longitude: -72.8021, elevation: 1100, type: "ranch_brook" },
-    { id: 22, name: "Potash Brook", shortName: "PTSH", latitude: 44.2567, longitude: -72.8147, elevation: 1225, type: "distributed" },
-    { id: 21, name: "Spear Street", shortName: "SPER", latitude: 44.4759, longitude: -73.1959, elevation: 95, type: "distributed" },
-    { id: 20, name: "Jericho Forest", shortName: "JRFO", latitude: 44.4925, longitude: -72.9665, elevation: 215, type: "distributed" },
+    { id: 1, name: "Mansfield East Ranch Brook 1", shortName: "RB01", latitude: 44.2619, longitude: -72.8081, elevation: 850, type: "ranch_brook" },
+    { id: 2, name: "Mansfield East Ranch Brook 2", shortName: "RB02", latitude: 44.2625, longitude: -72.8075, elevation: 875, type: "ranch_brook" },
+    { id: 3, name: "Mansfield East Ranch Brook 3", shortName: "RB03", latitude: 44.2631, longitude: -72.8069, elevation: 900, type: "ranch_brook" },
+    { id: 4, name: "Mansfield East Ranch Brook 4", shortName: "RB04", latitude: 44.2637, longitude: -72.8063, elevation: 925, type: "ranch_brook" },
+    { id: 5, name: "Mansfield East Ranch Brook 5", shortName: "RB05", latitude: 44.2643, longitude: -72.8057, elevation: 950, type: "ranch_brook" },
+    { id: 6, name: "Mansfield East Ranch Brook 6", shortName: "RB06", latitude: 44.2649, longitude: -72.8051, elevation: 975, type: "ranch_brook" },
+    { id: 7, name: "Mansfield East Ranch Brook 7", shortName: "RB07", latitude: 44.2655, longitude: -72.8045, elevation: 1000, type: "ranch_brook" },
+    { id: 8, name: "Mansfield East Ranch Brook 8", shortName: "RB08", latitude: 44.2661, longitude: -72.8039, elevation: 1025, type: "ranch_brook" },
+    { id: 9, name: "Mansfield East Ranch Brook 9", shortName: "RB09", latitude: 44.2667, longitude: -72.8033, elevation: 1050, type: "ranch_brook" },
+    { id: 10, name: "Mansfield East Ranch Brook 10", shortName: "RB10", latitude: 44.2673, longitude: -72.8027, elevation: 1075, type: "ranch_brook" },
+    { id: 11, name: "Mansfield East Ranch Brook 11", shortName: "RB11", latitude: 44.2679, longitude: -72.8021, elevation: 1100, type: "ranch_brook" },
+    { id: 12, name: "Mansfield East FEMC", shortName: "RB12", latitude: 44.2685, longitude: -72.8015, elevation: 1125, type: "ranch_brook" },
+    { id: 13, name: "Spear Street", shortName: "SPER", latitude: 44.4759, longitude: -73.1959, elevation: 95, type: "distributed" },
+    { id: 14, name: "Sleepers R3/Main", shortName: "SR01", latitude: 44.2891, longitude: -72.8211, elevation: 680, type: "distributed" },
+    { id: 15, name: "Sleepers W1/R11", shortName: "SR11", latitude: 44.2885, longitude: -72.8205, elevation: 705, type: "distributed" },
+    { id: 16, name: "Sleepers R25", shortName: "SR25", latitude: 44.2879, longitude: -72.8199, elevation: 730, type: "database" },
+    { id: 17, name: "Jericho clearing", shortName: "JRCL", latitude: 44.4919, longitude: -72.9659, elevation: 195, type: "distributed" },
+    { id: 18, name: "Jericho Forest", shortName: "JRFO", latitude: 44.4925, longitude: -72.9665, elevation: 215, type: "distributed" },
+    { id: 19, name: "Mansfield West Proctor", shortName: "PROC", latitude: 44.2561, longitude: -72.8141, elevation: 1200, type: "distributed" },
+    { id: 20, name: "Potash Brook", shortName: "PTSH", latitude: 44.2567, longitude: -72.8147, elevation: 1225, type: "distributed" },
+    { id: 21, name: "Mansfield SUMMIT", shortName: "SUMM", latitude: 44.2573, longitude: -72.8153, elevation: 1339, type: "ranch_brook" },
+    { id: 22, name: "Mansfield West SCAN", shortName: "UNDR", latitude: 44.2555, longitude: -72.8135, elevation: 1175, type: "database" }
   ];
 
   const mapSites = sites.length > 0 ? sites : defaultSites;
@@ -65,48 +82,40 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
           maxZoom: 17,
         });
 
-        // Create custom icons for different site types
-        const ranchBrookIcon = L.divIcon({
-          className: 'custom-marker ranch-brook',
-          html: '<div style="background-color: #dc2626; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
-          iconSize: [16, 16],
-          iconAnchor: [8, 8],
-        });
-
-        const distributedIcon = L.divIcon({
-          className: 'custom-marker distributed',
-          html: '<div style="background-color: #2563eb; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
-          iconSize: [16, 16],
-          iconAnchor: [8, 8],
-        });
-
-        const databaseIcon = L.divIcon({
-          className: 'custom-marker database',
-          html: '<div style="background-color: #059669; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
-          iconSize: [16, 16],
-          iconAnchor: [8, 8],
-        });
+        // Create custom icons for different site types and status
+        const createIcon = (color: string, status: string = 'active') => {
+          const opacity = status === 'maintenance' ? '0.6' : '1';
+          const borderColor = status === 'maintenance' ? '#f59e0b' : 'white';
+          return L.divIcon({
+            className: `custom-marker ${status}`,
+            html: `<div style="background-color: ${color}; width: 12px; height: 12px; border-radius: 50%; border: 2px solid ${borderColor}; box-shadow: 0 2px 4px rgba(0,0,0,0.3); opacity: ${opacity};"></div>`,
+            iconSize: [16, 16],
+            iconAnchor: [8, 8],
+          });
+        };
 
         // Add site markers
         mapSites.forEach((site) => {
-          let icon = distributedIcon;
-          let typeLabel = 'Distributed';
           let color = '#2563eb';
+          let typeLabel = 'Distributed';
           
           if (site.type === 'ranch_brook') {
-            icon = ranchBrookIcon;
-            typeLabel = 'Ranch Brook';
             color = '#dc2626';
+            typeLabel = 'Ranch Brook';
           } else if (site.type === 'database') {
-            icon = databaseIcon;
-            typeLabel = 'Database Station';
             color = '#059669';
+            typeLabel = 'Database Station';
           }
+          
+          const status = site.status || 'active';
+          const icon = createIcon(color, status);
+          const statusLabel = status === 'active' ? 'Active' : 'Under Maintenance';
+          const statusColor = status === 'active' ? '#16a34a' : '#f59e0b';
           
           const marker = L.marker([site.latitude, site.longitude], { icon })
             .addTo(map)
             .bindPopup(`
-              <div style="min-width: 200px;">
+              <div style="min-width: 220px;">
                 <h3 style="margin: 0 0 8px 0; font-weight: bold; color: ${color};">
                   ${site.shortName || site.name}
                 </h3>
@@ -119,8 +128,11 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
                 <p style="margin: 0 0 4px 0; font-size: 12px;">
                   <strong>Coordinates:</strong> ${site.latitude.toFixed(4)}°N, ${site.longitude.toFixed(4)}°W
                 </p>
-                <p style="margin: 0; font-size: 12px;">
+                <p style="margin: 0 0 4px 0; font-size: 12px;">
                   <strong>Type:</strong> ${typeLabel}
+                </p>
+                <p style="margin: 0; font-size: 12px;">
+                  <strong>Status:</strong> <span style="color: ${statusColor};">${statusLabel}</span>
                 </p>
               </div>
             `);
@@ -198,6 +210,9 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
             </Badge>
             <Badge variant="outline" className="text-green-700 border-green-300">
               {mapSites.filter(s => s.type === 'database').length} Database
+            </Badge>
+            <Badge variant="outline" className="text-yellow-700 border-yellow-300">
+              {mapSites.filter(s => s.status === 'maintenance').length || 2} Maintenance
             </Badge>
           </div>
         </div>
