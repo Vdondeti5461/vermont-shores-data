@@ -8,9 +8,11 @@ export const getApiBaseUrl = (): string => {
   const cfg = w?.__APP_CONFIG__?.API_BASE_URL as string | undefined;
   if (cfg) return cfg.replace(/\/$/, '');
 
-  // 2) Optional Vite env for local builds (won't be used on Lovable prod)
+  // 2) Optional Vite env for local builds only
   const envUrl = (import.meta as any)?.env?.VITE_API_URL as string | undefined;
-  if (envUrl) return envUrl.replace(/\/$/, '');
+  if (envUrl && w && (w.location.hostname === 'localhost' || w.location.hostname === '127.0.0.1')) {
+    return envUrl.replace(/\/$/, '');
+  }
 
   // 3) Local dev fallback
   if (w && (w.location.hostname === 'localhost' || w.location.hostname === '127.0.0.1')) {

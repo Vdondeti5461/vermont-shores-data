@@ -39,7 +39,7 @@ const DatabaseStatus = () => {
             {isHealthy && (
               <div className="flex gap-4 text-sm text-muted-foreground">
                 <span>{locations.length} locations</span>
-                <span>API: localhost:3001</span>
+                <span>API: {API_BASE_URL}</span>
               </div>
             )}
           </div>
@@ -58,7 +58,7 @@ const DatabaseStatus = () => {
         {!isHealthy && !isLoading && (
           <div className="mt-4 p-3 bg-red-50 rounded-lg border border-red-200">
             <p className="text-sm text-red-700">
-              Unable to connect to local database. Make sure your server is running on localhost:3001
+              Unable to connect to database API. Make sure your server is reachable at {API_BASE_URL}
             </p>
             <p className="text-xs text-red-600 mt-1">
               Run: <code>cd server && npm run dev</code>

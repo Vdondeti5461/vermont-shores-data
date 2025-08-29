@@ -93,7 +93,7 @@ const MultiDatabaseDownload = () => {
 
   const fetchDatabases = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/databases');
+      const response = await fetch(`${API_BASE_URL}/api/databases`);
       const data = await response.json();
       setDatabases(data.databases);
     } catch (error) {
