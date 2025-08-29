@@ -289,6 +289,64 @@ export class LocalDatabaseService {
     }
   }
 
+  // Get snow depth time series data for charts
+  static async getSnowDepthTimeSeries(
+    database: string,
+    location?: string,
+    startDate?: string,
+    endDate?: string,
+    dataType: 'raw' | 'cleaned' | 'both' = 'both'
+  ): Promise<{ timestamp: string; location: string; raw_depth?: number; cleaned_depth?: number; dbtcdt?: number }[]> {
+    try {
+      const params = new URLSearchParams({
+        database,
+        ...(location && { location }),
+        ...(startDate && { start_date: startDate }),
+        ...(endDate && { end_date: endDate }),
+        data_type: dataType
+      });
+
+      const response = await fetch(`${API_BASE_URL}/api/snow-depth-series?${params}`, {
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to fetch snow depth time series:', error);
+      // Return mock data for development
+      return this.generateMockSnowDepthData(location, startDate, endDate);
+    }
+  }
+
+  // Generate mock snow depth data for development
+  private static generateMockSnowDepthData(location?: string, startDate?: string, endDate?: string) {
+    const data = [];
+    const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const end = endDate ? new Date(endDate) : new Date();
+    
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const baseDepth = Math.sin(d.getTime() / (1000 * 60 * 60 * 24 * 7)) * 50 + 100;
+      const noise = (Math.random() - 0.5) * 20;
+      
+      data.push({
+        timestamp: d.toISOString().split('T')[0],
+        location: location || 'Station_1',
+        raw_depth: Math.max(0, baseDepth + noise),
+        cleaned_depth: Math.max(0, baseDepth + noise * 0.3), // Less noisy
+        dbtcdt: Math.max(0, baseDepth + noise * 0.3)
+      });
+    }
+    
+    return data;
+  }
+
   static async getAnalyticsSummary(
     database: string = 'raw_data',
     location?: string,

@@ -10,6 +10,7 @@ import Analytics from "./pages/Analytics";
 import DataDownload from "./pages/DataDownload";
 import Research from "./pages/Research";
 import AdvancedAnalytics from "./pages/AdvancedAnalytics";
+import SnowAnalytics from "./pages/SnowAnalytics";
 import Documentation from "./pages/Documentation";
 import APIDocumentation from "./pages/APIDocumentation";
 import NotFound from "./pages/NotFound";
@@ -31,6 +32,7 @@ const App = () => (
           <Route path="/analytics/realtime" element={<Analytics />} />
           <Route path="/analytics/historical" element={<Analytics />} />
           <Route path="/analytics/advanced" element={<AdvancedAnalytics />} />
+          <Route path="/analytics/snow-depth" element={<SnowAnalytics />} />
           <Route path="/analytics/quality" element={<Analytics />} />
           <Route path="/analytics/climate/*" element={<Analytics />} />
           <Route path="/analytics/hydrology/*" element={<Analytics />} />
