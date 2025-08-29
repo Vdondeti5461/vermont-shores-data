@@ -147,58 +147,58 @@ const DataMap = () => {
 
           <TabsContent value="network" className="space-y-6 animate-fade-in">
             {/* Network Status Dashboard */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card className="border-l-4 border-l-green-500">
-                <CardContent className="p-4">
+            <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 xs:gap-4">
+              <Card className="border-l-4 border-l-green-500 hover:shadow-md transition-shadow">
+                <CardContent className="p-3 xs:p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-2xl font-bold text-gray-900">{networkSites.length}</div>
-                      <div className="text-sm font-medium text-gray-600">Active Stations</div>
+                      <div className="text-xl xs:text-2xl font-bold text-foreground">{networkSites.length}</div>
+                      <div className="text-xs xs:text-sm font-medium text-muted-foreground">Active Stations</div>
                       <div className="flex items-center gap-1 mt-1">
                         <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                        <span className="text-xs text-green-600">All operational</span>
+                        <span className="text-2xs xs:text-xs text-green-600">All operational</span>
                       </div>
                     </div>
-                    <Activity className="h-8 w-8 text-green-500" />
+                    <Activity className="h-6 w-6 xs:h-8 xs:w-8 text-green-500" />
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="border-l-4 border-l-blue-500">
-                <CardContent className="p-4">
+              <Card className="border-l-4 border-l-blue-500 hover:shadow-md transition-shadow">
+                <CardContent className="p-3 xs:p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-2xl font-bold text-gray-900">1116m</div>
-                      <div className="text-sm font-medium text-gray-600">Elevation Span</div>
-                      <div className="text-xs text-blue-600 mt-1">47m → 1163m</div>
+                      <div className="text-xl xs:text-2xl font-bold text-foreground">1116m</div>
+                      <div className="text-xs xs:text-sm font-medium text-muted-foreground">Elevation Span</div>
+                      <div className="text-2xs xs:text-xs text-blue-600 mt-1">47m → 1163m</div>
                     </div>
-                    <Mountain className="h-8 w-8 text-blue-500" />
+                    <Mountain className="h-6 w-6 xs:h-8 xs:w-8 text-blue-500" />
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="border-l-4 border-l-purple-500">
-                <CardContent className="p-4">
+              <Card className="border-l-4 border-l-purple-500 hover:shadow-md transition-shadow">
+                <CardContent className="p-3 xs:p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-2xl font-bold text-gray-900">2</div>
-                      <div className="text-sm font-medium text-gray-600">Network Types</div>
-                      <div className="text-xs text-purple-600 mt-1">RB + Distributed</div>
+                      <div className="text-xl xs:text-2xl font-bold text-foreground">2</div>
+                      <div className="text-xs xs:text-sm font-medium text-muted-foreground">Network Types</div>
+                      <div className="text-2xs xs:text-xs text-purple-600 mt-1">RB + Distributed</div>
                     </div>
-                    <MapPin className="h-8 w-8 text-purple-500" />
+                    <MapPin className="h-6 w-6 xs:h-8 xs:w-8 text-purple-500" />
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="border-l-4 border-l-orange-500">
-                <CardContent className="p-4">
+              <Card className="border-l-4 border-l-orange-500 hover:shadow-md transition-shadow">
+                <CardContent className="p-3 xs:p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-2xl font-bold text-gray-900">24/7</div>
-                      <div className="text-sm font-medium text-gray-600">Data Stream</div>
-                      <div className="text-xs text-orange-600 mt-1">Continuous monitoring</div>
+                      <div className="text-xl xs:text-2xl font-bold text-foreground">24/7</div>
+                      <div className="text-xs xs:text-sm font-medium text-muted-foreground">Data Stream</div>
+                      <div className="text-2xs xs:text-xs text-orange-600 mt-1">Continuous monitoring</div>
                     </div>
-                    <Eye className="h-8 w-8 text-orange-500" />
+                    <Eye className="h-6 w-6 xs:h-8 xs:w-8 text-orange-500" />
                   </div>
                 </CardContent>
               </Card>
@@ -230,10 +230,9 @@ const DataMap = () => {
                 </div>
               </CardHeader>
               <CardContent className="p-6">
-                {/* Elevation Profile Visualization */}
-                <div className="mb-6">
-                  <h4 className="text-sm font-semibold text-gray-800 mb-3">Elevation Profile (47m - 1163m)</h4>
-                  <div className="relative h-20 bg-gradient-to-r from-green-50 via-yellow-50 to-blue-50 rounded-lg border overflow-hidden">
+                <div className="mb-4 xs:mb-6">
+                  <h4 className="text-sm font-semibold text-foreground mb-2 xs:mb-3">Elevation Profile (47m - 1163m)</h4>
+                  <div className="relative h-16 xs:h-20 bg-gradient-to-r from-green-50 via-yellow-50 to-blue-50 rounded-lg border overflow-hidden">
                     {/* Background gradient bars */}
                     <div className="absolute inset-0 flex">
                       <div className="flex-1 bg-green-200/30 border-r border-green-300/50"></div>
@@ -242,11 +241,15 @@ const DataMap = () => {
                     </div>
                     
                     {/* Elevation scale */}
-                    <div className="absolute bottom-0 left-0 right-0 flex justify-between text-xs text-gray-500 p-2">
-                      <span>Valley (47m)</span>
-                      <span>Montane (500m)</span>
-                      <span>Alpine (800m)</span>
-                      <span>Summit (1163m)</span>
+                    <div className="absolute bottom-0 left-0 right-0 flex justify-between text-2xs xs:text-xs text-muted-foreground p-1 xs:p-2">
+                      <span className="hidden xs:inline">Valley (47m)</span>
+                      <span className="xs:hidden">47m</span>
+                      <span className="hidden xs:inline">Montane (500m)</span>
+                      <span className="xs:hidden">500m</span>
+                      <span className="hidden xs:inline">Alpine (800m)</span>
+                      <span className="xs:hidden">800m</span>
+                      <span className="hidden xs:inline">Summit (1163m)</span>
+                      <span className="xs:hidden">1163m</span>
                     </div>
 
                     {/* Station markers */}
@@ -260,10 +263,10 @@ const DataMap = () => {
                         return (
                           <div
                             key={site.id}
-                            className="absolute top-2 transform -translate-x-1/2 group cursor-pointer"
+                            className="absolute top-1 xs:top-2 transform -translate-x-1/2 group cursor-pointer"
                             style={{ left: `${position}%` }}
                           >
-                            <div className={`w-3 h-12 rounded-full ${
+                            <div className={`w-2 xs:w-3 h-8 xs:h-12 rounded-full ${
                               isSummit 
                                 ? 'bg-yellow-400 border-2 border-yellow-600' 
                                 : isRanchBrook 
@@ -274,7 +277,7 @@ const DataMap = () => {
                             
                             {/* Station info on hover */}
                             <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-20">
-                              <div className="bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                              <div className="bg-foreground text-background text-2xs xs:text-xs rounded py-1 px-2 whitespace-nowrap shadow-lg">
                                 <div className="font-semibold">
                                   {isSummit ? 'Summit' : site.shortName}
                                 </div>
@@ -287,9 +290,9 @@ const DataMap = () => {
                   </div>
                 </div>
 
-                {/* Station Data Table */}
-                <div className="space-y-1">
-                  <div className="grid grid-cols-12 gap-4 px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
+                {/* Station Data Table - Desktop Only */}
+                <div className="space-y-1 hidden md:block">
+                  <div className="grid grid-cols-12 gap-4 px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider border-b">
                     <div className="col-span-1">Rank</div>
                     <div className="col-span-2">Station ID</div>
                     <div className="col-span-3">Location</div>
@@ -310,13 +313,13 @@ const DataMap = () => {
                         return (
                           <div 
                             key={site.id}
-                            className={`grid grid-cols-12 gap-4 px-4 py-3 hover:bg-gray-50 border-b border-gray-100 transition-colors cursor-pointer ${
-                              isSummit ? 'bg-yellow-50' : ''
+                            className={`grid grid-cols-12 gap-4 px-4 py-3 hover:bg-muted/50 border-b border-border transition-colors cursor-pointer ${
+                              isSummit ? 'bg-yellow-50 dark:bg-yellow-950/20' : ''
                             }`}
                           >
                             {/* Rank */}
                             <div className="col-span-1 flex items-center">
-                              <div className="text-sm font-bold text-gray-400">
+                              <div className="text-sm font-bold text-muted-foreground">
                                 #{index + 1}
                               </div>
                             </div>
@@ -332,34 +335,36 @@ const DataMap = () => {
                                       : 'bg-blue-500'
                                 }`}
                               ></div>
-                              <div className="font-semibold text-sm text-gray-900">
+                              <div className="font-semibold text-sm text-foreground">
                                 {isSummit ? 'SUMMIT' : site.shortName}
                               </div>
                             </div>
 
                             {/* Location */}
                             <div className="col-span-3 flex flex-col">
-                              <div className="text-sm text-gray-900">{site.name}</div>
-                              <div className="text-xs text-gray-500">
+                              <div className="font-medium text-sm text-foreground">
+                                {site.name}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
                                 {site.latitude.toFixed(4)}°N, {site.longitude.toFixed(4)}°W
                               </div>
                             </div>
 
                             {/* Elevation */}
                             <div className="col-span-2 flex flex-col">
-                              <div className="text-sm font-bold text-gray-900">{site.elevation}m</div>
-                              <div className="text-xs text-gray-500">{ecosystemZone} Zone</div>
+                              <div className="font-semibold text-sm text-foreground">
+                                {site.elevation}m
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {ecosystemZone}
+                              </div>
                             </div>
 
                             {/* Network Type */}
-                            <div className="col-span-2 flex items-center">
+                            <div className="col-span-2">
                               <Badge 
-                                variant="outline" 
-                                className={`text-xs ${
-                                  isRanchBrook 
-                                    ? 'text-red-700 border-red-300 bg-red-50' 
-                                    : 'text-blue-700 border-blue-300 bg-blue-50'
-                                }`}
+                                variant={isRanchBrook ? "destructive" : "secondary"}
+                                className="text-xs"
                               >
                                 {isRanchBrook ? 'Ranch Brook' : 'Distributed'}
                               </Badge>
@@ -367,10 +372,76 @@ const DataMap = () => {
 
                             {/* Status */}
                             <div className="col-span-2 flex items-center gap-2">
-                              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                               <span className="text-xs text-green-600 font-medium">Active</span>
                             </div>
                           </div>
+                        );
+                      })}
+                  </div>
+                </div>
+                
+                {/* Mobile Station Cards */}
+                <div className="md:hidden space-y-3">
+                  <div className="text-sm font-medium text-muted-foreground mb-3">
+                    {networkSites.length} monitoring stations (sorted by elevation)
+                  </div>
+                  <div className="grid gap-3 max-h-96 overflow-y-auto">
+                    {networkSites
+                      .sort((a, b) => b.elevation - a.elevation)
+                      .map((site, index) => {
+                        const isSummit = site.shortName === 'RB-13';
+                        const isRanchBrook = site.type === 'ranch_brook';
+                        const ecosystemZone = site.elevation >= 800 ? 'Alpine' :
+                                             site.elevation >= 500 ? 'Montane' : 'Valley';
+                        
+                        return (
+                          <Card 
+                            key={site.id}
+                            className={`p-3 hover:shadow-md transition-all cursor-pointer ${
+                              isSummit ? 'bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200' : 'hover:border-primary/20'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <div className="text-xs font-bold text-muted-foreground bg-muted rounded px-1.5 py-0.5">
+                                  #{index + 1}
+                                </div>
+                                <div 
+                                  className={`w-3 h-3 rounded-full ${
+                                    isSummit 
+                                      ? 'bg-yellow-400' 
+                                      : isRanchBrook 
+                                        ? 'bg-red-500' 
+                                        : 'bg-blue-500'
+                                  }`}
+                                ></div>
+                                <div className="font-semibold text-sm text-foreground">
+                                  {isSummit ? 'SUMMIT' : site.shortName}
+                                </div>
+                              </div>
+                              <Badge 
+                                variant={isRanchBrook ? "destructive" : "secondary"}
+                                className="text-2xs"
+                              >
+                                {isRanchBrook ? 'RB' : 'DIST'}
+                              </Badge>
+                            </div>
+                            
+                            <div className="space-y-1">
+                              <div className="font-medium text-sm text-foreground">
+                                {site.name}
+                              </div>
+                              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                <span>{site.latitude.toFixed(4)}°N, {site.longitude.toFixed(4)}°W</span>
+                                <span className="font-medium text-primary">{site.elevation}m • {ecosystemZone}</span>
+                              </div>
+                              <div className="flex items-center gap-2 mt-2">
+                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                <span className="text-2xs text-green-600 font-medium">Active</span>
+                              </div>
+                            </div>
+                          </Card>
                         );
                       })}
                   </div>

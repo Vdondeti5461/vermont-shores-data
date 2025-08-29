@@ -41,35 +41,35 @@ const DataDownloadPage = () => {
       <Header />
       <main className="pt-16">
         {/* Hero Section */}
-        <section className="py-20 bg-gradient-to-br from-primary/5 to-secondary/5">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-16">
-              <Badge variant="outline" className="mb-4">
-                <Download className="w-4 h-4 mr-2" />
+        <section className="py-12 xs:py-16 md:py-20 bg-gradient-to-br from-primary/5 to-secondary/5">
+          <div className="container mx-auto px-4 xs:px-3">
+            <div className="text-center mb-8 xs:mb-12 md:mb-16">
+              <Badge variant="outline" className="mb-3 xs:mb-4">
+                <Download className="w-3 h-3 xs:w-4 xs:h-4 mr-2" />
                 Data Access
               </Badge>
-              <h1 className="scientific-heading text-4xl md:text-6xl mb-6">
+              <h1 className="scientific-heading text-2xl xs:text-3xl md:text-4xl lg:text-6xl mb-4 xs:mb-6">
                 <span className="text-primary">Download</span> Research
                 <br />Data & APIs
               </h1>
-              <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+              <p className="text-sm xs:text-base lg:text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">
                 Access comprehensive environmental datasets from Vermont's Summit-to-Shore monitoring network. 
                 Download filtered data, use our APIs, or access real-time data feeds.
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 xs:gap-6">
               {downloadOptions.map((option) => {
                 const Icon = option.icon;
                 return (
-                  <Card key={option.title} className="hover:shadow-lg transition-shadow">
+                  <Card key={option.title} className="hover:shadow-lg transition-all duration-300 touch:active:scale-98">
                     <CardHeader className="text-center pb-3">
-                      <Icon className="h-8 w-8 text-primary mx-auto mb-2" />
-                      <CardTitle className="text-lg">{option.title}</CardTitle>
+                      <Icon className="h-6 w-6 xs:h-8 xs:w-8 text-primary mx-auto mb-2" />
+                      <CardTitle className="text-base xs:text-lg">{option.title}</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-sm text-muted-foreground mb-3">{option.description}</p>
-                      <ul className="text-xs text-muted-foreground space-y-1">
+                      <p className="text-xs xs:text-sm text-muted-foreground mb-3">{option.description}</p>
+                      <ul className="text-2xs xs:text-xs text-muted-foreground space-y-1">
                         {option.features.map((feature, index) => (
                           <li key={index}>• {feature}</li>
                         ))}
@@ -83,16 +83,16 @@ const DataDownloadPage = () => {
         </section>
 
         {/* Download Interface */}
-        <section id="download" className="py-16">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-12">
-              <Badge variant="outline" className="mb-4">
+        <section id="download" className="py-8 xs:py-12 md:py-16">
+          <div className="container mx-auto px-4 xs:px-3">
+            <div className="text-center mb-8 xs:mb-10 md:mb-12">
+              <Badge variant="outline" className="mb-3 xs:mb-4">
                 Multi-Database Access
               </Badge>
-              <h2 className="scientific-heading text-3xl md:text-4xl mb-6">
+              <h2 className="scientific-heading text-2xl xs:text-3xl md:text-4xl mb-4 xs:mb-6">
                 Dynamic <span className="text-primary">Data Export</span>
               </h2>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              <p className="text-sm xs:text-base lg:text-lg text-muted-foreground max-w-2xl mx-auto">
                 Access data from multiple databases with timestamp and location-based filtering
               </p>
             </div>
@@ -102,13 +102,13 @@ const DataDownloadPage = () => {
         </section>
 
         {/* Data Access Methods */}
-        <section className="py-16 bg-muted/30">
-          <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <Badge variant="outline" className="mb-4">
+        <section className="py-8 xs:py-12 md:py-16 bg-muted/30">
+          <div className="container mx-auto px-4 xs:px-3">
+          <div className="text-center mb-8 xs:mb-10 md:mb-12">
+            <Badge variant="outline" className="mb-3 xs:mb-4">
               Access Methods & Bulk Downloads
             </Badge>
-            <h2 className="scientific-heading text-3xl md:text-4xl mb-6">
+            <h2 className="scientific-heading text-2xl xs:text-3xl md:text-4xl mb-4 xs:mb-6">
               Multiple <span className="text-primary">Access Options</span>
             </h2>
           </div>
@@ -121,34 +121,36 @@ const DataDownloadPage = () => {
               <TabsTrigger value="feeds">Real-time Feeds</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="browse" className="mt-8">
+            <TabsContent value="browse" className="mt-6 xs:mt-8">
               <Card>
                 <CardHeader>
-                  <CardTitle>Interactive Data Browser</CardTitle>
+                  <CardTitle className="text-base xs:text-lg">Interactive Data Browser</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground mb-6">
+                  <p className="text-sm xs:text-base text-muted-foreground mb-4 xs:mb-6">
                     Use our web interface to explore, filter, and download data with custom parameters based on 
                     TIMESTAMP and Location as primary filtering criteria.
                   </p>
-                  <div className="grid md:grid-cols-3 gap-4 mb-6">
-                    <div className="p-4 bg-muted/50 rounded-lg">
-                      <h4 className="font-semibold mb-2">Database Selection</h4>
-                      <p className="text-sm text-muted-foreground">Choose from raw, cleaned, or processed databases</p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 xs:gap-4 mb-4 xs:mb-6">
+                    <div className="p-3 xs:p-4 bg-muted/50 rounded-lg">
+                      <h4 className="font-semibold mb-2 text-sm xs:text-base">Database Selection</h4>
+                      <p className="text-xs xs:text-sm text-muted-foreground">Choose from raw, cleaned, or processed databases</p>
                     </div>
-                    <div className="p-4 bg-muted/50 rounded-lg">
-                      <h4 className="font-semibold mb-2">Location & Time Filtering</h4>
-                      <p className="text-sm text-muted-foreground">Filter by specific locations and date ranges</p>
+                    <div className="p-3 xs:p-4 bg-muted/50 rounded-lg">
+                      <h4 className="font-semibold mb-2 text-sm xs:text-base">Location & Time Filtering</h4>
+                      <p className="text-xs xs:text-sm text-muted-foreground">Filter by specific locations and date ranges</p>
                     </div>
-                    <div className="p-4 bg-muted/50 rounded-lg">
-                      <h4 className="font-semibold mb-2">Attribute Selection</h4>
-                      <p className="text-sm text-muted-foreground">Choose specific environmental measurements</p>
+                    <div className="p-3 xs:p-4 bg-muted/50 rounded-lg">
+                      <h4 className="font-semibold mb-2 text-sm xs:text-base">Attribute Selection</h4>
+                      <p className="text-xs xs:text-sm text-muted-foreground">Choose specific environmental measurements</p>
                     </div>
                   </div>
-                  <p className="text-sm text-muted-foreground mb-4">
+                  <p className="text-xs xs:text-sm text-muted-foreground mb-3 xs:mb-4">
                     <strong>Data Age:</strong> 3 Years of comprehensive environmental monitoring data available.
                   </p>
-                  <Button asChild><Link to="#download">Start Browsing Data</Link></Button>
+                  <Button asChild className="w-full xs:w-auto">
+                    <Link to="#download">Start Browsing Data</Link>
+                  </Button>
                 </CardContent>
               </Card>
             </TabsContent>
