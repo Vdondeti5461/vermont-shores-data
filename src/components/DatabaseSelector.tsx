@@ -20,19 +20,19 @@ const DatabaseSelector: React.FC<DatabaseSelectorProps> = ({
   const getDatabaseBadgeVariant = (databaseId: string) => {
     switch (databaseId) {
       case 'raw_data': return 'destructive';
-      case 'initial_clean': return 'default';
-      case 'final_clean': return 'secondary';
-      case 'season_data': return 'outline';
+      case 'initial_clean_data': return 'default';
+      case 'final_clean_data': return 'secondary';
+      case 'seasonal_clean_data': return 'outline';
       default: return 'outline';
     }
   };
 
-  const getDatabaseLabel = (databaseId: string) => {
+  const getDatabaseCategory = (databaseId: string) => {
     switch (databaseId) {
-      case 'raw_data': return 'Raw Data';
-      case 'initial_clean': return 'Initial Clean';
-      case 'final_clean': return 'Final Clean';
-      case 'season_data': return 'Seasonal';
+      case 'raw_data': return 'Raw';
+      case 'initial_clean_data': return 'Initial Clean';
+      case 'final_clean_data': return 'Final Clean';
+      case 'seasonal_clean_data': return 'Seasonal';
       default: return 'Data';
     }
   };
@@ -82,9 +82,11 @@ const DatabaseSelector: React.FC<DatabaseSelectorProps> = ({
                 }`}></div>
                 <h4 className="font-medium text-sm">{db.name}</h4>
               </div>
-              <p className="text-xs text-muted-foreground mb-2">{db.database_name}</p>
-              <Badge variant={getDatabaseBadgeVariant(db.id)}>
-                {getDatabaseLabel(db.id)}
+              <p className="text-xs text-muted-foreground mb-2">
+                {db.database_name || 'Database'}
+              </p>
+              <Badge variant={getDatabaseBadgeVariant(db.id)} className="text-xs">
+                {getDatabaseCategory(db.id)}
               </Badge>
             </CardContent>
           </Card>

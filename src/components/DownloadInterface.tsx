@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useLocalHealthCheck } from '@/hooks/useLocalDatabase';
 import { LocalDatabaseService, DatabaseInfo } from '@/services/localDatabaseService';
@@ -9,6 +10,7 @@ import TableSelector from './TableSelector';
 import LocationSelector from './LocationSelector';
 import AttributeSelector from './AttributeSelector';
 import DateRangeSelector from './DateRangeSelector';
+import { Download, RefreshCw, AlertCircle, CheckCircle, Database } from 'lucide-react';
 
 const DownloadInterface = () => {
   const { toast } = useToast();
@@ -290,29 +292,45 @@ const DownloadInterface = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header with Database Status */}
-      <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-xl p-6 border border-primary/20">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-bold text-foreground mb-2">Download Environmental Data</h2>
-            <p className="text-muted-foreground">Select database, table, locations, and attributes to export research data</p>
-            <div className="flex items-center gap-4 mt-2">
+    <div className="space-y-8">
+      {/* Status Header */}
+      <Card className="border-primary/20 bg-gradient-to-r from-primary/5 via-background to-secondary/5">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Database className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-xl">Environmental Data Download</CardTitle>
+                <p className="text-muted-foreground text-sm">
+                  Interactive interface for accessing multi-database environmental datasets
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${isHealthy ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
-                <span className="text-sm text-muted-foreground">
-                  Database: {isHealthy ? 'Connected' : 'Disconnected'}
-                </span>
+                {isHealthy ? (
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                ) : (
+                  <AlertCircle className="h-4 w-4 text-red-500" />
+                )}
+                <Badge variant={isHealthy ? "default" : "destructive"} className="text-xs">
+                  {isHealthy ? 'Connected' : 'Disconnected'}
+                </Badge>
               </div>
               <div className="text-sm text-muted-foreground">
-                Current: <span className="font-medium">{databases.find(db => db.id === selectedDatabase)?.name || 'None Selected'}</span>
+                <span className="font-medium">
+                  {databases.find(db => db.id === selectedDatabase)?.name || 'No Database Selected'}
+                </span>
               </div>
             </div>
           </div>
-        </div>
-      </div>
+        </CardHeader>
+      </Card>
 
-      <div className="grid lg:grid-cols-5 gap-6">
+      {/* Selection Interface */}
+      <div className="grid xl:grid-cols-5 lg:grid-cols-3 md:grid-cols-2 gap-6">
         {/* Database Selection */}
         <DatabaseSelector
           databases={databases}
@@ -339,6 +357,16 @@ const DownloadInterface = () => {
           isLoading={isLocationsLoading}
         />
 
+        {/* Attribute Selection */}
+        <AttributeSelector
+          attributes={tableMetadata?.columns || []}
+          selectedAttributes={selectedAttributes}
+          onAttributeToggle={handleAttributeToggle}
+          onSelectAll={handleSelectAllAttributes}
+          isLoading={isAttributesLoading}
+          tableName={selectedTable}
+        />
+
         {/* Date Range & Download */}
         <DateRangeSelector
           startDate={startDate}
@@ -356,17 +384,71 @@ const DownloadInterface = () => {
             attributes: selectedAttributes.length,
           }}
         />
-
-        {/* Attribute Selection - moved after download */}
-        <AttributeSelector
-          attributes={tableMetadata?.columns || []}
-          selectedAttributes={selectedAttributes}
-          onAttributeToggle={handleAttributeToggle}
-          onSelectAll={handleSelectAllAttributes}
-          isLoading={isAttributesLoading}
-          tableName={selectedTable}
-        />
       </div>
+
+      {/* Download Summary */}
+      {selectedDatabase && selectedTable && (
+        <Card className="border-secondary/20 bg-secondary/5">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Download className="h-5 w-5" />
+              Download Summary
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-4 gap-4 text-sm">
+              <div className="text-center p-3 rounded-lg bg-background/50">
+                <div className="font-semibold text-primary">
+                  {databases.find(db => db.id === selectedDatabase)?.name}
+                </div>
+                <div className="text-muted-foreground">Database</div>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-background/50">
+                <div className="font-semibold text-primary">{selectedTable}</div>
+                <div className="text-muted-foreground">Table</div>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-background/50">
+                <div className="font-semibold text-primary">{selectedLocations.length}</div>
+                <div className="text-muted-foreground">Locations</div>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-background/50">
+                <div className="font-semibold text-primary">{selectedAttributes.length}</div>
+                <div className="text-muted-foreground">Attributes</div>
+              </div>
+            </div>
+            
+            {startDate && endDate && (
+              <div className="mt-4 p-3 rounded-lg bg-background/50 text-center">
+                <div className="font-semibold text-primary">
+                  {startDate.toLocaleDateString()} - {endDate.toLocaleDateString()}
+                </div>
+                <div className="text-muted-foreground text-sm">Date Range</div>
+              </div>
+            )}
+
+            <div className="flex justify-center mt-6">
+              <Button
+                onClick={handleDownload}
+                disabled={!selectedDatabase || !selectedTable || selectedLocations.length === 0 || isDownloading}
+                size="lg"
+                className="min-w-48"
+              >
+                {isDownloading ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Preparing Download...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4 mr-2" />
+                    Download CSV Data
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
