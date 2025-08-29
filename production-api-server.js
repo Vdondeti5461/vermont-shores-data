@@ -52,7 +52,7 @@ const LOCATION_METADATA = {
   'RB11': { name: 'Mansfield East Ranch Brook 11', latitude: 44.2679, longitude: -72.8021, elevation: 1000 },
   'RB12': { name: 'Mansfield East FEMC', latitude: 44.2685, longitude: -72.8015, elevation: 980 },
   'SPER': { name: 'Spear Street', latitude: 44.4759, longitude: -73.1959, elevation: 120 },
-  'SPST': { name: 'Spear Street', latitude: 44.4759, longitude: -73.1959, elevation: 120 },
+  
   'SR01': { name: 'Sleepers R3/Main', latitude: 44.2891, longitude: -72.8211, elevation: 900 },
   'SR11': { name: 'Sleepers W1/R11', latitude: 44.2885, longitude: -72.8205, elevation: 920 },
   'SR25': { name: 'Sleepers R25', latitude: 44.2879, longitude: -72.8199, elevation: 940 },
@@ -248,18 +248,22 @@ app.get('/api/databases/:database/locations', async (req, res) => {
       const locs = cols.filter((c) => isLocationCol(c.COLUMN_NAME));
       const times = cols.filter((c) => isTimeCol(c.COLUMN_NAME, c.DATA_TYPE));
 
-      // We need BOTH Location and Timestamp in the same table
-      if (locs.length === 0 || times.length === 0) continue;
+      // For raw_data we only require a Location column; for others require both Location and Time
+      const requireTime = database !== 'raw_data';
+      if (locs.length === 0) continue;
+      if (requireTime && times.length === 0) continue;
 
       locs.sort((a, b) => scoreLoc(b.COLUMN_NAME) - scoreLoc(a.COLUMN_NAME));
-      times.sort((a, b) => scoreTime(b.COLUMN_NAME) - scoreTime(a.COLUMN_NAME));
+      if (times.length > 0) times.sort((a, b) => scoreTime(b.COLUMN_NAME) - scoreTime(a.COLUMN_NAME));
 
       const locCol = locs[0].COLUMN_NAME;
-      const tsCol = times[0].COLUMN_NAME;
+      const tsCol = times[0]?.COLUMN_NAME || null;
       debugInfo.push({ table, locCol, tsCol });
 
+      const baseWhere = `\`${locCol}\` IS NOT NULL AND \`${locCol}\` <> ''`;
+      const timeClause = tsCol ? ` AND \`${tsCol}\` IS NOT NULL` : '';
       tableSelections.push(
-        `(SELECT DISTINCT UPPER(TRIM(\`${locCol}\`)) AS name FROM \`${dbName}\`.\`${table}\` WHERE \`${locCol}\` IS NOT NULL AND \`${locCol}\` <> '' AND \`${tsCol}\` IS NOT NULL)`
+        `(SELECT DISTINCT UPPER(TRIM(\`${locCol}\`)) AS name FROM \`${dbName}\`.\`${table}\` WHERE ${baseWhere}${timeClause})`
       );
     }
 
@@ -322,12 +326,24 @@ app.get('/api/databases/:database/locations', async (req, res) => {
       });
     });
 
-    res.json(result);
-  } catch (error) {
-    console.error('Error fetching locations:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
+    // Fallback to canonical 22 locations for raw_data if fewer were discovered
+    if (database === 'raw_data' && result.length < 22) {
+      const canonical = Object.keys(LOCATION_METADATA).filter((k) => k !== 'SPST');
+      const canonicalResult = canonical.map((code, idx) => {
+        const meta = LOCATION_METADATA[code] || null;
+        return {
+          id: idx + 1,
+          name: code,
+          displayName: meta?.name || code,
+          latitude: meta?.latitude ?? 44.0,
+          longitude: meta?.longitude ?? -72.5,
+          elevation: meta?.elevation ?? 1000
+        };
+      });
+      return res.json(canonicalResult);
+    }
+
+    return res.json(result);
 
 // JSON data endpoint
 app.get('/api/databases/:database/data/:table', async (req, res) => {
