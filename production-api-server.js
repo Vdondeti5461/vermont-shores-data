@@ -169,18 +169,22 @@ app.get('/api/databases/:database/locations', async (req, res) => {
   try {
     const { database } = req.params;
     const dbName = getDatabaseName(database);
+    
+    console.log(`[DEBUG] Processing locations for database: ${database} -> ${dbName}`);
 
     const tablesParam = String(req.query.tables || '').trim();
     const requestedTables = tablesParam ? new Set(tablesParam.split(',').map((t) => t.trim())) : null;
     const debugMode = String(req.query.debug || '').toLowerCase() === '1' || String(req.query.debug || '').toLowerCase() === 'true';
 
     // Discover ALL columns up-front so we can select tables that have BOTH a location-like and a timestamp-like column
+    console.log(`[DEBUG] Querying columns for schema: ${dbName}`);
     const [colRows] = await pool.execute(
       `SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE
        FROM INFORMATION_SCHEMA.COLUMNS
        WHERE TABLE_SCHEMA = ?`,
       [dbName]
     );
+    console.log(`[DEBUG] Found ${colRows.length} columns across tables`);
 
     // Group columns by table
     const byTable = new Map();
@@ -260,11 +264,16 @@ app.get('/api/databases/:database/locations', async (req, res) => {
     }
 
     if (tableSelections.length === 0) {
+      console.log(`[DEBUG] No valid tables found for ${database} (${dbName})`);
       return res.json([]);
     }
+    
+    console.log(`[DEBUG] Found ${tableSelections.length} valid tables with both location and timestamp columns`);
 
     const unionQuery = `SELECT DISTINCT name FROM (${tableSelections.join(' UNION ALL ')}) AS all_locs ORDER BY name`;
+    console.log(`[DEBUG] Executing union query for ${database}`);
     const [rows] = await pool.execute(unionQuery);
+    console.log(`[DEBUG] Found ${rows.length} distinct locations before filtering`);
 
     if (debugMode) {
       return res.json({
