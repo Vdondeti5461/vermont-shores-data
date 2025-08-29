@@ -182,7 +182,8 @@ app.get('/api/databases/:database/locations', async (req, res) => {
     const debugMode = String(req.query.debug || '').toLowerCase() === '1' || String(req.query.debug || '').toLowerCase() === 'true';
     const forceCanonical = String(req.query.canonical || '').toLowerCase() === '1' || String(req.query.canonical || '').toLowerCase() === 'true';
 
-    if (forceCanonical) {
+    // Always return canonical 22 sites for raw_data unless debugging is requested
+    if ((database === 'raw_data' && !debugMode) || forceCanonical) {
       const canonical = Object.keys(LOCATION_METADATA).filter((k) => k !== 'SPST').map((code, idx) => {
         const meta = LOCATION_METADATA[code] || null;
         return {
