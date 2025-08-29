@@ -240,14 +240,39 @@ app.get('/api/databases/:database/locations', async (req, res) => {
 
     // Build union across ALL candidate location-like columns per table
     const tableQueries = [];
+    const debugMode = String(req.query.debug || '').toLowerCase() === '1' || String(req.query.debug || '').toLowerCase() === 'true';
+    const debugInfo = [];
+
     for (const [table, cols] of candidates.entries()) {
-      const colSelects = cols.map((col) =>
-        `(SELECT DISTINCT TRIM(\`${col}\`) AS name FROM \`${dbName}\`.\`${table}\` WHERE \`${col}\` IS NOT NULL AND \`${col}\` <> '')`
-      );
+      const colSelects = cols.map((col) => {
+        const sel = `(SELECT DISTINCT TRIM(\`${col}\`) AS name FROM \`${dbName}\`.\`${table}\` WHERE \`${col}\` IS NOT NULL AND \`${col}\` <> '')`;
+        return sel;
+      });
+      if (debugMode) {
+        for (const col of cols) {
+          try {
+            const [r] = await pool.execute(`SELECT COUNT(DISTINCT TRIM(\`${col}\`)) AS cnt FROM \`${dbName}\`.\`${table}\` WHERE \`${col}\` IS NOT NULL AND \`${col}\` <> ''`);
+            debugInfo.push({ table, column: col, distinct: r[0]?.cnt || 0 });
+          } catch (e) {
+            debugInfo.push({ table, column: col, error: e.message });
+          }
+        }
+      }
       tableQueries.push(colSelects.join(' UNION ALL '));
     }
 
     const query = `SELECT DISTINCT name FROM (${tableQueries.join(' UNION ALL ')}) AS combined_locations ORDER BY name`;
+    const [rows] = await pool.execute(query);
+
+    if (debugMode) {
+      return res.json({
+        database: dbName,
+        tables_scanned: candidates.size,
+        candidates: Array.from(candidates.entries()).map(([t, cs]) => ({ table: t, columns: cs })),
+        debug_counts: debugInfo.sort((a,b) => (b.distinct||0)-(a.distinct||0)),
+        locations: rows.map(r => r.name)
+      });
+    }
 
     const [rows] = await pool.execute(query);
 
