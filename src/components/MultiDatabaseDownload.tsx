@@ -81,15 +81,15 @@ const MultiDatabaseDownload = () => {
     setSelectedLocations([]);
   }, [selectedDatabase]);
 
-  // Fetch locations when table changes (table-specific locations)
+  // Fetch locations after attributes are loaded (need Location attribute info)
   useEffect(() => {
-    if (selectedDatabase && selectedTable) {
+    if (selectedDatabase && selectedTable && attributes.length > 0) {
       fetchLocations(selectedDatabase, selectedTable);
     } else {
       setLocations([]);
       setSelectedLocations([]);
     }
-  }, [selectedDatabase, selectedTable]);
+  }, [selectedDatabase, selectedTable, attributes]);
 
   // Fetch attributes when table changes
   useEffect(() => {
@@ -154,36 +154,47 @@ const MultiDatabaseDownload = () => {
   const fetchLocations = async (database: string, table?: string) => {
     try {
       if (table) {
-        // Prefer table-specific endpoint; fallback to union endpoint filtered by table
-        let url = `${API_BASE_URL}/api/databases/${database}/tables/${table}/locations`;
-        let response = await fetch(url);
-
-        if (response.status === 404) {
-          url = `${API_BASE_URL}/api/databases/${database}/locations?tables=${encodeURIComponent(table)}`;
-          response = await fetch(url);
+        // First, check if Location attribute exists in the fetched attributes
+        const locationAttribute = attributes.find(attr => 
+          attr.name.toLowerCase() === 'location'
+        );
+        
+        if (!locationAttribute) {
+          console.warn('No Location attribute found in table attributes');
+          setLocations([]);
+          return;
         }
 
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        setLocations(Array.isArray(data) ? data : (data.locations || data.values || []));
-      } else {
-        // Database-wide distinct locations across all tables
-        const url = `${API_BASE_URL}/api/databases/${database}/locations`;
+        // Fetch distinct values for the Location attribute
+        const url = `${API_BASE_URL}/api/databases/${database}/tables/${table}/attributes/${locationAttribute.name}/distinct`;
         const response = await fetch(url);
+        
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
+
         const data = await response.json();
-        setLocations(Array.isArray(data) ? data : data.locations || []);
+        // Convert distinct values to location objects with consistent interface
+        const distinctValues = data.values || data.distinct || data || [];
+        const locationObjects = distinctValues.map((value: string) => ({
+          id: value,
+          name: value,
+          displayName: value,
+          latitude: 0,
+          longitude: 0,
+          elevation: 0
+        }));
+        setLocations(locationObjects);
+      } else {
+        // For database-wide locations, we'd need to aggregate across all tables
+        // For now, just clear locations when no table is selected
+        setLocations([]);
       }
     } catch (error: any) {
       console.error('Error fetching locations:', error);
       toast({
         title: "Error",
-        description: `Failed to fetch locations: ${error.message}`,
+        description: `Failed to fetch location values: ${error.message}`,
         variant: "destructive"
       });
     }
