@@ -96,23 +96,23 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
           });
         };
 
-        // Add site markers
+        // Add site markers - using theme colors that match network overview
         mapSites.forEach((site) => {
-          let color = '#2563eb';
+          let color = 'hsl(var(--primary))'; // Blue for distributed sites
           let typeLabel = 'Distributed';
           
           if (site.type === 'ranch_brook') {
-            color = '#dc2626';
+            color = 'hsl(var(--destructive))'; // Red for ranch brook sites
             typeLabel = 'Ranch Brook';
           } else if (site.type === 'database') {
-            color = '#059669';
+            color = 'hsl(var(--secondary))'; // Green for database stations
             typeLabel = 'Database Station';
           }
           
           const status = site.status || 'active';
           const icon = createIcon(color, status);
           const statusLabel = status === 'active' ? 'Active' : 'Under Maintenance';
-          const statusColor = status === 'active' ? '#16a34a' : '#f59e0b';
+          const statusColor = status === 'active' ? 'hsl(var(--success))' : 'hsl(var(--warning))';
           
           const marker = L.marker([site.latitude, site.longitude], { icon })
             .addTo(map)
@@ -204,13 +204,13 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-red-700 border-red-300">
+            <Badge variant="outline" className="text-destructive border-destructive/30">
               {mapSites.filter(s => s.type === 'ranch_brook').length} Mansfield
             </Badge>
-            <Badge variant="outline" className="text-blue-700 border-blue-300">
+            <Badge variant="outline" className="text-primary border-primary/30">
               {mapSites.filter(s => s.type === 'distributed').length} Regional
             </Badge>
-            <Badge variant="outline" className="text-yellow-700 border-yellow-300">
+            <Badge variant="outline" className="text-warning border-warning/30">
               {mapSites.filter(s => s.status === 'maintenance').length} Maintenance
             </Badge>
           </div>
@@ -258,15 +258,15 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
             <h4 className="font-semibold mb-2 text-sm">Network Legend</h4>
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-xs">
-                <div className="w-3 h-3 rounded-full bg-red-600 border border-white"></div>
+                <div className="w-3 h-3 rounded-full bg-destructive border border-white"></div>
                 <span>Mansfield Sites ({mapSites.filter(s => s.type === 'ranch_brook').length})</span>
               </div>
               <div className="flex items-center gap-2 text-xs">
-                <div className="w-3 h-3 rounded-full bg-blue-600 border border-white"></div>
+                <div className="w-3 h-3 rounded-full bg-primary border border-white"></div>
                 <span>Regional Sites ({mapSites.filter(s => s.type === 'distributed').length})</span>
               </div>
               <div className="flex items-center gap-2 text-xs">
-                <div className="w-3 h-3 rounded-full bg-yellow-600 border border-white opacity-60"></div>
+                <div className="w-3 h-3 rounded-full bg-warning border border-white opacity-60"></div>
                 <span>Under Maintenance ({mapSites.filter(s => s.status === 'maintenance').length})</span>
               </div>
             </div>
