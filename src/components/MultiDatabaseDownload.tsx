@@ -154,13 +154,13 @@ const MultiDatabaseDownload = () => {
   const fetchLocations = async (database: string, table?: string) => {
     try {
       if (table) {
-        // Use the new dedicated endpoint for table-specific locations
-        const url = `${API_BASE_URL}/api/databases/${database}/tables/${table}/locations`;
+        // Use the existing compatible endpoint for table-specific locations
+        const url = `${API_BASE_URL}/api/databases/${database}/locations?tables=${encodeURIComponent(table)}`;
         const response = await fetch(url);
         const data = await response.json();
         setLocations(Array.isArray(data) ? data : data.locations || []);
       } else {
-        // Fallback to general locations endpoint
+        // General locations endpoint
         const url = `${API_BASE_URL}/api/databases/${database}/locations`;
         const response = await fetch(url);
         const data = await response.json();
