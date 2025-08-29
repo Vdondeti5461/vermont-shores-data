@@ -402,8 +402,64 @@ const DynamicDataBrowser = () => {
           throw new Error(`Download failed: ${status} ${response.statusText}`);
         }
       } else {
-        // Normal single request success
-        blob = await response.blob();
+        // Normal success: read text so we can detect potential row caps and optionally chunk by month
+        const initialText = await response.text();
+        const initialLines = initialText.split(/\r?\n/);
+        let header = initialLines[0] ?? '';
+        const initialBody = initialLines.slice(1).filter((l) => l.trim().length > 0);
+
+        const needsChunking = initialBody.length >= 1000 && startDate && endDate;
+        if (needsChunking) {
+          console.warn('[Chunking] ~1000 rows detected. Fetching monthly chunks per location.');
+
+          const chunkRanges: { start: Date; end: Date }[] = [];
+          if (startDate && endDate) {
+            let cursor = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+            while (cursor <= endDate) {
+              const monthStart = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+              const monthEnd = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0);
+              const rangeStart = new Date(Math.max(monthStart.getTime(), startDate.getTime()));
+              const rangeEnd = new Date(Math.min(monthEnd.getTime(), endDate.getTime()))
+              chunkRanges.push({ start: rangeStart, end: rangeEnd });
+              cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+            }
+          }
+
+          const rows: string[] = [];
+          let success = 0;
+          const locs = selectedLocations.length > 0 ? selectedLocations : [undefined];
+
+          for (const loc of locs) {
+            for (const chunk of chunkRanges) {
+              const p = new URLSearchParams(params.toString());
+              if (loc) p.set('location', loc);
+              p.set('start_date', format(chunk.start, 'yyyy-MM-dd 00:00:00'));
+              p.set('end_date', format(chunk.end, 'yyyy-MM-dd 23:59:59'));
+              const url = `${API_BASE_URL}/api/databases/${selectedDatabase}/download/${selectedTable}?${p.toString()}`;
+              const res = await fetch(url);
+              if (!res.ok) {
+                console.warn(`[Chunking] Skipping chunk ${format(chunk.start, 'yyyy-MM-dd')} to ${format(chunk.end, 'yyyy-MM-dd')} for ${loc ?? 'all locations'} - status ${res.status}`);
+                continue;
+              }
+              const text = await res.text();
+              const lines = text.split(/\r?\n/);
+              if (!header && lines[0]) header = lines[0];
+              const body = lines.slice(1).filter((l) => l.trim().length > 0);
+              if (body.length > 0) {
+                rows.push(...body);
+                success++;
+              }
+            }
+          }
+
+          if (!header || rows.length === 0 || success === 0) {
+            throw new Error('No data found for the selected criteria');
+          }
+          const combined = [header, ...rows].join('\n');
+          blob = new Blob([combined], { type: 'text/csv;charset=utf-8;' });
+        } else {
+          blob = new Blob([initialText], { type: 'text/csv;charset=utf-8;' });
+        }
       }
       console.log('[Downloaded Blob Size]', blob.size, 'bytes');
       
