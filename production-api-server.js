@@ -180,6 +180,22 @@ app.get('/api/databases/:database/locations', async (req, res) => {
     const tablesParam = String(req.query.tables || '').trim();
     const requestedTables = tablesParam ? new Set(tablesParam.split(',').map((t) => t.trim())) : null;
     const debugMode = String(req.query.debug || '').toLowerCase() === '1' || String(req.query.debug || '').toLowerCase() === 'true';
+    const forceCanonical = String(req.query.canonical || '').toLowerCase() === '1' || String(req.query.canonical || '').toLowerCase() === 'true';
+
+    if (forceCanonical) {
+      const canonical = Object.keys(LOCATION_METADATA).filter((k) => k !== 'SPST').map((code, idx) => {
+        const meta = LOCATION_METADATA[code] || null;
+        return {
+          id: idx + 1,
+          name: code,
+          displayName: meta?.name || code,
+          latitude: meta?.latitude ?? 44.0,
+          longitude: meta?.longitude ?? -72.5,
+          elevation: meta?.elevation ?? 1000
+        };
+      });
+      return res.json(canonical);
+    }
 
     // Discover ALL columns up-front so we can select tables that have BOTH a location-like and a timestamp-like column
     console.log(`[DEBUG] Querying columns for schema: ${dbName}`);
