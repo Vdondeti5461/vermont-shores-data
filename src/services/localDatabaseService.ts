@@ -295,14 +295,21 @@ export class LocalDatabaseService {
     location?: string,
     startDate?: string,
     endDate?: string,
+    season?: string,
+    year?: string,
     dataType: 'raw' | 'cleaned' | 'both' = 'both'
   ): Promise<{ timestamp: string; location: string; raw_depth?: number; cleaned_depth?: number; dbtcdt?: number }[]> {
     try {
+      // Use actual database names from your system
+      const dbName = database === 'raw' ? 'rawdata' : 'finalcleandata';
+      
       const params = new URLSearchParams({
-        database,
+        database: dbName,
         ...(location && { location }),
         ...(startDate && { start_date: startDate }),
         ...(endDate && { end_date: endDate }),
+        ...(season && { season }),
+        ...(year && { year }),
         data_type: dataType
       });
 
@@ -320,27 +327,77 @@ export class LocalDatabaseService {
       return await response.json();
     } catch (error) {
       console.error('Failed to fetch snow depth time series:', error);
-      // Return mock data for development
-      return this.generateMockSnowDepthData(location, startDate, endDate);
+      // Return mock data for development with proper database context
+      return this.generateMockSnowDepthData(location, startDate, endDate, database, season, year);
     }
   }
 
-  // Generate mock snow depth data for development
-  private static generateMockSnowDepthData(location?: string, startDate?: string, endDate?: string) {
+  // Generate mock snow depth data for development with database context
+  private static generateMockSnowDepthData(
+    location?: string, 
+    startDate?: string, 
+    endDate?: string, 
+    database?: string,
+    season?: string,
+    year?: string
+  ) {
     const data = [];
-    const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const end = endDate ? new Date(endDate) : new Date();
+    
+    // Set date range based on year or default range
+    const start = year ? new Date(`${year}-01-01`) : 
+                 startDate ? new Date(startDate) : 
+                 new Date('2022-01-01');
+    const end = year ? new Date(`${year}-12-31`) : 
+               endDate ? new Date(endDate) : 
+               new Date('2023-12-31');
+    
+    // Season mapping
+    const seasonMonths = {
+      'winter': [12, 1, 2],
+      'spring': [3, 4, 5], 
+      'summer': [6, 7, 8],
+      'fall': [9, 10, 11]
+    };
     
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      const baseDepth = Math.sin(d.getTime() / (1000 * 60 * 60 * 24 * 7)) * 50 + 100;
-      const noise = (Math.random() - 0.5) * 20;
+      const month = d.getMonth() + 1;
+      
+      // Skip if season filter doesn't match
+      if (season && seasonMonths[season as keyof typeof seasonMonths]) {
+        if (!seasonMonths[season as keyof typeof seasonMonths].includes(month)) {
+          continue;
+        }
+      }
+      
+      // Generate snow depth based on season and location
+      let baseDepth = 0;
+      if (month >= 12 || month <= 3) { // Winter months
+        baseDepth = Math.sin(d.getTime() / (1000 * 60 * 60 * 24 * 7)) * 80 + 120;
+      } else if (month >= 4 && month <= 5) { // Spring melt
+        baseDepth = Math.max(0, Math.sin(d.getTime() / (1000 * 60 * 60 * 24 * 3)) * 60 + 40);
+      } else { // Summer/Fall - minimal snow
+        baseDepth = Math.random() * 10;
+      }
+      
+      // Add location variation
+      const locationMultiplier = location === 'Station_1' ? 1.2 : 
+                                location === 'Station_2' ? 0.8 : 1.0;
+      baseDepth *= locationMultiplier;
+      
+      // Add noise - more for raw data, less for cleaned
+      const rawNoise = (Math.random() - 0.5) * 30;
+      const cleanedNoise = (Math.random() - 0.5) * 10;
+      
+      const isRaw = database === 'raw';
+      const raw_depth = Math.max(0, baseDepth + rawNoise);
+      const cleaned_depth = Math.max(0, baseDepth + cleanedNoise);
       
       data.push({
         timestamp: d.toISOString().split('T')[0],
         location: location || 'Station_1',
-        raw_depth: Math.max(0, baseDepth + noise),
-        cleaned_depth: Math.max(0, baseDepth + noise * 0.3), // Less noisy
-        dbtcdt: Math.max(0, baseDepth + noise * 0.3)
+        raw_depth: isRaw ? raw_depth : undefined,
+        cleaned_depth: !isRaw ? cleaned_depth : undefined,
+        dbtcdt: isRaw ? raw_depth : cleaned_depth
       });
     }
     

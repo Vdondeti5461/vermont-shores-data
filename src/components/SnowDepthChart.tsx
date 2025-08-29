@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CalendarDays, MapPin, TrendingUp, Download } from 'lucide-react';
+import { CalendarDays, MapPin, TrendingUp, Download, Database } from 'lucide-react';
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { LocalDatabaseService } from '@/services/localDatabaseService';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -29,12 +29,20 @@ const SnowDepthChart: React.FC<SnowDepthChartProps> = ({ className = '' }) => {
   const [locations, setLocations] = useState<any[]>([]);
   const [selectedLocation, setSelectedLocation] = useState<string>('');
   const [selectedDatabase, setSelectedDatabase] = useState<string>('raw');
-  const [dateRange, setDateRange] = useState({
-    start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    end: new Date().toISOString().split('T')[0]
-  });
+  const [selectedYear, setSelectedYear] = useState<string>('2023');
+  const [selectedSeason, setSelectedSeason] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [chartType, setChartType] = useState<'line' | 'area'>('line');
+
+  // Available years and seasons
+  const availableYears = ['2022', '2023', '2024'];
+  const seasons = [
+    { value: '', label: 'All Seasons' },
+    { value: 'winter', label: 'Winter (Dec-Feb)' },
+    { value: 'spring', label: 'Spring (Mar-May)' },
+    { value: 'summer', label: 'Summer (Jun-Aug)' },
+    { value: 'fall', label: 'Fall (Sep-Nov)' }
+  ];
 
   // Load locations and initial data
   useEffect(() => {
@@ -42,8 +50,8 @@ const SnowDepthChart: React.FC<SnowDepthChartProps> = ({ className = '' }) => {
       try {
         setLoading(true);
         
-        // Load locations
-        const locationsData = await LocalDatabaseService.getLocations('CRRELS2S_VTClimateRepository');
+        // Load locations from rawdata database
+        const locationsData = await LocalDatabaseService.getLocations('rawdata');
         setLocations(locationsData);
         
         if (locationsData.length > 0) {
@@ -66,18 +74,29 @@ const SnowDepthChart: React.FC<SnowDepthChartProps> = ({ className = '' }) => {
     const loadSnowDepthData = async () => {
       try {
         setLoading(true);
+        
+        // Set date range based on year and season
+        const startDate = `${selectedYear}-01-01`;
+        const endDate = `${selectedYear}-12-31`;
+        
         const snowData = await LocalDatabaseService.getSnowDepthTimeSeries(
-          selectedDatabase === 'raw' ? 'CRRELS2S_VTClimateRepository' : 'CRRELS2S_VTClimateRepository_Processed',
+          selectedDatabase,
           selectedLocation,
-          dateRange.start,
-          dateRange.end,
+          startDate,
+          endDate,
+          selectedSeason,
+          selectedYear,
           'both'
         );
         
         // Transform data for chart
         const chartData = snowData.map(item => ({
           ...item,
-          date: new Date(item.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          date: new Date(item.timestamp).toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric',
+            year: selectedSeason ? undefined : '2-digit'
+          }),
           rawDepth: item.raw_depth || item.dbtcdt || 0,
           cleanedDepth: item.cleaned_depth || item.dbtcdt || 0
         }));
@@ -91,7 +110,7 @@ const SnowDepthChart: React.FC<SnowDepthChartProps> = ({ className = '' }) => {
     };
 
     loadSnowDepthData();
-  }, [selectedLocation, selectedDatabase, dateRange]);
+  }, [selectedLocation, selectedDatabase, selectedYear, selectedSeason]);
 
   // Calculate statistics
   const stats = React.useMemo(() => {
@@ -100,14 +119,14 @@ const SnowDepthChart: React.FC<SnowDepthChartProps> = ({ className = '' }) => {
     const rawDepths = data.map(d => d.rawDepth || 0).filter(Boolean);
     const cleanedDepths = data.map(d => d.cleanedDepth || 0).filter(Boolean);
     
-    const avgRaw = rawDepths.reduce((sum, val) => sum + val, 0) / rawDepths.length;
-    const avgCleaned = cleanedDepths.reduce((sum, val) => sum + val, 0) / cleanedDepths.length;
-    const maxRaw = Math.max(...rawDepths);
-    const maxCleaned = Math.max(...cleanedDepths);
+    const avgRaw = rawDepths.length > 0 ? rawDepths.reduce((sum, val) => sum + val, 0) / rawDepths.length : 0;
+    const avgCleaned = cleanedDepths.length > 0 ? cleanedDepths.reduce((sum, val) => sum + val, 0) / cleanedDepths.length : 0;
+    const maxRaw = rawDepths.length > 0 ? Math.max(...rawDepths) : 0;
+    const maxCleaned = cleanedDepths.length > 0 ? Math.max(...cleanedDepths) : 0;
     
     // Calculate variance reduction as data quality improvement
-    const rawVariance = rawDepths.reduce((sum, val) => sum + Math.pow(val - avgRaw, 2), 0) / rawDepths.length;
-    const cleanedVariance = cleanedDepths.reduce((sum, val) => sum + Math.pow(val - avgCleaned, 2), 0) / cleanedDepths.length;
+    const rawVariance = rawDepths.length > 0 ? rawDepths.reduce((sum, val) => sum + Math.pow(val - avgRaw, 2), 0) / rawDepths.length : 0;
+    const cleanedVariance = cleanedDepths.length > 0 ? cleanedDepths.reduce((sum, val) => sum + Math.pow(val - avgCleaned, 2), 0) / cleanedDepths.length : 0;
     const improvement = rawVariance > 0 ? ((rawVariance - cleanedVariance) / rawVariance) * 100 : 0;
     
     return { avgRaw, avgCleaned, maxRaw, maxCleaned, improvement };
@@ -147,15 +166,15 @@ const SnowDepthChart: React.FC<SnowDepthChartProps> = ({ className = '' }) => {
             Snow Depth <span className="text-primary">Analysis</span>
           </h2>
           <p className="text-muted-foreground">
-            Time series comparison between raw and processed DBTCDT measurements
+            DBTCDT measurements from <strong>{selectedDatabase === 'raw' ? 'rawdata' : 'finalcleandata'}</strong> database
           </p>
         </div>
         
-        <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 w-full lg:w-auto">
           <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-            <SelectTrigger className="w-full sm:w-48">
+            <SelectTrigger className="min-w-36">
               <MapPin className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Select location" />
+              <SelectValue placeholder="Location" />
             </SelectTrigger>
             <SelectContent>
               {locations.map((location) => (
@@ -167,15 +186,74 @@ const SnowDepthChart: React.FC<SnowDepthChartProps> = ({ className = '' }) => {
           </Select>
           
           <Select value={selectedDatabase} onValueChange={setSelectedDatabase}>
-            <SelectTrigger className="w-full sm:w-44">
+            <SelectTrigger className="min-w-32">
+              <Database className="h-4 w-4 mr-2" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="raw">Raw Database</SelectItem>
-              <SelectItem value="processed">Processed DB</SelectItem>
+              <SelectItem value="raw">Raw Data</SelectItem>
+              <SelectItem value="cleaned">Final Clean</SelectItem>
             </SelectContent>
           </Select>
+
+          <Select value={selectedYear} onValueChange={setSelectedYear}>
+            <SelectTrigger className="min-w-24">
+              <CalendarDays className="h-4 w-4 mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {availableYears.map((year) => (
+                <SelectItem key={year} value={year}>
+                  {year}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={selectedSeason} onValueChange={setSelectedSeason}>
+            <SelectTrigger className="min-w-32">
+              <SelectValue placeholder="Season" />
+            </SelectTrigger>
+            <SelectContent>
+              {seasons.map((season) => (
+                <SelectItem key={season.value} value={season.value}>
+                  {season.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              setSelectedYear('2023');
+              setSelectedSeason('');
+              setSelectedDatabase('raw');
+            }}
+          >
+            Reset
+          </Button>
         </div>
+      </div>
+
+      {/* Database Info Badge */}
+      <div className="flex flex-wrap gap-2">
+        <Badge variant="secondary" className="flex items-center gap-1">
+          <Database className="h-3 w-3" />
+          Database: {selectedDatabase === 'raw' ? 'rawdata' : 'finalcleandata'}
+        </Badge>
+        <Badge variant="outline">
+          Year: {selectedYear}
+        </Badge>
+        {selectedSeason && (
+          <Badge variant="outline">
+            Season: {seasons.find(s => s.value === selectedSeason)?.label}
+          </Badge>
+        )}
+        <Badge variant="outline">
+          Data Points: {data.length}
+        </Badge>
       </div>
 
       {/* Statistics Cards */}
@@ -221,7 +299,9 @@ const SnowDepthChart: React.FC<SnowDepthChartProps> = ({ className = '' }) => {
       <Card>
         <CardHeader className="pb-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <CardTitle className="text-lg">Snow Depth Time Series</CardTitle>
+            <CardTitle className="text-lg">
+              Snow Depth Time Series - {selectedYear} {selectedSeason ? `(${seasons.find(s => s.value === selectedSeason)?.label})` : ''}
+            </CardTitle>
             <Tabs value={chartType} onValueChange={(value) => setChartType(value as 'line' | 'area')} className="w-fit">
               <TabsList className="grid w-fit grid-cols-2">
                 <TabsTrigger value="line">Line Chart</TabsTrigger>
@@ -251,7 +331,7 @@ const SnowDepthChart: React.FC<SnowDepthChartProps> = ({ className = '' }) => {
                   <Line 
                     type="monotone" 
                     dataKey="rawDepth" 
-                    stroke="hsl(var(--chart-1))" 
+                    stroke="hsl(220 70% 50%)" 
                     strokeWidth={2}
                     name="Raw Data"
                     dot={{ r: 3 }}
@@ -260,7 +340,7 @@ const SnowDepthChart: React.FC<SnowDepthChartProps> = ({ className = '' }) => {
                   <Line 
                     type="monotone" 
                     dataKey="cleanedDepth" 
-                    stroke="hsl(var(--chart-2))" 
+                    stroke="hsl(142 76% 36%)" 
                     strokeWidth={2}
                     name="Cleaned Data"
                     dot={{ r: 3 }}
@@ -286,16 +366,16 @@ const SnowDepthChart: React.FC<SnowDepthChartProps> = ({ className = '' }) => {
                     type="monotone" 
                     dataKey="rawDepth" 
                     stackId="1"
-                    stroke="hsl(var(--chart-1))" 
-                    fill="hsl(var(--chart-1) / 0.3)"
+                    stroke="hsl(220 70% 50%)" 
+                    fill="hsl(220 70% 50% / 0.3)"
                     name="Raw Data"
                   />
                   <Area 
                     type="monotone" 
                     dataKey="cleanedDepth" 
                     stackId="2"
-                    stroke="hsl(var(--chart-2))" 
-                    fill="hsl(var(--chart-2) / 0.3)"
+                    stroke="hsl(142 76% 36%)" 
+                    fill="hsl(142 76% 36% / 0.3)"
                     name="Cleaned Data"
                   />
                 </AreaChart>
@@ -308,28 +388,53 @@ const SnowDepthChart: React.FC<SnowDepthChartProps> = ({ className = '' }) => {
       {/* Data Quality Insights */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Data Quality Insights</CardTitle>
+          <CardTitle className="text-lg">Data Quality Analysis</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-3 h-3 rounded-full bg-chart-1"></div>
-              <div>
-                <p className="font-medium text-sm">Raw Data</p>
-                <p className="text-xs text-muted-foreground">Direct sensor measurements</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h4 className="font-semibold mb-3">Database Information</h4>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Source Database:</span>
+                  <span className="font-medium">{selectedDatabase === 'raw' ? 'rawdata' : 'finalcleandata'}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Time Period:</span>
+                  <span className="font-medium">{selectedYear} {selectedSeason ? `(${selectedSeason})` : '(Full Year)'}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Location:</span>
+                  <span className="font-medium">{selectedLocation}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Data Points:</span>
+                  <span className="font-medium">{data.length}</span>
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="w-3 h-3 rounded-full bg-chart-2"></div>
-              <div>
-                <p className="font-medium text-sm">Cleaned Data</p>
-                <p className="text-xs text-muted-foreground">Quality controlled & validated</p>
+
+            <div>
+              <h4 className="font-semibold mb-3">Quality Metrics</h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="text-center p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+                  <div className="text-lg font-bold text-blue-600">{stats.avgRaw.toFixed(1)} cm</div>
+                  <p className="text-xs text-muted-foreground">Raw Average</p>
+                </div>
+                <div className="text-center p-3 bg-green-50 dark:bg-green-950/20 rounded-lg">
+                  <div className="text-lg font-bold text-green-600">{stats.avgCleaned.toFixed(1)} cm</div>
+                  <p className="text-xs text-muted-foreground">Cleaned Average</p>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <Badge variant="secondary" className="px-2 py-1">
-                {stats.improvement > 0 ? 'Improved' : 'Similar'} Quality
-              </Badge>
+              
+              <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Variance Improvement:</span>
+                  <Badge variant={stats.improvement > 0 ? "default" : "secondary"}>
+                    {stats.improvement > 0 ? '+' : ''}{stats.improvement.toFixed(1)}%
+                  </Badge>
+                </div>
+              </div>
             </div>
           </div>
         </CardContent>
