@@ -14,6 +14,7 @@ import { Loader2, Download, Database, Table, MapPin, Calendar as CalendarIcon, A
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { API_BASE_URL } from '@/lib/apiConfig';
+import { LocalDatabaseService } from '@/services/localDatabaseService';
 
 interface DatabaseInfo {
   key: string;
@@ -154,19 +155,51 @@ const DynamicDataBrowser = () => {
   // Load locations for selected database
   const loadLocations = async (databaseKey: string) => {
     if (!databaseKey) return;
-    
+
     try {
-      const data = await apiCall(`/api/databases/${databaseKey}/locations`, `Load locations for ${databaseKey}`);
+      // Request canonical list for raw_data to ensure all 22 locations
+      const endpoint = `/api/databases/${databaseKey}/locations${databaseKey === 'raw_data' ? '?canonical=1' : ''}`;
+      const data = await apiCall(endpoint, `Load locations for ${databaseKey}`);
       const raw = Array.isArray(data) ? data : data.locations || [];
+
       // Normalize to LocationInfo objects if API returns array of strings
-      const normalized = raw.map((item: any, idx: number) =>
+      const normalized: LocationInfo[] = raw.map((item: any, idx: number) =>
         typeof item === 'string'
           ? { id: idx + 1, name: item, displayName: item, latitude: 0, longitude: 0, elevation: 0 }
           : item
       );
-      setLocations(normalized);
+
+      // Fallback to canonical 22 sites for raw_data if backend returns fewer
+      if (databaseKey === 'raw_data' && normalized.length < 22) {
+        const canonical = await LocalDatabaseService.getLocations('raw_data');
+        const mapped = canonical.map((l, idx) => ({
+          id: l.id ?? idx + 1,
+          name: l.name,
+          displayName: l.name,
+          latitude: l.latitude ?? 0,
+          longitude: l.longitude ?? 0,
+          elevation: l.elevation ?? 0,
+        }));
+        setLocations(mapped);
+      } else {
+        setLocations(normalized);
+      }
     } catch (error) {
-      setLocations([]);
+      // Last-resort fallback for raw_data
+      if (databaseKey === 'raw_data') {
+        const canonical = await LocalDatabaseService.getLocations('raw_data');
+        const mapped = canonical.map((l, idx) => ({
+          id: l.id ?? idx + 1,
+          name: l.name,
+          displayName: l.name,
+          latitude: l.latitude ?? 0,
+          longitude: l.longitude ?? 0,
+          elevation: l.elevation ?? 0,
+        }));
+        setLocations(mapped);
+      } else {
+        setLocations([]);
+      }
     }
   };
   // Load attributes for selected table
@@ -461,6 +494,11 @@ const DynamicDataBrowser = () => {
                     </div>
                   ))}
                 </div>
+                {locations.length > 8 && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Showing {locations.length} locations. Scroll to see all.
+                  </p>
+                )}
                 <div className="mt-4 flex gap-2">
                   <Button
                     variant="outline"
