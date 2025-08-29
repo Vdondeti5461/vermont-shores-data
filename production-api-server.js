@@ -352,37 +352,20 @@ app.get('/api/databases/:database/locations', async (req, res) => {
       tableList = allTables.map(table => Object.values(table)[0]);
     }
     
-    // Use information_schema to find tables and their location column (Location or LocationName)
-    const [locTableRows] = await connection.execute(
-      `SELECT TABLE_NAME, COLUMN_NAME 
-       FROM INFORMATION_SCHEMA.COLUMNS 
-       WHERE TABLE_SCHEMA = ? 
-         AND UPPER(COLUMN_NAME) IN ('LOCATION','LOCATIONNAME')`,
-      [databaseName]
-    );
-
-    // Map to { table, col } pairs
-    let tableColPairs = locTableRows.map((r) => ({ table: r.TABLE_NAME, col: r.COLUMN_NAME }));
-
-    // If specific tables were requested, intersect with requested list
-    if (tables) {
-      const requested = new Set(tableList);
-      tableColPairs = tableColPairs.filter((p) => requested.has(p.table));
-    }
-
-    // Additional filtering for season-based databases
+    // Simple logic: every table has Location and TIMESTAMP columns
+    // Additional filtering for season-based databases  
     if (database === 'seasonal_clean_data') {
-      tableColPairs = tableColPairs.filter((p) => p.table.startsWith('cleaned_data_season_'));
+      tableList = tableList.filter((t) => t.startsWith('cleaned_data_season_'));
     }
 
-    if (tableColPairs.length === 0) {
+    if (tableList.length === 0) {
       connection.release();
       return res.json([]);
     }
 
-    // Build union query to get ALL locations using the correct column per table
-    const unionQueries = tableColPairs.map(({ table, col }) =>
-      `(SELECT \`${col}\` as name FROM \`${table}\` WHERE \`${col}\` IS NOT NULL AND \`${col}\` != '')`
+    // Build union query - every table has Location column
+    const unionQueries = tableList.map(table =>
+      `(SELECT Location as name FROM \`${table}\` WHERE Location IS NOT NULL AND Location != '')`
     );
 
     // Get all locations, then make them distinct at the end
@@ -422,7 +405,7 @@ app.get('/api/databases/:database/download/:table', async (req, res) => {
     const allCols = colRows.map((c) => c.Field);
     const colMap = new Map(allCols.map((c) => [c.toLowerCase(), c]));
     const tsCol = colMap.get('timestamp') || 'TIMESTAMP';
-    const locCol = colMap.get('location') || colMap.get('locationname') || 'Location';
+    const locCol = colMap.get('location') || 'Location';
 
     // Determine selected columns
     let selected;
