@@ -73,13 +73,23 @@ const MultiDatabaseDownload = () => {
   useEffect(() => {
     if (selectedDatabase) {
       fetchTables(selectedDatabase);
-      fetchLocations(selectedDatabase);
     } else {
       setTables([]);
       setLocations([]);
     }
     setSelectedTable('');
+    setSelectedLocations([]);
   }, [selectedDatabase]);
+
+  // Fetch locations when table changes (table-specific locations)
+  useEffect(() => {
+    if (selectedDatabase && selectedTable) {
+      fetchLocations(selectedDatabase, selectedTable);
+    } else {
+      setLocations([]);
+      setSelectedLocations([]);
+    }
+  }, [selectedDatabase, selectedTable]);
 
   // Fetch attributes when table changes
   useEffect(() => {
@@ -141,9 +151,13 @@ const MultiDatabaseDownload = () => {
     }
   };
 
-  const fetchLocations = async (database: string) => {
+  const fetchLocations = async (database: string, table?: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/databases/${database}/locations`);
+      let url = `${API_BASE_URL}/api/databases/${database}/locations`;
+      if (table) {
+        url += `?tables=${table}`;
+      }
+      const response = await fetch(url);
       const data = await response.json();
       setLocations(data);
     } catch (error) {
@@ -170,16 +184,29 @@ const MultiDatabaseDownload = () => {
     try {
       const params = new URLSearchParams();
       
+      // Handle multiple locations
       if (selectedLocations.length > 0) {
-        params.append('location', selectedLocations[0]); // For now, single location
+        // If multiple locations selected, download each separately or combine
+        if (selectedLocations.length === 1) {
+          params.append('location', selectedLocations[0]);
+        } else {
+          // For multiple locations, we'll need to modify the backend to handle this
+          // For now, let's download the first one but warn the user
+          params.append('location', selectedLocations[0]);
+          toast({
+            title: "Multiple Locations",
+            description: `Downloading data for ${selectedLocations[0]} only. Multiple location downloads will be enhanced soon.`,
+            variant: "default"
+          });
+        }
       }
       
       if (startDate) {
-        params.append('start_date', startDate.toISOString());
+        params.append('start_date', startDate.toISOString().split('T')[0]);
       }
       
       if (endDate) {
-        params.append('end_date', endDate.toISOString());
+        params.append('end_date', endDate.toISOString().split('T')[0]);
       }
       
       if (selectedAttributes.length > 0) {
@@ -246,13 +273,13 @@ const MultiDatabaseDownload = () => {
         </p>
       </div>
 
+      {/* Step 1: Database & Table Selection */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Database Selection */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Database className="h-5 w-5" />
-              Select Database
+              Step 1: Select Database
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -274,18 +301,17 @@ const MultiDatabaseDownload = () => {
           </CardContent>
         </Card>
 
-        {/* Table Selection */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Table className="h-5 w-5" />
-              Select Table
+              Step 2: Select Table
             </CardTitle>
           </CardHeader>
           <CardContent>
             <Select value={selectedTable} onValueChange={setSelectedTable} disabled={!selectedDatabase || isLoadingTables}>
               <SelectTrigger>
-                <SelectValue placeholder={isLoadingTables ? "Loading tables..." : "Choose a table"} />
+                <SelectValue placeholder={isLoadingTables ? "Loading tables..." : selectedDatabase ? "Choose a table" : "Select database first"} />
               </SelectTrigger>
               <SelectContent>
                 {tables.map((table) => (
@@ -302,85 +328,117 @@ const MultiDatabaseDownload = () => {
             </Select>
           </CardContent>
         </Card>
-
-        {/* Location Filter */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5" />
-              Filter by Location
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              {locations.map((location) => (
-                <div key={location.name} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={location.name}
-                    checked={selectedLocations.includes(location.name)}
-                    onCheckedChange={() => toggleLocation(location.name)}
-                  />
-                  <Label htmlFor={location.name} className="text-sm">
-                    {location.displayName || location.name}
-                  </Label>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Date Range */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              Date Range
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Start Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start text-left font-normal">
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {startDate ? format(startDate, "PPP") : "Select start date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={startDate}
-                      onSelect={setStartDate}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div>
-                <Label>End Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start text-left font-normal">
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {endDate ? format(endDate, "PPP") : "Select end date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={endDate}
-                      onSelect={setEndDate}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
+
+      {/* Step 2: Primary Filters - TIMESTAMP and Location */}
+      {selectedDatabase && selectedTable && (
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
+            <Badge variant="secondary">Step 3</Badge>
+            Primary Filters: Time & Location
+          </h3>
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  TIMESTAMP Filter
+                  <Badge variant="outline" className="text-xs">Required</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label>Start Date</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-full justify-start text-left font-normal">
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {startDate ? format(startDate, "PPP") : "Select start date"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={startDate}
+                          onSelect={setStartDate}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div>
+                    <Label>End Date</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-full justify-start text-left font-normal">
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {endDate ? format(endDate, "PPP") : "Select end date"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={endDate}
+                          onSelect={setEndDate}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  Location Filter
+                  <Badge variant="outline" className="text-xs">Required</Badge>
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  {locations.length} locations available for this table
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {locations.length > 0 ? (
+                    locations.map((location) => (
+                      <div key={location.name} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={location.name}
+                          checked={selectedLocations.includes(location.name)}
+                          onCheckedChange={() => toggleLocation(location.name)}
+                        />
+                        <Label htmlFor={location.name} className="text-sm">
+                          <span className="font-medium">{location.name}</span>
+                          {location.displayName && location.displayName !== location.name && (
+                            <span className="text-muted-foreground ml-1">
+                              - {location.displayName}
+                            </span>
+                          )}
+                        </Label>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Loading locations for selected table...
+                    </p>
+                  )}
+                </div>
+                {selectedLocations.length > 0 && (
+                  <div className="mt-2 pt-2 border-t">
+                    <p className="text-sm text-primary">
+                      {selectedLocations.length} location{selectedLocations.length > 1 ? 's' : ''} selected
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
 
       {/* Attributes Selection */}
       {attributes.length > 0 && (
