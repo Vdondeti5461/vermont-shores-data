@@ -173,15 +173,52 @@ app.get('/api/databases/:database/locations', async (req, res) => {
     const { database } = req.params;
     const dbName = getDatabaseName(database);
 
-    // Find all tables that have a Location column (case-insensitive)
+    // Optional filter for specific table(s)
+    const listParam = (req.query.tables || req.query.table || '').toString();
+    const requested = new Set(listParam.split(',').map((s) => s.trim()).filter(Boolean));
+
+    // If canonical list requested (used for raw_data), return full 22 stations
+    if (String(req.query.canonical) === '1') {
+      const codes = Object.keys(LOCATION_METADATA);
+      const locations = codes.map((code, idx) => {
+        const meta = LOCATION_METADATA[code];
+        return {
+          id: idx + 1,
+          name: code,
+          displayName: meta?.name || code,
+          latitude: meta?.latitude ?? 44.25 + (idx * 0.001),
+          longitude: meta?.longitude ?? -72.58 - (idx * 0.001),
+          elevation: meta?.elevation ?? 500
+        };
+      });
+      return res.json(locations);
+    }
+
+    // Discover tables that contain a location-like column (robust, case-insensitive)
     const [locTables] = await pool.execute(
       `SELECT TABLE_NAME, COLUMN_NAME
        FROM INFORMATION_SCHEMA.COLUMNS
-       WHERE TABLE_SCHEMA = ? AND LOWER(COLUMN_NAME) = 'location'`,
+       WHERE TABLE_SCHEMA = ?
+         AND (
+           LOWER(COLUMN_NAME) IN (
+             'location','location_id','locationcode','location_code','locationname','location_name',
+             'site','site_id','sitecode','site_code','sitename','site_name',
+             'station','station_id','stationcode','station_code','stationname','station_name',
+             'loc','loc_id','locname','loc_name'
+           )
+           OR LOWER(COLUMN_NAME) LIKE '%location%'
+           OR LOWER(COLUMN_NAME) LIKE '%site%'
+           OR LOWER(COLUMN_NAME) LIKE '%station%'
+         )`,
       [dbName]
     );
 
-    if (!locTables || locTables.length === 0) {
+    // If specific tables requested, keep only those
+    const locTablesFiltered = requested.size
+      ? locTables.filter((r) => requested.has(r.TABLE_NAME))
+      : locTables;
+
+    if (!locTablesFiltered || locTablesFiltered.length === 0) {
       return res.json([]);
     }
 
@@ -271,12 +308,30 @@ app.get('/api/databases/:database/locations', async (req, res) => {
     const seen = new Set();
     const names = [];
 
-    for (const row of locTables) {
+    for (const row of locTablesFiltered) {
       const table = row.TABLE_NAME;
+      const col = row.COLUMN_NAME;
       try {
         const [rows] = await pool.execute(
-          `SELECT DISTINCT Location AS name FROM \`${dbName}\`.\`${table}\`
-           WHERE Location IS NOT NULL AND Location <> ''`
+          `SELECT DISTINCT \
+            TRIM(
+              REPLACE(REPLACE(REPLACE(UPPER(\
+                CAST(
+                  CASE WHEN ISNULL(
+                    NULLIF(
+                      NULLIF(
+                        NULLIF(
+                          ${'`'+col+'`'},''
+                        ), 'NULL'
+                      ), 'NA'
+                    )
+                  , '')
+                  THEN '' ELSE ${'`'+col+'`'} END
+                AS CHAR)
+              ), '\\r',''), '\\n',''), '\\t','')
+            ) AS name
+           FROM \`${dbName}\`.\`${table}\`
+           WHERE ${'`'+col+'`'} IS NOT NULL AND ${'`'+col+'`'} <> ''`
         );
         for (const r of rows) {
           const canon = canonicalize(r?.name);
