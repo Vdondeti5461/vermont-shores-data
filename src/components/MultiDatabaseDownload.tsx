@@ -150,11 +150,14 @@ const MultiDatabaseDownload = () => {
   const fetchLocationValues = async (database: string, table: string) => {
     setIsLoadingLocations(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/databases/${database}/tables/${table}/locations`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data = await response.json();
-      const values = data.values || data.distinct || data || [];
-      setLocationValues(Array.isArray(values) ? values : []);
+    const response = await fetch(`${API_BASE_URL}/api/databases/${database}/tables/${table}/locations`);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    const raw = (data.values || data.distinct || data || []) as any[];
+    const normalized = Array.isArray(raw)
+      ? raw.map((v: any) => (typeof v === 'string' ? v : v?.name)).filter(Boolean)
+      : [];
+    setLocationValues(normalized);
     } catch (error) {
       console.error('Error fetching location values:', error);
       toast({
