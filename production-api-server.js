@@ -127,9 +127,8 @@ app.get('/api/databases/:database/tables', async (req, res) => {
       [dbName]
     );
 
-    const filtered = infoRows.filter((r) => CORE_TABLES.has(String(r.TABLE_NAME).toLowerCase()));
-
-    const tables = filtered.map((r) => ({
+    // Include all tables in the schema (do not restrict to a fixed allowlist)
+    const tables = infoRows.map((r) => ({
       name: r.TABLE_NAME,
       displayName: r.TABLE_NAME.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
       description: `${r.TABLE_NAME} environmental data table`,
