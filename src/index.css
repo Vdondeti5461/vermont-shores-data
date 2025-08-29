@@ -141,8 +141,56 @@ All colors MUST be HSL. Scientific, professional theme with UVM branding.
     @apply border-border;
   }
 
+  html {
+    /* Cross-browser text size adjustment */
+    -webkit-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    
+    /* Smooth scrolling for better UX */
+    scroll-behavior: smooth;
+    
+    /* Better font rendering */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
   body {
     @apply bg-background text-foreground font-sans antialiased;
+    
+    /* Mobile optimizations */
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+    
+    /* Prevent horizontal scrolling */
+    overflow-x: hidden;
+    
+    /* Better touch handling */
+    touch-action: manipulation;
+  }
+
+  /* iOS Safari specific fixes */
+  @supports (-webkit-touch-callout: none) {
+    body {
+      /* Fix for iOS Safari viewport height issue */
+      min-height: -webkit-fill-available;
+    }
+  }
+
+  /* Ensure proper viewport on mobile */
+  @media screen and (max-width: 767px) {
+    html {
+      /* Disable zoom on input focus */
+      font-size: 16px;
+    }
+    
+    body {
+      /* Better mobile spacing */
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+    }
   }
 
   /* Custom scrollbar for scientific data tables */
@@ -230,7 +278,7 @@ All colors MUST be HSL. Scientific, professional theme with UVM branding.
     transform: translateY(-1px);
   }
 
-  /* Mobile-specific improvements */
+  /* Enhanced mobile optimizations */
   @media (max-width: 640px) {
     .container {
       padding-left: 0.75rem;
@@ -246,8 +294,10 @@ All colors MUST be HSL. Scientific, professional theme with UVM branding.
       font-size: 0.875rem;
       padding-left: 1rem;
       padding-right: 1rem;
-      padding-top: 0.5rem;
-      padding-bottom: 0.5rem;
+      padding-top: 0.75rem;
+      padding-bottom: 0.75rem;
+      /* Better touch target */
+      min-height: 44px;
     }
     
     .data-card {
@@ -255,26 +305,78 @@ All colors MUST be HSL. Scientific, professional theme with UVM branding.
     }
   }
 
-  /* Touch targets for mobile */
-  @media (hover: none) {
+  /* Touch-friendly interactions */
+  @media (hover: none) and (pointer: coarse) {
     .hover-scale:hover {
       transform: none;
     }
     
     .hover-scale:active {
       transform: scale(0.98);
+      transition: transform 0.1s ease;
+    }
+    
+    /* Better touch targets */
+    button, a, [role="button"] {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    
+    /* Remove hover states on touch devices */
+    .hover\:bg-gray-100:hover {
+      background-color: transparent;
     }
   }
 
-  /* Ensure proper text scaling on mobile */
+  /* Extra small devices */
   @media (max-width: 480px) {
-    html {
-      -webkit-text-size-adjust: 100%;
-    }
-    
     .scientific-heading {
       font-size: 1.25rem;
+      line-height: 1.2;
     }
+    
+    .container {
+      padding-left: 0.5rem;
+      padding-right: 0.5rem;
+    }
+  }
+
+  /* Landscape mobile orientation */
+  @media (max-height: 500px) and (orientation: landscape) {
+    .scientific-heading {
+      font-size: 1.125rem;
+    }
+    
+    .hero-content {
+      padding-top: 2rem;
+      padding-bottom: 2rem;
+    }
+  }
+
+  /* High DPI displays */
+  @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .logo, .icon {
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: crisp-edges;
+    }
+  }
+
+  /* Cross-browser button reset */
+  button {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background: none;
+    border: none;
+    font: inherit;
+    cursor: pointer;
+    outline: inherit;
+  }
+
+  /* Better focus indicators for accessibility */
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
   }
 
   /* Custom marker animations for interactive map */

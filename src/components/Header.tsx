@@ -18,54 +18,55 @@ const Header = () => {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200/50 shadow-sm">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-border shadow-sm pt-safe-top">
+      <div className="container mx-auto px-4 xs:px-3">
+        <div className="flex items-center justify-between h-14 xs:h-12 md:h-16">
           
           {/* Logo */}
           <Link 
             to="/"
-            className="flex items-center space-x-3 hover:opacity-80 transition-opacity"
+            className="flex items-center space-x-2 xs:space-x-1.5 md:space-x-3 hover:opacity-80 transition-opacity touch:active:scale-95"
+            onClick={() => setIsMenuOpen(false)}
           >
-            <div className="w-10 h-10 bg-gradient-to-br from-green-700 to-green-600 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 xs:w-7 xs:h-7 md:w-10 md:h-10 bg-gradient-to-br from-primary to-primary/80 rounded-lg flex items-center justify-center">
               <img 
                 src="/lovable-uploads/d19c9c85-6a6b-4115-bc8e-2ed5fd432891.png" 
                 alt="University of Vermont" 
-                className="w-8 h-8 object-contain filter brightness-0 invert"
+                className="w-6 h-6 xs:w-5 xs:h-5 md:w-8 md:h-8 object-contain filter brightness-0 invert"
               />
             </div>
-            <div className="text-xl font-bold text-gray-900">
-              Summit-to-Shore
-              <div className="text-xs font-normal">
-                <span className="text-green-700">University of Vermont</span> × CRREL
+            <div className="text-base xs:text-sm md:text-xl font-bold text-foreground">
+              <span className="block leading-tight">Summit-to-Shore</span>
+              <div className="text-2xs xs:text-3xs md:text-xs font-normal leading-tight">
+                <span className="text-primary">University of Vermont</span> × CRREL
               </div>
             </div>
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
+          <nav className="hidden lg:flex items-center space-x-6 xl:space-x-8">
             {navItems.map((item) => {
               const Icon = item.icon;
               return (
                 <Link
                   key={item.label}
                   to={item.href}
-                  className={`flex items-center space-x-1 transition-colors duration-200 font-medium ${
+                  className={`flex items-center space-x-1 transition-all duration-200 font-medium px-2 py-1 rounded-md ${
                     isActive(item.href) 
-                      ? 'text-primary' 
-                      : 'text-gray-700 hover:text-primary'
+                      ? 'text-primary bg-primary/10' 
+                      : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
                   }`}
                 >
                   <Icon className="h-4 w-4" />
-                  <span>{item.label}</span>
+                  <span className="text-sm">{item.label}</span>
                 </Link>
               );
             })}
           </nav>
 
           {/* CTA Button */}
-          <div className="hidden md:block">
-            <Button className="bg-primary hover:bg-primary/90 text-white">
+          <div className="hidden lg:block">
+            <Button className="btn-research text-sm px-4 py-2">
               Access Live Data
             </Button>
           </div>
@@ -73,16 +74,18 @@ const Header = () => {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            className="lg:hidden p-2 rounded-lg hover:bg-muted active:bg-muted/80 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+            aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={isMenuOpen}
           >
-            {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            {isMenuOpen ? <X className="h-5 w-5 md:h-6 md:w-6" /> : <Menu className="h-5 w-5 md:h-6 md:w-6" />}
           </button>
         </div>
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden border-t border-gray-200/50 bg-white/95 backdrop-blur-sm">
-            <nav className="py-4 space-y-2">
+          <div className="lg:hidden border-t border-border bg-background/98 backdrop-blur-md animate-slide-up">
+            <nav className="py-3 space-y-1 pb-safe-bottom">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -90,19 +93,22 @@ const Header = () => {
                     key={item.label}
                     to={item.href}
                     onClick={() => setIsMenuOpen(false)}
-                    className={`flex items-center space-x-3 px-4 py-3 transition-colors rounded-lg mx-2 font-medium ${
+                    className={`flex items-center space-x-3 px-4 py-3 mx-2 transition-all duration-200 rounded-lg font-medium touch:active:scale-98 min-h-[48px] ${
                       isActive(item.href)
-                        ? 'text-primary bg-primary/10'
-                        : 'text-gray-700 hover:text-primary hover:bg-primary/5'
+                        ? 'text-primary bg-primary/10 shadow-sm'
+                        : 'text-muted-foreground hover:text-primary hover:bg-primary/5 active:bg-primary/10'
                     }`}
                   >
-                    <Icon className="h-5 w-5" />
-                    <span>{item.label}</span>
+                    <Icon className="h-5 w-5 flex-shrink-0" />
+                    <span className="text-base">{item.label}</span>
                   </Link>
                 );
               })}
-              <div className="px-6 pt-4">
-                <Button className="w-full bg-primary hover:bg-primary/90 text-white">
+              <div className="px-4 pt-4">
+                <Button 
+                  className="w-full btn-research text-base py-3 min-h-[48px]"
+                  onClick={() => setIsMenuOpen(false)}
+                >
                   Access Live Data
                 </Button>
               </div>
