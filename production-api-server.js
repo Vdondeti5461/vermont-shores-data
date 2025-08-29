@@ -55,6 +55,19 @@ app.get('/health', async (req, res) => {
   }
 });
 
+// Health check alias under /api for reverse proxy setups
+app.get('/api/health', async (req, res) => {
+  try {
+    const connection = await pool.getConnection();
+    await connection.ping();
+    connection.release();
+    res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+  } catch (error) {
+    console.error('Health check failed:', error);
+    res.status(500).json({ status: 'unhealthy', error: error.message });
+  }
+});
+
 // Get all available databases - return only what we have access to
 app.get('/api/databases', async (req, res) => {
   try {

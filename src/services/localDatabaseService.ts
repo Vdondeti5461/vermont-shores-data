@@ -301,7 +301,7 @@ export class LocalDatabaseService {
   // Health check to verify server connection
   static async healthCheck(): Promise<boolean> {
     try {
-      const response = await fetch(`${this.baseUrl}/health`);
+      const response = await fetch(`${this.baseUrl}/api/health`);
       return response.ok;
     } catch (error) {
       console.error('Health check failed:', error);
