@@ -23,6 +23,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLocalDatabaseOverview } from '@/hooks/useLocalDatabase';
 import { Skeleton } from '@/components/ui/skeleton';
+import { API_BASE_URL } from '@/lib/apiConfig';
 
 const Analytics = () => {
   const navigate = useNavigate();
@@ -77,7 +78,7 @@ const Analytics = () => {
           <div className="text-center">
             <h2 className="text-2xl font-bold mb-4">Database Connection Error</h2>
             <p className="text-muted-foreground mb-4">
-              Unable to connect to local database. Please ensure the server is running on localhost:3001
+              Unable to connect to database API. Please ensure it is reachable at {API_BASE_URL}
             </p>
             <Button onClick={() => window.location.reload()}>
               Retry Connection

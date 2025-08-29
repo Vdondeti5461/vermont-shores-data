@@ -4,9 +4,10 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Code, Database, FileText, Globe, Key } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/apiConfig';
 
 const APIDocumentation = () => {
-  const baseUrl = 'http://localhost:3001/api';
+  const baseUrl = `${API_BASE_URL}/api`;
 
   const endpoints = [
     {
@@ -19,7 +20,25 @@ const APIDocumentation = () => {
       "key": "raw_data",
       "name": "CRRELS2S_VTClimateRepository",
       "displayName": "Raw Data",
-      "description": "Original unprocessed environmental data"
+      "description": "Raw data"
+    },
+    {
+      "key": "initial_clean_data",
+      "name": "CRRELS2S_VTClimateRepository_Processed",
+      "displayName": "Initial Clean_data",
+      "description": "Initial clean data"
+    },
+    {
+      "key": "final_clean_data",
+      "name": "CRRELS2S_ProcessedData",
+      "displayName": "Final Clean_data",
+      "description": "Final Clean Data"
+    },
+    {
+      "key": "seasonal_clean_data",
+      "name": "CRRELS2S_cleaned_data_seasons",
+      "displayName": "Seasonal Clean_data",
+      "description": "Season wise final clean data"
     }
   ]
 }`
@@ -29,16 +48,30 @@ const APIDocumentation = () => {
       path: '/databases/:database/tables',
       description: 'Get all tables for a specific database',
       parameters: [
-        { name: 'database', description: 'Database key (e.g., raw_data, processed_data)' }
+        { name: 'database', description: 'Database key (e.g., raw_data, final_clean_data, seasonal_clean_data)' }
       ],
       response: `{
-  "database": "CRRELS2S_VTClimateRepository",
+  "database": "CRRELS2S_ProcessedData",
   "tables": [
     {
       "name": "table1",
       "displayName": "Primary Environmental Data",
-      "description": "Primary environmental measurements",
-      "rowCount": 150000,
+      "description": "Primary environmental measurements including temperature, humidity, and soil data",
+      "rowCount": 927399,
+      "primaryAttributes": ["TIMESTAMP", "Location"]
+    },
+    {
+      "name": "LocationMax",
+      "displayName": "Location Max",
+      "description": "Environmental data measurements",
+      "rowCount": 44,
+      "primaryAttributes": ["TIMESTAMP", "Location"]
+    },
+    {
+      "name": "calibration_table",
+      "displayName": "calibration_table",
+      "description": "Environmental data measurements",
+      "rowCount": 43,
       "primaryAttributes": ["TIMESTAMP", "Location"]
     }
   ]
@@ -53,9 +86,60 @@ const APIDocumentation = () => {
         { name: 'table', description: 'Table name' }
       ],
       response: `{
-  "database": "CRRELS2S_VTClimateRepository",
+  "database": "CRRELS2S_ProcessedData",
   "table": "table1",
   "attributes": [
+    {
+      "name": "TIMESTAMP",
+      "type": "datetime",
+      "nullable": false,
+      "category": "Time",
+      "isPrimary": true
+    },
+    {
+      "name": "Location",
+      "type": "varchar",
+      "nullable": false,
+      "category": "Location",
+      "isPrimary": true
+    },
+    {
+      "name": "AirTC_Avg",
+      "type": "float",
+      "nullable": true,
+      "category": "Temperature",
+      "isPrimary": false
+    },
+    {
+      "name": "RH",
+      "type": "float",
+      "nullable": true,
+      "category": "Humidity",
+      "isPrimary": false
+    },
+    {
+      "name": "Soil_Moisture",
+      "type": "float",
+      "nullable": true,
+      "category": "Soil",
+      "isPrimary": false
+    },
+    {
+      "name": "SWE",
+      "type": "float",
+      "nullable": true,
+      "category": "Snow",
+      "isPrimary": false
+    },
+    {
+      "name": "SW_in",
+      "type": "int",
+      "nullable": true,
+      "category": "Radiation",
+      "isPrimary": false
+    }
+  ],
+  "primaryAttributes": [
     {
       "name": "TIMESTAMP",
       "type": "datetime",
@@ -134,19 +218,39 @@ const APIDocumentation = () => {
 
   const exampleRequests = [
     {
-      title: 'Get Raw Data Locations',
-      url: `${baseUrl}/databases/raw_data/locations`,
-      description: 'Fetch all monitoring locations from the raw data database'
+      title: 'Get All Available Databases',
+      url: `${baseUrl}/databases`,
+      description: 'Fetch all available databases including raw, processed, and seasonal data'
+    },
+    {
+      title: 'Get Final Clean Data Tables',
+      url: `${baseUrl}/databases/final_clean_data/tables`,
+      description: 'Get all tables available in the final clean data database'
+    },
+    {
+      title: 'Get Table Attributes',
+      url: `${baseUrl}/databases/final_clean_data/tables/table1/attributes`,
+      description: 'Get all available attributes/columns for the primary environmental data table'
+    },
+    {
+      title: 'Get Locations from Database',
+      url: `${baseUrl}/databases/final_clean_data/locations`,
+      description: 'Fetch all monitoring locations from the final clean data database'
     },
     {
       title: 'Get Temperature Data for Specific Location',
-      url: `${baseUrl}/databases/raw_data/data/table1?location=Station_001&start_date=2024-01-01&attributes=TIMESTAMP,Location,AirTC_Avg`,
+      url: `${baseUrl}/databases/final_clean_data/data/table1?location=Station_001&start_date=2024-01-01&attributes=TIMESTAMP,Location,AirTC_Avg,Soil_Temperature_C`,
       description: 'Get temperature data from a specific station for January 2024'
     },
     {
-      title: 'Download Wind Data CSV',
-      url: `${baseUrl}/databases/processed_data/download/Wind?start_date=2024-01-01&end_date=2024-01-31`,
-      description: 'Download all wind data for January 2024 as CSV'
+      title: 'Download Environmental Data CSV',
+      url: `${baseUrl}/databases/final_clean_data/download/table1?start_date=2024-01-01&end_date=2024-01-31&attributes=TIMESTAMP,Location,AirTC_Avg,RH,SWE`,
+      description: 'Download environmental data for January 2024 as CSV'
+    },
+    {
+      title: 'Get Snow and Radiation Data',
+      url: `${baseUrl}/databases/final_clean_data/data/table1?attributes=TIMESTAMP,Location,SWE,SW_in,SW_out,LW_in,LW_out&start_date=2024-01-01`,
+      description: 'Get snow water equivalent and radiation measurements'
     }
   ];
 
@@ -155,18 +259,18 @@ const APIDocumentation = () => {
       <Header />
       <main className="pt-16">
         {/* Hero Section */}
-        <section className="py-20 bg-gradient-to-br from-primary/5 to-secondary/5">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-16">
+        <section className="py-12 sm:py-16 md:py-20 bg-gradient-to-br from-primary/5 to-secondary/5">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-8 sm:mb-12 md:mb-16">
               <Badge variant="outline" className="mb-4">
                 <Code className="w-4 h-4 mr-2" />
                 API Documentation
               </Badge>
-              <h1 className="scientific-heading text-4xl md:text-6xl mb-6">
+              <h1 className="scientific-heading text-3xl sm:text-4xl md:text-5xl lg:text-6xl mb-4 sm:mb-6">
                 <span className="text-primary">REST API</span>
                 <br />Documentation
               </h1>
-              <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+              <p className="text-base sm:text-lg text-muted-foreground max-w-3xl mx-auto px-4">
                 Complete API reference for accessing Summit-to-Shore environmental data programmatically. 
                 Filter by database, location, timestamp, and specific attributes.
               </p>
@@ -175,9 +279,9 @@ const APIDocumentation = () => {
         </section>
 
         {/* API Overview */}
-        <section className="py-16">
-          <div className="container mx-auto px-4">
-            <div className="grid md:grid-cols-3 gap-6 mb-12">
+        <section className="py-12 sm:py-16">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
               <Card>
                 <CardHeader>
                   <Database className="h-8 w-8 text-primary mb-2" />
@@ -214,7 +318,7 @@ const APIDocumentation = () => {
             </div>
 
             <Tabs defaultValue="endpoints" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 gap-2">
                 <TabsTrigger value="endpoints">API Endpoints</TabsTrigger>
                 <TabsTrigger value="examples">Usage Examples</TabsTrigger>
                 <TabsTrigger value="authentication">Authentication</TabsTrigger>
@@ -225,11 +329,11 @@ const APIDocumentation = () => {
                   {endpoints.map((endpoint, index) => (
                     <Card key={index}>
                       <CardHeader>
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                           <Badge variant={endpoint.method === 'GET' ? 'secondary' : 'default'}>
                             {endpoint.method}
                           </Badge>
-                          <code className="text-lg font-mono">{endpoint.path}</code>
+                          <code className="text-base sm:text-lg font-mono break-all">{endpoint.path}</code>
                         </div>
                         <p className="text-muted-foreground">{endpoint.description}</p>
                       </CardHeader>
@@ -278,8 +382,8 @@ const APIDocumentation = () => {
                         <p className="text-muted-foreground">{example.description}</p>
                       </CardHeader>
                       <CardContent>
-                        <div className="bg-muted p-4 rounded-lg">
-                          <code className="text-sm break-all">{example.url}</code>
+                        <div className="bg-muted p-4 rounded-lg overflow-x-auto">
+                          <code className="text-sm break-all whitespace-pre-wrap">{example.url}</code>
                         </div>
                       </CardContent>
                     </Card>
@@ -294,22 +398,36 @@ const APIDocumentation = () => {
                     </CardHeader>
                     <CardContent>
                       <pre className="bg-muted p-4 rounded-lg text-sm overflow-x-auto">
-                        <code>{`// Fetch locations from raw data database
-const response = await fetch('${baseUrl}/databases/raw_data/locations');
-const locations = await response.json();
+                        <code>{`// Fetch all available databases
+const dbResponse = await fetch('${baseUrl}/databases');
+const databases = await dbResponse.json();
+console.log('Available databases:', databases.databases);
 
-// Get temperature data with filters
+// Get tables from final clean data
+const tablesResponse = await fetch('${baseUrl}/databases/final_clean_data/tables');
+const tables = await tablesResponse.json();
+console.log('Available tables:', tables.tables);
+
+// Get locations from final clean data database
+const locationsResponse = await fetch('${baseUrl}/databases/final_clean_data/locations');
+const locations = await locationsResponse.json();
+
+// Get environmental data with filters
 const params = new URLSearchParams({
   location: 'Station_001',
   start_date: '2024-01-01T00:00:00Z',
   end_date: '2024-01-31T23:59:59Z',
-  attributes: 'TIMESTAMP,Location,AirTC_Avg,RH'
+  attributes: 'TIMESTAMP,Location,AirTC_Avg,RH,SWE,Soil_Temperature_C'
 });
 
 const dataResponse = await fetch(
-  \`${baseUrl}/databases/raw_data/data/table1?\${params}\`
+  \`${baseUrl}/databases/final_clean_data/data/table1?\${params}\`
 );
-const data = await dataResponse.json();`}</code>
+const data = await dataResponse.json();
+
+// Download data as CSV
+const downloadUrl = \`${baseUrl}/databases/final_clean_data/download/table1?\${params}\`;
+window.open(downloadUrl, '_blank');`}</code>
                       </pre>
                     </CardContent>
                   </Card>
@@ -343,7 +461,7 @@ const data = await dataResponse.json();`}</code>
                       </ul>
                     </div>
                     <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                      <h4 className="font-semibold text-yellow-800 mb-2">Fair Use Policy</h4>
+                      <h4 className="font-semibold text-yellow-800 mb-2">Fair Use Policy & Contact</h4>
                       <p className="text-yellow-700 text-sm">
                         Please use the API responsibly:
                       </p>
@@ -351,8 +469,15 @@ const data = await dataResponse.json();`}</code>
                         <li>Limit requests to reasonable intervals</li>
                         <li>Use appropriate date ranges and limits</li>
                         <li>Cache responses when possible</li>
-                        <li>Contact us for high-volume usage</li>
+                        <li>For bulk downloads, use the request form</li>
+                        <li>Contact s2s@uvm.edu for high-volume usage or questions</li>
+                        <li>Phone: (802) 656-2215 for technical support</li>
                       </ul>
+                      <div className="mt-3 p-2 bg-yellow-100 rounded">
+                        <p className="text-yellow-800 text-sm font-medium">
+                          🌐 Production API Base URL: https://vdondeti.w3.uvm.edu/api
+                        </p>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
