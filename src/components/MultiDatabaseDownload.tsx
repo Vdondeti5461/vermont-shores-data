@@ -153,11 +153,8 @@ const MultiDatabaseDownload = () => {
 
   const fetchLocations = async (database: string, table?: string) => {
     try {
-      let url = `${API_BASE_URL}/api/databases/${database}/locations`;
-      const params: string[] = [];
-      if (table) params.push(`tables=${encodeURIComponent(table)}`);
-      if (database === 'raw_data') params.push('canonical=1');
-      if (params.length) url += `?${params.join('&')}`;
+      // New API always returns all 22 locations regardless of database/table
+      const url = `${API_BASE_URL}/api/databases/${database}/locations`;
       const response = await fetch(url);
       const data = await response.json();
       setLocations(data);
@@ -181,19 +178,20 @@ const MultiDatabaseDownload = () => {
       return;
     }
 
-    // Enforce primary filter order like earlier implementation
+    // Require timestamp and location selection
     if (!startDate && !endDate) {
       toast({
         title: "Time Range Required",
-        description: "Please select a TIMESTAMP (start and/or end) before proceeding",
+        description: "Please select a start and/or end date",
         variant: "destructive"
       });
       return;
     }
+    
     if (selectedLocations.length === 0) {
       toast({
         title: "Location Required",
-        description: "Please select at least one Location",
+        description: "Please select at least one location",
         variant: "destructive"
       });
       return;
@@ -203,18 +201,9 @@ const MultiDatabaseDownload = () => {
     try {
       const params = new URLSearchParams();
 
-      // Handle locations (single selection for download filename parity)
+      // Handle multiple locations (join with comma for new API)
       if (selectedLocations.length > 0) {
-        if (selectedLocations.length === 1) {
-          params.append('location', selectedLocations[0]);
-        } else {
-          params.append('location', selectedLocations[0]);
-          toast({
-            title: "Multiple Locations",
-            description: `Downloading data for ${selectedLocations[0]} only.`,
-            variant: "default"
-          });
-        }
+        params.append('location', selectedLocations.join(','));
       }
 
       if (startDate) params.append('start_date', startDate.toISOString().split('T')[0]);
@@ -223,7 +212,7 @@ const MultiDatabaseDownload = () => {
 
       const url = `${API_BASE_URL}/api/databases/${selectedDatabase}/download/${selectedTable}?${params}`;
 
-      // Build filename: database_Table_YYYY-MM-DD.csv
+      // Build filename: database_table_YYYY-MM-DD.csv
       const todayStamp = new Date().toISOString().split('T')[0];
       const link = document.createElement('a');
       link.href = url;
@@ -232,7 +221,10 @@ const MultiDatabaseDownload = () => {
       link.click();
       document.body.removeChild(link);
 
-      toast({ title: "Download Started", description: "Your data export has been initiated" });
+      toast({ 
+        title: "Download Started", 
+        description: `Downloading data for ${selectedLocations.length} location(s)` 
+      });
     } catch (error) {
       console.error('Error downloading data:', error);
       toast({ title: "Download Failed", description: "Failed to download data", variant: "destructive" });
@@ -400,7 +392,7 @@ const MultiDatabaseDownload = () => {
                   <Badge variant="outline" className="text-xs">Required</Badge>
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  {locations.length} locations available for this table
+                  All {locations.length} Vermont monitoring locations available
                 </p>
               </CardHeader>
               <CardContent>
@@ -486,7 +478,7 @@ const MultiDatabaseDownload = () => {
                 <p>Database: {selectedDatabase ? databases.find(db => db.key === selectedDatabase)?.displayName : 'None selected'}</p>
                 <p>Table: {selectedTable ? tables.find(t => t.name === selectedTable)?.displayName : 'None selected'}</p>
                 <p>Attributes: {selectedAttributes.length} selected</p>
-                <p>Locations: {selectedLocations.length > 0 ? selectedLocations.join(', ') : 'All locations'}</p>
+                <p>Locations: {selectedLocations.length > 0 ? `${selectedLocations.join(', ')} (${selectedLocations.length} selected)` : 'None selected'}</p>
                 <p>Date Range: {startDate && endDate ? `${format(startDate, 'PP')} - ${format(endDate, 'PP')}` : 'All dates'}</p>
               </div>
             </div>

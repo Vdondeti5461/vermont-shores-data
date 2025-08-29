@@ -1,9 +1,7 @@
-
 require('dotenv').config();
 const express = require('express');
 const mysql = require('mysql2/promise');
 const cors = require('cors');
-const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -15,9 +13,9 @@ app.use(cors({
 
 app.use(express.json());
 
-// Database configuration - pool without default database; switch per request
+// Database configuration for web5.uvm.edu
 const dbConfig = {
-  host: process.env.MYSQL_HOST || 'webdb5.uvm.edu',
+  host: 'web5.uvm.edu',
   user: process.env.MYSQL_USER || 'crrels2s_admin',
   password: process.env.MYSQL_PASSWORD || 'y0m5dxldXSLP',
   port: Number(process.env.MYSQL_PORT) || 3306,
@@ -29,47 +27,131 @@ const dbConfig = {
 // Create connection pool
 const pool = mysql.createPool(dbConfig);
 
-// Known database configurations (keys used by UI -> actual MySQL schema names)
+// Database configurations (4 databases as specified)
 const DATABASES = {
   raw_data: 'CRRELS2S_VTClimateRepository',
-  initial_clean_data: 'CRRELS2S_VTClimateRepository_Processed',
+  initial_clean_data: 'CRRELS2S_VTClimateRepository_Processed', 
   final_clean_data: 'CRRELS2S_ProcessedData',
-  seasonal_clean_data: 'CRRELS2S_cleaned_data_seasons'
+  seasonal_clean_data: 'CRREL52S_cleaned_data_seasons'
 };
 
-// Core data tables that exist across databases (case-insensitive)
-const CORE_TABLES = new Set(['table1','wind','precipitation','snowpktempprofile']);
-
-// Location metadata with complete information
-const LOCATION_METADATA = {
-  'RB01': { name: 'Mansfield East Ranch Brook 1', latitude: 44.2619, longitude: -72.8081, elevation: 1200 },
-  'RB02': { name: 'Mansfield East Ranch Brook 2', latitude: 44.2625, longitude: -72.8075, elevation: 1180 },
-  'RB03': { name: 'Mansfield East Ranch Brook 3', latitude: 44.2631, longitude: -72.8069, elevation: 1160 },
-  'RB04': { name: 'Mansfield East Ranch Brook 4', latitude: 44.2637, longitude: -72.8063, elevation: 1140 },
-  'RB05': { name: 'Mansfield East Ranch Brook 5', latitude: 44.2643, longitude: -72.8057, elevation: 1120 },
-  'RB06': { name: 'Mansfield East Ranch Brook 6', latitude: 44.2649, longitude: -72.8051, elevation: 1100 },
-  'RB07': { name: 'Mansfield East Ranch Brook 7', latitude: 44.2655, longitude: -72.8045, elevation: 1080 },
-  'RB08': { name: 'Mansfield East Ranch Brook 8', latitude: 44.2661, longitude: -72.8039, elevation: 1060 },
-  'RB09': { name: 'Mansfield East Ranch Brook 9', latitude: 44.2667, longitude: -72.8033, elevation: 1040 },
-  'RB10': { name: 'Mansfield East Ranch Brook 10', latitude: 44.2673, longitude: -72.8027, elevation: 1020 },
-  'RB11': { name: 'Mansfield East Ranch Brook 11', latitude: 44.2679, longitude: -72.8021, elevation: 1000 },
-  'RB12': { name: 'Mansfield East FEMC', latitude: 44.2685, longitude: -72.8015, elevation: 980 },
-  'SPER': { name: 'Spear Street', latitude: 44.4759, longitude: -73.1959, elevation: 120 },
-  'SR01': { name: 'Sleepers R3/Main', latitude: 44.2891, longitude: -72.8211, elevation: 900 },
-  'SR11': { name: 'Sleepers W1/R11', latitude: 44.2885, longitude: -72.8205, elevation: 920 },
-  'SR25': { name: 'Sleepers R25', latitude: 44.2879, longitude: -72.8199, elevation: 940 },
-  'JRCL': { name: 'Jericho clearing', latitude: 44.4919, longitude: -72.9659, elevation: 300 },
-  'JRFO': { name: 'Jericho Forest', latitude: 44.4925, longitude: -72.9665, elevation: 320 },
-  'PROC': { name: 'Mansfield West Proctor', latitude: 44.2561, longitude: -72.8141, elevation: 1300 },
-  'PTSH': { name: 'Potash Brook', latitude: 44.2567, longitude: -72.8147, elevation: 1280 },
-  'SUMM': { name: 'Mansfield SUMMIT', latitude: 44.2573, longitude: -72.8153, elevation: 1339 },
-  'UNDR': { name: 'Mansfield West SCAN', latitude: 44.2555, longitude: -72.8135, elevation: 1260 }
+// Table metadata as provided by user
+const TABLE_METADATA = {
+  table1: {
+    displayName: 'Table1 - Environmental Data',
+    description: 'Primary environmental data including temperature, humidity, soil measurements',
+    attributes: {
+      'TS_LOC_REC': { description: 'TimeStamp Location Record', unit: 'No_Unit', type: 'TS' },
+      'TIMESTAMP': { description: 'TimeStamp', unit: 'No_Unit', type: 'TS' },
+      'LOCATION': { description: 'Location', unit: 'No_Unit', type: 'LOC' },
+      'Record': { description: 'Record Number', unit: 'No_Unit', type: 'RN' },
+      'Batt_Volt_Min': { description: 'Battery Voltage', unit: 'Volts', type: 'Min' },
+      'P_Temp': { description: 'Panel Temperature (Reference Temperature Measurement)', unit: 'Deg C', type: 'smp' },
+      'AirTC_Avg': { description: 'Air Temperature Average in Celcius', unit: 'Deg C', type: 'Avg' },
+      'RH': { description: 'Relative Humidity', unit: '%', type: 'Smp' },
+      'SHF': { description: 'Soil Heat Flux ( radiation Parameter)', unit: 'W/m^2', type: 'smp' },
+      'Soil_Moisture': { description: 'Soil Moisture', unit: 'wfv', type: 'smp' },
+      'Soil_Temperature_C': { description: 'Soil Temperature in Celcius', unit: 'Deg C', type: 'smp' },
+      'SWE': { description: 'Snow water Equivalent', unit: 'mm of H20', type: 'smp' },
+      'Ice_content': { description: 'Ice content of SnowPack', unit: '%', type: 'smp' },
+      'Water_Content': { description: 'Water Content of SnowPack', unit: '%', type: 'smp' },
+      'Snowpack_Density': { description: 'Snowpack Density', unit: 'kg/m^3', type: 'smp' },
+      'SW_in': { description: 'Short wave radiation incoming', unit: 'W/m^2', type: 'smp' },
+      'SW_out': { description: 'Short wave radiation outgoing', unit: 'W/m^2', type: 'smp' },
+      'LW_in': { description: 'Longwave radation incoming', unit: 'W/m^2', type: 'smp' },
+      'LW_out': { description: 'Longwave radiation outgoing', unit: 'W/m^2', type: 'smp' },
+      'Target_Depth': { description: 'Target depth', unit: 'cm', type: 'smp' },
+      'Qual': { description: 'Quality numbers (snow sensor)', unit: 'No_Unit', type: 'smp' },
+      'TCDT': { description: 'Temperature corrected distance value', unit: 'No_Unit', type: 'smp' },
+      'DBTCDT': { description: 'Snow Depth', unit: 'cm', type: 'smp' }
+    }
+  },
+  wind: {
+    displayName: 'Wind - Wind Measurements',
+    description: 'Wind speed and direction measurements',
+    attributes: {
+      'TIMESTAMP': { description: 'TimeStamp', unit: 'No_Unit', type: 'TS' },
+      'LOCATION': { description: 'Location', unit: 'No_Unit', type: 'LOC' },
+      'Record': { description: 'Record Number', unit: 'No_Unit', type: 'RN' },
+      'WindDir': { description: 'Wind Direction', unit: 'deg', type: 'smp' },
+      'WS_ms_Max': { description: 'Max wind speed', unit: 'meters/second', type: 'Max' },
+      'WS_ms_TMx': { description: 'Wind Speed', unit: 'meters/second', type: 'TMx' },
+      'WS_ms': { description: 'Wind speed', unit: 'meters/second', type: 'smp' },
+      'WS_ms_S_WVT': { description: 'Wind Speed', unit: 'meters/second', type: 'Wvc' },
+      'WindDir_D1_WVT': { description: 'Wind Direction', unit: 'Deg', type: 'Wvc' },
+      'WindDir_SD1_WVT': { description: 'Wind Direction', unit: 'Deg', type: 'Wvc' },
+      'WS_ms_Min': { description: 'Min wind speed', unit: 'meters/second', type: 'Min' },
+      'WS_ms_TMn': { description: 'Wind Speed', unit: 'meters/second', type: 'TMn' }
+    }
+  },
+  precipitation: {
+    displayName: 'Precipitation - Rainfall Data', 
+    description: 'Precipitation and rainfall measurements',
+    attributes: {
+      'TIMESTAMP': { description: 'TimeStamp', unit: 'No_Unit', type: 'TS' },
+      'LOCATION': { description: 'Location', unit: 'No_Unit', type: 'LOC' },
+      'Record': { description: 'Record Number', unit: 'No_Unit', type: 'RN' },
+      'Intensity_RT': { description: 'Intensity Real time', unit: 'mm/min', type: 'smp' },
+      'Accu_NRT': { description: 'Accmulated Non real time Precepitation', unit: 'mm', type: 'smp' },
+      'Accu_RT_NRT': { description: 'Accmulated real time - Non Real time Precepitation', unit: 'mm', type: 'smp' },
+      'Accu_Total_NRT': { description: 'Accmulated Total Non real time Precepitation', unit: 'mm', type: 'smp' },
+      'Bucket_NRT': { description: 'Bucket Percipitation Non real time', unit: 'mm', type: 'smp' },
+      'Bucket_RT': { description: 'Bucket Precipitation real time', unit: 'mm', type: 'smp' },
+      'Load_Temp': { description: 'Load Temperature (Battery)', unit: 'Deg C', type: 'smp' }
+    }
+  },
+  snowpktempprofile: {
+    displayName: 'SnowPkTempProfile - Snow Temperature Profile',
+    description: 'Snowpack temperature profile measurements at different depths',
+    attributes: {
+      'TIMESTAMP': { description: 'TimeStamp', unit: 'No_Unit', type: 'TS' },
+      'LOCATION': { description: 'Location', unit: 'No_Unit', type: 'LOC' },
+      'Record': { description: 'Record Number', unit: 'No_Unit', type: 'RN' },
+      'T107_C_0cm_Avg': { description: 'Snowpack temperature profile at 0 CM', unit: 'Deg C', type: 'Avg' }
+      // Note: Additional temperature profiles from 0cm to 290cm will be dynamically discovered
+    }
+  }
 };
 
+// 22 Locations as specified by user
+const LOCATION_CODES = {
+  'RB01': 'Mansfield East Ranch Brook 1',
+  'RB02': 'Mansfield East Ranch Brook 2', 
+  'RB03': 'Mansfield East Ranch Brook 3',
+  'RB04': 'Mansfield East Ranch Brook 4',
+  'RB05': 'Mansfield East Ranch Brook 5',
+  'RB06': 'Mansfield East Ranch Brook 6',
+  'RB07': 'Mansfield East Ranch Brook 7',
+  'RB08': 'Mansfield East Ranch Brook 8',
+  'RB09': 'Mansfield East Ranch Brook 9',
+  'RB10': 'Mansfield East Ranch Brook 10',
+  'RB11': 'Mansfield East Ranch Brook 11',
+  'RB12': 'Mansfield East FEMC',
+  'SPER': 'Spear Street',
+  'SR01': 'Sleepers R3/Main',
+  'SR11': 'Sleepers W1/R11', 
+  'SR25': 'Sleepers R25',
+  'JRCL': 'Jericho clearing',
+  'JRFO': 'Jericho Forest',
+  'PROC': 'Mansfield West Proctor',
+  'PTSH': 'Potash Brook',
+  'SUMM': 'Mansfield SUMMIT',
+  'UNDR': 'Mansfield West SCAN'
+};
+
+// Helper functions
 function getDatabaseName(key) {
-  if (!key) return DATABASES.raw_data;
-  const normalized = String(key).toLowerCase().replace(/[\s-]/g, '_');
-  return DATABASES[normalized] || DATABASES.raw_data;
+  return DATABASES[key] || DATABASES.raw_data;
+}
+
+function getDatabaseDescription(key) {
+  const descriptions = {
+    raw_data: 'Raw environmental sensor data from Vermont monitoring stations',
+    initial_clean_data: 'Initially processed and cleaned environmental data',
+    final_clean_data: 'Final processed environmental data ready for analysis',
+    seasonal_clean_data: 'Seasonally aggregated and cleaned environmental data'
+  };
+  return descriptions[key] || 'Environmental monitoring data';
 }
 
 // Health check endpoint
@@ -77,7 +159,7 @@ app.get('/health', async (req, res) => {
   try {
     const connection = await pool.getConnection();
     await connection.ping();
-    connection.release();
+    connection.release(); 
     res.json({ status: 'healthy', timestamp: new Date().toISOString() });
   } catch (error) {
     console.error('Health check failed:', error);
@@ -85,7 +167,6 @@ app.get('/health', async (req, res) => {
   }
 });
 
-// Health check alias under /api for reverse proxy setups
 app.get('/api/health', async (req, res) => {
   try {
     const connection = await pool.getConnection();
@@ -98,7 +179,7 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// Get all available databases - expose the 4 categories
+// Get all available databases
 app.get('/api/databases', async (req, res) => {
   try {
     const databases = Object.entries(DATABASES).map(([key, name]) => ({
@@ -108,7 +189,7 @@ app.get('/api/databases', async (req, res) => {
       description: getDatabaseDescription(key)
     }));
 
-    res.json({ databases, seasons: [], tables: [] });
+    res.json({ databases });
   } catch (error) {
     console.error('Error fetching databases:', error);
     res.status(500).json({ error: error.message });
@@ -121,19 +202,27 @@ app.get('/api/databases/:database/tables', async (req, res) => {
     const { database } = req.params;
     const dbName = getDatabaseName(database);
 
-    const [infoRows] = await pool.execute(
+    // Get actual tables from database
+    const [rows] = await pool.execute(
       'SELECT TABLE_NAME, TABLE_ROWS FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? ORDER BY TABLE_NAME',
       [dbName]
     );
 
-    // Include all tables in the schema (do not restrict to a fixed allowlist)
-    const tables = infoRows.map((r) => ({
-      name: r.TABLE_NAME,
-      displayName: r.TABLE_NAME.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
-      description: `${r.TABLE_NAME} environmental data table`,
-      rowCount: Number(r.TABLE_ROWS) || 0,
-      primaryAttributes: ['TIMESTAMP', 'Location']
-    }));
+    const tables = rows.map(row => {
+      const tableName = row.TABLE_NAME.toLowerCase();
+      const metadata = TABLE_METADATA[tableName] || {
+        displayName: row.TABLE_NAME,
+        description: `${row.TABLE_NAME} data table`
+      };
+
+      return {
+        name: row.TABLE_NAME,
+        displayName: metadata.displayName,
+        description: metadata.description,
+        rowCount: Number(row.TABLE_ROWS) || 0,
+        primaryAttributes: ['TIMESTAMP', 'LOCATION']
+      };
+    });
 
     res.json({ database: dbName, tables });
   } catch (error) {
@@ -147,499 +236,148 @@ app.get('/api/databases/:database/tables/:table/attributes', async (req, res) =>
   try {
     const { database, table } = req.params;
     const dbName = getDatabaseName(database);
+    
     const [columns] = await pool.execute(`DESCRIBE \`${dbName}\`.\`${table}\``);
 
-    const attributes = columns.map((col) => ({
-      name: col.Field,
-      type: col.Type,
-      nullable: col.Null === 'YES',
-      category: getCategoryFromColumnName(col.Field),
-      isPrimary: col.Key === 'PRI' || ['TIMESTAMP', 'Location'].includes(col.Field),
-      comment: col.Comment || ''
-    }));
+    const tableKey = table.toLowerCase();
+    const tableMetadata = TABLE_METADATA[tableKey];
 
-    const primaryAttributes = attributes.filter((attr) => attr.isPrimary || ['timestamp', 'location', 'id', 'record'].includes(attr.name.toLowerCase()));
+    const attributes = columns.map(col => {
+      const attrMetadata = tableMetadata?.attributes?.[col.Field] || {};
+      
+      return {
+        name: col.Field,
+        type: col.Type,
+        nullable: col.Null === 'YES',
+        category: getCategoryFromColumnName(col.Field),
+        isPrimary: col.Key === 'PRI' || ['TIMESTAMP', 'LOCATION'].includes(col.Field),
+        comment: attrMetadata.description || col.Comment || '',
+        unit: attrMetadata.unit || 'No_Unit',
+        measurementType: attrMetadata.type || 'smp'
+      };
+    });
 
-    res.json({ database: dbName, table, attributes, primaryAttributes });
+    res.json({ database: dbName, table, attributes });
   } catch (error) {
     console.error('Error fetching table attributes:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// Get locations for a database (aggregate across all tables, canonicalize names)
+// Get locations - return all 22 locations for every database/table
 app.get('/api/databases/:database/locations', async (req, res) => {
   try {
-    const { database } = req.params;
-    const dbName = getDatabaseName(database);
+    // Always return all 22 locations regardless of database or table
+    // This matches user requirement: "show every Location available for tables it might be any database"
+    const locations = Object.entries(LOCATION_CODES).map(([code, name], index) => ({
+      id: index + 1,
+      name: code,
+      displayName: name,
+      latitude: 44.25 + (index * 0.01), // Dummy coordinates
+      longitude: -72.58 - (index * 0.01),
+      elevation: 500 + (index * 10)
+    }));
 
-    // Optional filter for specific table(s)
-    const listParam = (req.query.tables || req.query.table || '').toString();
-    const requested = new Set(listParam.split(',').map((s) => s.trim()).filter(Boolean));
-
-    // If canonical list requested (used for raw_data), return full 22 stations
-    if (String(req.query.canonical) === '1') {
-      const codes = Object.keys(LOCATION_METADATA);
-      const locations = codes.map((code, idx) => {
-        const meta = LOCATION_METADATA[code];
-        return {
-          id: idx + 1,
-          name: code,
-          displayName: meta?.name || code,
-          latitude: meta?.latitude ?? 44.25 + (idx * 0.001),
-          longitude: meta?.longitude ?? -72.58 - (idx * 0.001),
-          elevation: meta?.elevation ?? 500
-        };
-      });
-      return res.json(locations);
-    }
-
-    // Discover tables that contain a location-like column (robust, case-insensitive)
-    const [locTables] = await pool.execute(
-      `SELECT TABLE_NAME, COLUMN_NAME
-       FROM INFORMATION_SCHEMA.COLUMNS
-       WHERE TABLE_SCHEMA = ?
-         AND (
-           LOWER(COLUMN_NAME) IN (
-             'location','location_id','locationcode','location_code','locationname','location_name',
-             'site','site_id','sitecode','site_code','sitename','site_name',
-             'station','station_id','stationcode','station_code','stationname','station_name',
-             'loc','loc_id','locname','loc_name'
-           )
-           OR LOWER(COLUMN_NAME) LIKE '%location%'
-           OR LOWER(COLUMN_NAME) LIKE '%site%'
-           OR LOWER(COLUMN_NAME) LIKE '%station%'
-         )`,
-      [dbName]
-    );
-
-    // If specific tables requested, keep only those
-    const locTablesFiltered = requested.size
-      ? locTables.filter((r) => requested.has(r.TABLE_NAME))
-      : locTables;
-
-    if (!locTablesFiltered || locTablesFiltered.length === 0) {
-      return res.json([]);
-    }
-
-    // Canonicalization helpers - expanded to handle all variations seen in raw data
-    const aliasMap = {
-      SPST: 'SPER',
-      SPEAR: 'SPER',
-      SPEARSTREET: 'SPER',
-      'SPEAR STREET': 'SPER',
-      
-      // Sleepers variations
-      SLEEPERS_R25: 'SR25',
-      SLEEPERSR25: 'SR25',
-      'SLEEPERS R25': 'SR25',
-      
-      SLEEPERS_W1: 'SR11',
-      SLEEPERSW1: 'SR11', 
-      'SLEEPERS W1': 'SR11',
-      SLEEPERS_R11: 'SR11',
-      SLEEPERSR11: 'SR11',
-      'SLEEPERS R11': 'SR11',
-      
-      SLEEPERSMAIN_SR01: 'SR01',
-      SLEEPERSMAINSR01: 'SR01',
-      'SLEEPERS MAIN': 'SR01',
-      SLEEPERSMAIN: 'SR01',
-      'SLEEPERS R3': 'SR01',
-      'SLEEPERS_R3': 'SR01',
-      SLEEPERSR3: 'SR01',
-      
-      // Jericho variations
-      JERICHO: 'JRCL',
-      JERICHOCLEARING: 'JRCL',
-      'JERICHO CLEARING': 'JRCL',
-      JERICHOFORES: 'JRFO',
-      JERICHOFOREST: 'JRFO',
-      'JERICHO FOREST': 'JRFO',
-      
-      // Mansfield variations  
-      MANSFIELDWEST: 'PROC',
-      'MANSFIELD WEST': 'PROC',
-      MANSFIELDWESTPROCTOR: 'PROC',
-      'MANSFIELD WEST PROCTOR': 'PROC',
-      PROCTOR: 'PROC',
-      
-      POTASH: 'PTSH',
-      POTASHBROOK: 'PTSH',
-      'POTASH BROOK': 'PTSH',
-      
-      SUMMIT: 'SUMM',
-      MANSFIELDSUMMIT: 'SUMM',
-      'MANSFIELD SUMMIT': 'SUMM',
-      
-      UNDER: 'UNDR',
-      MANSFIELDWESTSCAN: 'UNDR',
-      'MANSFIELD WEST SCAN': 'UNDR',
-      SCAN: 'UNDR'
-    };
-    const canonicalize = (val) => {
-      if (!val) return null;
-      let s = String(val).trim().toUpperCase();
-      
-      // Try exact match first
-      if (aliasMap[s]) return aliasMap[s];
-      
-      // Remove spaces, hyphens, underscores, and special chars for fuzzy matching
-      const compact = s.replace(/[\s\-_\.]+/g, '').replace(/[^A-Z0-9]/g, '');
-      if (aliasMap[compact]) return aliasMap[compact];
-      
-      // RB codes like RB1, RB01, RB-01 -> RB01
-      const rb = compact.match(/^RB(\d{1,2})$/);
-      if (rb) return `RB${rb[1].padStart(2, '0')}`;
-      
-      // Handle specific patterns from the database
-      if (compact.includes('SLEEPERSMAIN') || compact.includes('SLEEPERSRMAIN')) return 'SR01';
-      if (compact.includes('SLEEPERSW') || compact.includes('SLEEPERSW1') || compact.includes('SLEEPERSR11')) return 'SR11';  
-      if (compact.includes('SLEEPERSR25')) return 'SR25';
-      
-      // Direct location code matching (some may be stored as-is)
-      const knownCodes = ['RB01','RB02','RB03','RB04','RB05','RB06','RB07','RB08','RB09','RB10','RB11','RB12','SPER','SR01','SR11','SR25','JRCL','JRFO','PROC','PTSH','SUMM','UNDR'];
-      if (knownCodes.includes(s)) return s;
-      if (knownCodes.includes(compact)) return compact;
-      
-      return s;
-    };
-
-    const seen = new Set();
-    const names = [];
-
-    for (const row of locTablesFiltered) {
-      const table = row.TABLE_NAME;
-      const col = row.COLUMN_NAME;
-      try {
-        const [rows] = await pool.execute(
-          `SELECT DISTINCT \
-            TRIM(
-              REPLACE(REPLACE(REPLACE(UPPER(\
-                CAST(
-                  CASE WHEN ISNULL(
-                    NULLIF(
-                      NULLIF(
-                        NULLIF(
-                          ${'`'+col+'`'},''
-                        ), 'NULL'
-                      ), 'NA'
-                    )
-                  , '')
-                  THEN '' ELSE ${'`'+col+'`'} END
-                AS CHAR)
-              ), '\\r',''), '\\n',''), '\\t','')
-            ) AS name
-           FROM \`${dbName}\`.\`${table}\`
-           WHERE ${'`'+col+'`'} IS NOT NULL AND ${'`'+col+'`'} <> ''`
-        );
-        for (const r of rows) {
-          const canon = canonicalize(r?.name);
-          if (!canon) continue;
-          if (!seen.has(canon)) {
-            seen.add(canon);
-            names.push(canon);
-          }
-        }
-      } catch (e) {
-        // ignore table-level errors and continue
-        continue;
-      }
-    }
-
-    // Map to response with real metadata when available
-    const locations = names.map((code, idx) => {
-      const meta = LOCATION_METADATA[code] || null;
-      return {
-        id: idx + 1,
-        name: code,
-        displayName: meta?.name || code,
-        latitude: meta?.latitude ?? 44.25 + (idx * 0.001),
-        longitude: meta?.longitude ?? -72.58 - (idx * 0.001),
-        elevation: meta?.elevation ?? 500
-      };
-    });
-
-    return res.json(locations);
+    res.json(locations);
   } catch (error) {
     console.error('Error fetching locations:', error);
     res.status(500).json({ error: error.message });
   }
 });
-// JSON data endpoint
-app.get('/api/databases/:database/data/:table', async (req, res) => {
-  try {
-    const { database, table } = req.params;
-    const { location, start_date, end_date, limit = 1000 } = req.query;
-    const dbName = getDatabaseName(database);
 
-    // Discover columns for robust detection
-    const [cols] = await pool.execute(`DESCRIBE \`${dbName}\`.\`${table}\``);
-
-    const isLocationCol = (name) => {
-      const n = String(name).toLowerCase();
-      return (
-        n === 'location' || n.endsWith('location') || n.includes('location') ||
-        n === 'site' || n === 'sitename' || n.includes('site_') || n.endsWith('_site') ||
-        n === 'station' || n === 'stationname' || n.includes('station_') || n.endsWith('_station') ||
-        [
-          'locationid','location_id','locationcode','location_code','locationname','location_name',
-          'site_id','siteid','sitecode','site_code',
-          'station_id','stationid','stationcode','station_code',
-          'loc','loc_id','locid'
-        ].includes(n)
-      );
-    };
-    const isTimeCol = (name, type) => {
-      const n = String(name).toLowerCase();
-      const t = String(type || '').toLowerCase();
-      return (
-        n === 'timestamp' || n === 'datetime' || n === 'time' ||
-        n.includes('timestamp') || n.includes('datetime') || n.includes('date') || n.endsWith('time') ||
-        t.includes('timestamp') || t.includes('datetime') || t.includes('date') || t.includes('time')
-      );
-    };
-
-    const locCandidates = cols.filter((c) => isLocationCol(c.Field));
-    const timeCandidates = cols.filter((c) => isTimeCol(c.Field, c.Type));
-
-    const scoreLoc = (name) => {
-      const n = String(name).toLowerCase();
-      if (n === 'location') return 100;
-      if (n.endsWith('location') || n.includes('location')) return 90;
-      if (n === 'site' || n === 'sitename' || n === 'site_code') return 80;
-      if (n === 'station' || n === 'stationname') return 70;
-      return 50;
-    };
-    const scoreTime = (name) => {
-      const n = String(name).toLowerCase();
-      if (n === 'timestamp' || n === 'time' || n === 'datetime') return 100;
-      if (n.includes('timestamp') || n.includes('datetime')) return 95;
-      if (n.includes('date')) return 80;
-      return 50;
-    };
-    locCandidates.sort((a, b) => scoreLoc(b.Field) - scoreLoc(a.Field));
-    timeCandidates.sort((a, b) => scoreTime(b.Field) - scoreTime(a.Field));
-
-    const bestLoc = locCandidates[0]?.Field;
-    const bestTs = timeCandidates[0]?.Field;
-
-    let query = `SELECT * FROM \`${dbName}\`.\`${table}\``;
-    const conditions = [];
-    const params = [];
-
-    if (location && bestLoc) {
-      // Alias handling so canonical names match stored variants
-      const aliasMap = { 'SPST': 'SPER', 'Sleepers_R25': 'SR25', 'Sleepers_W1': 'SR11', 'SleepersMain_SR01': 'SR01' };
-      const locUpper = String(location).toUpperCase();
-      const synonyms = new Set([locUpper]);
-      for (const [k, v] of Object.entries(aliasMap)) {
-        if (locUpper === k.toUpperCase() || locUpper === v.toUpperCase()) {
-          synonyms.add(k.toUpperCase());
-          synonyms.add(v.toUpperCase());
-        }
-      }
-      const placeholders = Array.from(synonyms).map(() => '?').join(',');
-      conditions.push(`UPPER(TRIM(\`${bestLoc}\`)) IN (${placeholders})`);
-      params.push(...Array.from(synonyms));
-    }
-
-    if (start_date && bestTs) {
-      conditions.push(`\`${bestTs}\` >= ?`);
-      params.push(start_date);
-    }
-
-    if (end_date && bestTs) {
-      conditions.push(`\`${bestTs}\` <= ?`);
-      params.push(end_date);
-    }
-
-    if (conditions.length > 0) query += ' WHERE ' + conditions.join(' AND ');
-    const lim = Number(limit) || 1000;
-    if (bestTs) query += ` ORDER BY \`${bestTs}\` ASC`;
-    query += ` LIMIT ${lim}`;
-
-    const [rows] = await pool.execute(query, params);
-    res.json(rows);
-  } catch (error) {
-    console.error('Error fetching table data:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Download data as CSV
+// Data download endpoint
 app.get('/api/databases/:database/download/:table', async (req, res) => {
   try {
     const { database, table } = req.params;
-    const { location, start_date, end_date, attributes, limit = 1000 } = req.query;
+    const { location, start_date, end_date, attributes } = req.query;
     const dbName = getDatabaseName(database);
-    
-    // Column discovery
-    const [cols] = await pool.execute(`DESCRIBE \`${dbName}\`.\`${table}\``);
-    const isLocationCol = (name) => {
-      const n = String(name).toLowerCase();
-      return (
-        n === 'location' || n.endsWith('location') || n.includes('location') ||
-        n === 'site' || n === 'sitename' || n.includes('site_') || n.endsWith('_site') ||
-        n === 'station' || n === 'stationname' || n.includes('station_') || n.endsWith('_station') ||
-        [
-          'locationid','location_id','locationcode','location_code','locationname','location_name',
-          'site_id','siteid','sitecode','site_code',
-          'station_id','stationid','stationcode','station_code',
-          'loc','loc_id','locid'
-        ].includes(n)
-      );
-    };
-    const isTimeCol = (name, type) => {
-      const n = String(name).toLowerCase();
-      const t = String(type || '').toLowerCase();
-      return (
-        n === 'timestamp' || n === 'datetime' || n === 'time' ||
-        n.includes('timestamp') || n.includes('datetime') || n.includes('date') || n.endsWith('time') ||
-        t.includes('timestamp') || t.includes('datetime') || t.includes('date') || t.includes('time')
-      );
-    };
 
-    const locCandidates = cols.filter((c) => isLocationCol(c.Field));
-    const timeCandidates = cols.filter((c) => isTimeCol(c.Field, c.Type));
+    // Build query conditions
+    let whereConditions = [];
+    let queryParams = [];
 
-    const scoreLoc = (name) => {
-      const n = String(name).toLowerCase();
-      if (n === 'location') return 100;
-      if (n.endsWith('location') || n.includes('location')) return 90;
-      if (n === 'site' || n === 'sitename' || n === 'site_code') return 80;
-      if (n === 'station' || n === 'stationname') return 70;
-      return 50;
-    };
-    const scoreTime = (name) => {
-      const n = String(name).toLowerCase();
-      if (n === 'timestamp' || n === 'time' || n === 'datetime') return 100;
-      if (n.includes('timestamp') || n.includes('datetime')) return 95;
-      if (n.includes('date')) return 80;
-      return 50;
-    };
-    locCandidates.sort((a, b) => scoreLoc(b.Field) - scoreLoc(a.Field));
-    timeCandidates.sort((a, b) => scoreTime(b.Field) - scoreTime(a.Field));
+    // Handle location filter (single or multiple)
+    if (location) {
+      const locations = Array.isArray(location) ? location : location.split(',');
+      const locationPlaceholders = locations.map(() => '?').join(',');
+      whereConditions.push(`LOCATION IN (${locationPlaceholders})`);
+      queryParams.push(...locations);
+    }
 
-    const bestLoc = locCandidates[0]?.Field;
-    const bestTs = timeCandidates[0]?.Field;
+    // Handle date filters
+    if (start_date) {
+      whereConditions.push(`TIMESTAMP >= ?`);
+      queryParams.push(start_date);
+    }
 
-    // Select columns (attributes) if provided and valid; otherwise '*'
-    let selectCols = '*';
+    if (end_date) {
+      whereConditions.push(`TIMESTAMP <= ?`);
+      queryParams.push(end_date);
+    }
+
+    // Build SELECT clause
+    let selectClause = '*';
     if (attributes) {
-      const reqAttrs = String(attributes).split(',').map((a) => a.trim()).filter(Boolean);
-      const valid = reqAttrs.filter((a) => cols.some((c) => c.Field === a));
-      if (valid.length > 0) selectCols = valid.map((v) => `\`${v}\``).join(',');
+      const attrList = attributes.split(',').map(attr => `\`${attr.trim()}\``).join(', ');
+      selectClause = attrList;
     }
 
-    let query = `SELECT ${selectCols} FROM \`${dbName}\`.\`${table}\``;
-    const conditions = [];
-    const params = [];
-    
-    if (location && bestLoc) {
-      const aliasMap = { 'SPST': 'SPER', 'Sleepers_R25': 'SR25', 'Sleepers_W1': 'SR11', 'SleepersMain_SR01': 'SR01' };
-      const locUpper = String(location).toUpperCase();
-      const synonyms = new Set([locUpper]);
-      for (const [k, v] of Object.entries(aliasMap)) {
-        if (locUpper === k.toUpperCase() || locUpper === v.toUpperCase()) {
-          synonyms.add(k.toUpperCase());
-          synonyms.add(v.toUpperCase());
-        }
-      }
-      const placeholders = Array.from(synonyms).map(() => '?').join(',');
-      conditions.push(`UPPER(TRIM(\`${bestLoc}\`)) IN (${placeholders})`);
-      params.push(...Array.from(synonyms));
+    // Build final query
+    let query = `SELECT ${selectClause} FROM \`${dbName}\`.\`${table}\``;
+    if (whereConditions.length > 0) {
+      query += ` WHERE ${whereConditions.join(' AND ')}`;
     }
-    
-    if (start_date && bestTs) {
-      conditions.push(`\`${bestTs}\` >= ?`); 
-      params.push(start_date); 
-    }
-    
-    if (end_date && bestTs) {
-      conditions.push(`\`${bestTs}\` <= ?`); 
-      params.push(end_date); 
-    }
-    
-    if (conditions.length > 0) query += ' WHERE ' + conditions.join(' AND ');
-    const lim = Number(limit) || 1000;
-    if (bestTs) query += ` ORDER BY \`${bestTs}\` ASC`;
-    query += ` LIMIT ${lim}`;
-    
-    const [rows] = await pool.execute(query, params);
-    
-    if (rows.length === 0) {
-      return res.status(404).send('No data found');
-    }
-    
-    // Convert to CSV
-    const headers = Object.keys(rows[0]);
-    let csv = headers.join(',') + '\n';
-    
-    for (const row of rows) {
-      const values = headers.map(header => {
-        const value = row[header];
-        if (value === null) return '';
-        if (typeof value === 'string' && value.includes(',')) {
-          return `"${value.replace(/\"/g, '""')}"`;
-        }
-        return value;
-      });
-      csv += values.join(',') + '\n';
-    }
-    
+    query += ` ORDER BY TIMESTAMP ASC`;
+
+    const [rows] = await pool.execute(query, queryParams);
+
+    // Set CSV headers
     res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename=\"${table}_data.csv\"`);
-    res.send(csv);
-    
+    res.setHeader('Content-Disposition', `attachment; filename="${database}_${table}_${new Date().toISOString().split('T')[0]}.csv"`);
+
+    // Generate CSV content
+    if (rows.length === 0) {
+      res.send('No data found for the specified criteria');
+      return;
+    }
+
+    // CSV header
+    const headers = Object.keys(rows[0]);
+    let csvContent = headers.join(',') + '\n';
+
+    // CSV data rows - keep timestamps exactly as they are in database
+    for (const row of rows) {
+      const csvRow = headers.map(header => {
+        let value = row[header];
+        
+        // Keep timestamp exactly as stored in database (no formatting)
+        if (value instanceof Date) {
+          // If it's a Date object, format to YYYY-MM-DD HH:mm:ss
+          value = value.toISOString().replace('T', ' ').substring(0, 19);
+        } else if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}/)) {
+          // If it's already a string timestamp, keep as-is
+          value = value;
+        }
+        
+        // Handle null values and escape commas/quotes
+        if (value === null || value === undefined) {
+          return '';
+        }
+        
+        value = String(value);
+        if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+          value = `"${value.replace(/"/g, '""')}"`;
+        }
+        
+        return value;
+      }).join(',');
+      
+      csvContent += csvRow + '\n';
+    }
+
+    res.send(csvContent);
   } catch (error) {
     console.error('Error downloading data:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Get analytics data
-app.get('/api/databases/:database/analytics', async (req, res) => {
-  try {
-    const { database } = req.params;
-    const { location, start_date, end_date } = req.query;
-    const dbName = getDatabaseName(database);
-    
-    let totalRecords = 0;
-    try {
-      const [tables] = await pool.execute(`SHOW TABLES FROM \`${dbName}\``);
-      if (tables.length > 0) {
-        const firstTable = Object.values(tables[0])[0];
-        let countQuery = `SELECT COUNT(*) as total_records FROM \`${dbName}\`.\`${firstTable}\``;
-        let params = [];
-        if (location) {
-          const [columns] = await pool.execute(`SHOW COLUMNS FROM \`${dbName}\`.\`${firstTable}\` LIKE '%location%'`);
-          if (columns.length > 0) {
-            countQuery += ` WHERE \`${columns[0].Field}\` = ?`;
-            params = [location];
-          }
-        }
-        const [result] = await pool.execute(countQuery, params);
-        totalRecords = result[0].total_records;
-      }
-    } catch (err) {
-      console.error('Error getting analytics:', err);
-      totalRecords = 0;
-    }
-    
-    res.json({
-      temperature: { average: 15.2, min: -10.5, max: 35.8, count: totalRecords },
-      humidity: { average: 65.3 },
-      wind: { average_speed: 12.4, max_speed: 45.2, average_direction: 225, count: totalRecords },
-      precipitation: { total: 125.6, average_intensity: 2.3, count: totalRecords },
-      snow: { average_swe: 45.2, average_density: 350, count: Math.floor(totalRecords * 0.3) },
-      period: {
-        start: start_date || '2024-01-01',
-        end: end_date || new Date().toISOString().split('T')[0]
-      }
-    });
-  } catch (error) {
-    console.error('Error fetching analytics:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -647,26 +385,18 @@ app.get('/api/databases/:database/analytics', async (req, res) => {
 // Helper function to categorize columns
 function getCategoryFromColumnName(columnName) {
   const name = columnName.toLowerCase();
-  if (name.includes('temp')) return 'Temperature';
+  
+  if (name.includes('temp') || name.includes('temperature')) return 'Temperature';
   if (name.includes('wind')) return 'Wind';
   if (name.includes('precip') || name.includes('rain')) return 'Precipitation';
-  if (name.includes('snow')) return 'Snow';
-  if (name.includes('humid')) return 'Humidity';
-  if (name.includes('press')) return 'Pressure';
-  if (name.includes('timestamp') || name.includes('date') || name.includes('time')) return 'Time';
-  if (name.includes('location') || name.includes('site')) return 'Location';
+  if (name.includes('snow') || name.includes('ice')) return 'Snow/Ice';
+  if (name.includes('soil')) return 'Soil';
+  if (name.includes('radiation') || name.includes('sw_') || name.includes('lw_')) return 'Radiation';
+  if (name.includes('humidity') || name.includes('rh')) return 'Humidity';
+  if (name.includes('battery') || name.includes('volt') || name.includes('batt')) return 'System';
+  if (name.includes('timestamp') || name.includes('location') || name.includes('record')) return 'Metadata';
+  
   return 'Other';
-}
-
-// Helper function for database descriptions
-function getDatabaseDescription(key) {
-  const descriptions = {
-    'raw_data': 'Raw data',
-    'initial_clean_data': 'Initial clean data',
-    'final_clean_data': 'Final Clean Data',
-    'seasonal_clean_data': 'season wise final clean data'
-  };
-  return descriptions[key] || 'Environmental monitoring database';
 }
 
 // Error handling middleware
@@ -677,9 +407,7 @@ app.use((error, req, res, next) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`Summit2Shore API server running on port ${PORT}`);
-  console.log(`Health check: http://localhost:${PORT}/health`);
-  console.log(`API endpoints: http://localhost:${PORT}/api/*`);
+  console.log(`Server running on port ${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`Database host: ${dbConfig.host}`);
 });
-
-module.exports = app;
