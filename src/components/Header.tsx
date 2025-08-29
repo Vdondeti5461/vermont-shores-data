@@ -11,6 +11,7 @@ const Header = () => {
     { label: 'About', href: '/about', icon: Info },
     { label: 'Network', href: '/network', icon: MapPin },
     { label: 'Analytics', href: '/analytics', icon: BarChart3 },
+    { label: 'Snow Analytics', href: '/analytics/snow-depth', icon: BarChart3 },
     { label: 'Data Download', href: '/download', icon: Download },
     { label: 'Research', href: '/research', icon: Users }
   ];

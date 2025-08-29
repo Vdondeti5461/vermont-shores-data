@@ -10,31 +10,31 @@ import { Link } from 'react-router-dom';
 const Home = () => {
   const quickLinks = [
     {
+      title: 'Snow Analytics',
+      description: 'Interactive snow depth time series analysis',
+      icon: BarChart3,
+      href: '/analytics/snow-depth',
+      color: 'bg-blue-500'
+    },
+    {
       title: 'Data Network',
       description: 'Explore monitoring stations across Vermont',
       icon: MapPin,
       href: '/network',
-      color: 'bg-blue-500'
+      color: 'bg-green-500'
     },
     {
       title: 'Live Analytics',
       description: 'Real-time environmental data visualization',
       icon: BarChart3,
       href: '/analytics',
-      color: 'bg-green-500'
+      color: 'bg-purple-500'
     },
     {
       title: 'Download Data',
       description: 'Access research datasets and APIs',
       icon: Download,
       href: '/download',
-      color: 'bg-purple-500'
-    },
-    {
-      title: 'Research Team',
-      description: 'Meet our scientists and collaborators',
-      icon: Users,
-      href: '/research',
       color: 'bg-orange-500'
     }
   ];
@@ -101,6 +101,17 @@ const Home = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 xs:gap-8">
+              <div className="data-card p-4 xs:p-6 touch:active:scale-98 transition-transform">
+                <div className="text-xs xs:text-sm text-muted-foreground mb-2">New Feature</div>
+                <h3 className="font-semibold text-base xs:text-lg mb-3">Snow Depth Analytics</h3>
+                <p className="text-muted-foreground text-sm xs:text-base mb-4 leading-relaxed">
+                  Interactive time series analysis of DBTCDT measurements with raw vs cleaned data comparison.
+                </p>
+                <Link to="/analytics/snow-depth" className="text-primary font-medium hover:underline text-sm xs:text-base">
+                  View Analytics →
+                </Link>
+              </div>
+
               <div className="data-card p-4 xs:p-6 touch:active:scale-98 transition-transform">
                 <div className="text-xs xs:text-sm text-muted-foreground mb-2">January 2024</div>
                 <h3 className="font-semibold text-base xs:text-lg mb-3">New Monitoring Stations</h3>
