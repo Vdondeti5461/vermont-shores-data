@@ -154,25 +154,23 @@ const MultiDatabaseDownload = () => {
   const fetchLocations = async (database: string, table?: string) => {
     try {
       if (table) {
-        // Get distinct values from the Location attribute in the specific table
-        const url = `${API_BASE_URL}/api/databases/${database}/tables/${table}/attributes/Location/distinct`;
-        const response = await fetch(url);
+        // Prefer table-specific endpoint; fallback to union endpoint filtered by table
+        let url = `${API_BASE_URL}/api/databases/${database}/tables/${table}/locations`;
+        let response = await fetch(url);
+
+        if (response.status === 404) {
+          url = `${API_BASE_URL}/api/databases/${database}/locations?tables=${encodeURIComponent(table)}`;
+          response = await fetch(url);
+        }
+
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
+
         const data = await response.json();
-        // Convert distinct values to location objects for consistent interface
-        const locationObjects = (data.values || data || []).map((value: string) => ({
-          id: value,
-          name: value,
-          displayName: value,
-          latitude: 0,
-          longitude: 0,
-          elevation: 0
-        }));
-        setLocations(locationObjects);
+        setLocations(Array.isArray(data) ? data : (data.locations || data.values || []));
       } else {
-        // General locations endpoint
+        // Database-wide distinct locations across all tables
         const url = `${API_BASE_URL}/api/databases/${database}/locations`;
         const response = await fetch(url);
         if (!response.ok) {
@@ -181,7 +179,7 @@ const MultiDatabaseDownload = () => {
         const data = await response.json();
         setLocations(Array.isArray(data) ? data : data.locations || []);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching locations:', error);
       toast({
         title: "Error",
