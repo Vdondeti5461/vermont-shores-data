@@ -8,18 +8,18 @@ import { Info, Target, Eye, Heart } from 'lucide-react';
 const About = () => {
   const objectives = [
     {
-      title: 'Snowpack Monitoring',
-      description: 'High-resolution monitoring of snowpack characteristics and meteorological variables across elevational gradients',
+      title: 'Long-term Monitoring',
+      description: 'Establish sustainable environmental monitoring across elevation gradients',
       icon: Target
     },
     {
-      title: 'Remote Sensing Integration',
-      description: 'UAV and LiDAR snow depth measurements to characterize snowpack evolution across varying forest cover and topography',
+      title: 'Data Integration',
+      description: 'Create comprehensive datasets for climate and ecosystem research',
       icon: Eye
     },
     {
-      title: 'Computational Model Validation',
-      description: 'Provide forcing and validation data for computational snowpack models in understudied montane environments',
+      title: 'Scientific Collaboration',
+      description: 'Foster partnerships between academic, government, and community organizations',
       icon: Heart
     }
   ];
@@ -74,11 +74,8 @@ const About = () => {
                 <br />Monitoring Network
               </h1>
               <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-                This Summit-to-Shore (S2S) observatory network monitors snowpack characteristics and meteorological 
-                variables at high spatial and temporal resolution across an elevational transect in Vermont. 
-                Traditional meteorological measurements combined with detailed snowpack measurements provide 
-                high-resolution observational data for computational snowpack models, augmenting research in 
-                low-elevation montane environments understudied with respect to snowpack dynamics.
+                A collaborative research initiative between the University of Vermont and CRREL, 
+                monitoring environmental conditions across Vermont's diverse landscapes.
               </p>
             </div>
           </div>
@@ -102,8 +99,7 @@ const About = () => {
                 Our <span className="text-primary">Objectives</span>
               </h2>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Advancing snowpack research through high-resolution monitoring, remote sensing, and computational modeling 
-                to better understand snow dynamics in Vermont's montane environments
+                Advancing environmental science through comprehensive monitoring and open data sharing
               </p>
             </div>
 
