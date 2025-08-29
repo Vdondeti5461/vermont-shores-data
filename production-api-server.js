@@ -37,6 +37,9 @@ const DATABASES = {
   seasonal_clean_data: 'CRRELS2S_cleaned_data_seasons'
 };
 
+// Core data tables that exist across databases (case-insensitive)
+const CORE_TABLES = new Set(['table1','wind','precipitation','snowpktempprofile']);
+
 // Location metadata with complete information
 const LOCATION_METADATA = {
   'RB01': { name: 'Mansfield East Ranch Brook 1', latitude: 44.2619, longitude: -72.8081, elevation: 1200 },
@@ -124,7 +127,9 @@ app.get('/api/databases/:database/tables', async (req, res) => {
       [dbName]
     );
 
-    const tables = infoRows.map((r) => ({
+    const filtered = infoRows.filter((r) => CORE_TABLES.has(String(r.TABLE_NAME).toLowerCase()));
+
+    const tables = filtered.map((r) => ({
       name: r.TABLE_NAME,
       displayName: r.TABLE_NAME.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
       description: `${r.TABLE_NAME} environmental data table`,
@@ -242,6 +247,8 @@ app.get('/api/databases/:database/locations', async (req, res) => {
     const debugInfo = [];
 
     for (const [table, cols] of byTable.entries()) {
+      const tableLower = String(table).toLowerCase();
+      if (!CORE_TABLES.has(tableLower)) continue;
       // For seasonal database, keep only cleaned_data_season_* tables as before
       if (database === 'seasonal_clean_data' && !String(table).startsWith('cleaned_data_season_')) continue;
 
