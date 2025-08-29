@@ -10,7 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Download, Database, Table, MapPin, Calendar as CalendarIcon, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Loader2, Download, Database, Table, MapPin, Calendar as CalendarIcon, AlertCircle, CheckCircle2, Info } from 'lucide-react';
+import MetadataDisplay from '@/components/MetadataDisplay';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { API_BASE_URL } from '@/lib/apiConfig';
@@ -522,9 +523,10 @@ const DynamicDataBrowser = () => {
     <div className="space-y-6">
 
       <Tabs defaultValue="select" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="select">Data Selection</TabsTrigger>
           <TabsTrigger value="filters">Filters & Attributes</TabsTrigger>
+          <TabsTrigger value="metadata">Metadata</TabsTrigger>
           <TabsTrigger value="download">Download</TabsTrigger>
         </TabsList>
 
@@ -886,6 +888,10 @@ const DynamicDataBrowser = () => {
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        <TabsContent value="metadata" className="space-y-6">
+          <MetadataDisplay />
         </TabsContent>
 
         <TabsContent value="download" className="space-y-6">

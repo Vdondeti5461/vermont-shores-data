@@ -51,31 +51,36 @@ const LOCATION_METADATA: Record<string, LocationMetadata> = {
 
 const TABLE_METADATA: Record<string, TableMetadata> = {
   'table1': {
-    displayName: 'Primary Environmental Data',
+    displayName: 'Primary Environmental Data (Table1)',
     description: 'Comprehensive environmental measurements including temperature, humidity, soil conditions, and radiation',
     attributes: {
+      'TS_LOC_REC': { description: 'TimeStamp Location Record', unit: 'No_Unit', measurement_type: 'No_Unit', category: 'System' },
       'TIMESTAMP': { description: 'TimeStamp', unit: 'TS', measurement_type: 'No_Unit', category: 'Time' },
       'LOCATION': { description: 'Location', unit: 'LOC', measurement_type: 'No_Unit', category: 'Location' },
       'Record': { description: 'Record Number', unit: 'RN', measurement_type: 'No Unit', category: 'System' },
       'Batt_Volt_Min': { description: 'Battery Voltage', unit: 'Volts', measurement_type: 'Min', category: 'System' },
       'P_Temp': { description: 'Panel Temperature (Reference Temperature Measurement)', unit: 'Deg C', measurement_type: 'smp', category: 'Temperature' },
-      'AirTC_Avg': { description: 'Air Temperature Average in Celcius', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
+      'AirTC_Avg': { description: 'Air Temperature Average in Celsius', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
       'RH': { description: 'Relative Humidity', unit: '%', measurement_type: 'Smp', category: 'Humidity' },
       'SHF': { description: 'Soil Heat Flux (radiation Parameter)', unit: 'W/m^2', measurement_type: 'smp', category: 'Radiation' },
       'Soil_Moisture': { description: 'Soil Moisture', unit: 'wfv', measurement_type: 'smp', category: 'Soil' },
-      'Soil_Temperature_C': { description: 'Soil Temperature in Celcius', unit: 'Deg C', measurement_type: 'smp', category: 'Temperature' },
+      'Soil_Temperature_C': { description: 'Soil Temperature in Celsius', unit: 'Deg C', measurement_type: 'smp', category: 'Temperature' },
       'SWE': { description: 'Snow water Equivalent', unit: 'mm of H20', measurement_type: 'smp', category: 'Snow' },
       'Ice_content': { description: 'Ice content of SnowPack', unit: '%', measurement_type: 'smp', category: 'Snow' },
       'Water_Content': { description: 'Water Content of SnowPack', unit: '%', measurement_type: 'smp', category: 'Snow' },
       'Snowpack_Density': { description: 'Snowpack Density', unit: 'kg/m^3', measurement_type: 'smp', category: 'Snow' },
       'SW_in': { description: 'Short wave radiation incoming', unit: 'W/m^2', measurement_type: 'smp', category: 'Radiation' },
       'SW_out': { description: 'Short wave radiation outgoing', unit: 'W/m^2', measurement_type: 'smp', category: 'Radiation' },
-      'LW_in': { description: 'Longwave radation incoming', unit: 'W/m^2', measurement_type: 'smp', category: 'Radiation' },
+      'LW_in': { description: 'Longwave radiation incoming', unit: 'W/m^2', measurement_type: 'smp', category: 'Radiation' },
       'LW_out': { description: 'Longwave radiation outgoing', unit: 'W/m^2', measurement_type: 'smp', category: 'Radiation' },
       'Target_Depth': { description: 'Target depth', unit: 'cm', measurement_type: 'smp', category: 'Snow' },
       'Qual': { description: 'Quality numbers (snow sensor)', unit: 'No Unit', measurement_type: 'smp', category: 'Quality' },
       'TCDT': { description: 'Temperature corrected distance value', unit: 'cm', measurement_type: 'smp', category: 'Snow' },
       'DBTCDT': { description: 'Snow Depth', unit: 'cm', measurement_type: 'smp', category: 'Snow' },
+      'Target_Depth_Med': { description: 'Target depth', unit: 'cm', measurement_type: 'Med', category: 'Snow' },
+      'Qual_Med': { description: 'Quality numbers (snow sensor)', unit: 'No Unit', measurement_type: 'Med', category: 'Quality' },
+      'TCDT_Med': { description: 'Temperature corrected distance value', unit: 'cm', measurement_type: 'Med', category: 'Snow' },
+      'DBTCDT_Med': { description: 'Snow Depth', unit: 'cm', measurement_type: 'Med', category: 'Snow' },
       'DataQualityFlag': { description: 'Data Quality Flag (1=Median Data, 0=Original Data)', unit: 'Flag', measurement_type: 'Flag', category: 'Quality' }
     }
   },
@@ -88,13 +93,13 @@ const TABLE_METADATA: Record<string, TableMetadata> = {
       'Record': { description: 'Record Number', unit: 'RN', measurement_type: 'No Unit', category: 'System' },
       'WindDir': { description: 'Wind Direction', unit: 'deg', measurement_type: 'smp', category: 'Wind' },
       'WS_ms_Max': { description: 'Max wind speed', unit: 'meters/second', measurement_type: 'Max', category: 'Wind' },
-      'WS_ms_TMx': { description: 'Wind Speed Time of Max', unit: 'meters/second', measurement_type: 'TMx', category: 'Wind' },
+      'WS_ms_TMx': { description: 'Wind Speed', unit: 'meters/second', measurement_type: 'TMx', category: 'Wind' },
       'WS_ms': { description: 'Wind speed', unit: 'meters/second', measurement_type: 'smp', category: 'Wind' },
       'WS_ms_S_WVT': { description: 'Wind Speed Standard Deviation', unit: 'meters/second', measurement_type: 'Wvc', category: 'Wind' },
       'WindDir_D1_WVT': { description: 'Wind Direction Vector', unit: 'Deg', measurement_type: 'Wvc', category: 'Wind' },
       'WindDir_SD1_WVT': { description: 'Wind Direction Standard Deviation', unit: 'Deg', measurement_type: 'Wvc', category: 'Wind' },
       'WS_ms_Min': { description: 'Min wind speed', unit: 'meters/second', measurement_type: 'Min', category: 'Wind' },
-      'WS_ms_TMn': { description: 'Wind Speed Time of Min', unit: 'meters/second', measurement_type: 'TMn', category: 'Wind' }
+      'WS_ms_TMn': { description: 'Wind Speed', unit: 'meters/second', measurement_type: 'TMn', category: 'Wind' }
     }
   },
   'Precipitation': {
@@ -119,7 +124,19 @@ const TABLE_METADATA: Record<string, TableMetadata> = {
     attributes: {
       'TIMESTAMP': { description: 'TimeStamp', unit: 'TS', measurement_type: 'No_Unit', category: 'Time' },
       'LOCATION': { description: 'Location', unit: 'LOC', measurement_type: 'No_Unit', category: 'Location' },
-      'Record': { description: 'Record Number', unit: 'RN', measurement_type: 'No Unit', category: 'System' }
+      'Record': { description: 'Record Number', unit: 'RN', measurement_type: 'No Unit', category: 'System' },
+      'T107_C_0cm_Avg': { description: 'Snowpack temperature profile at 0 CM', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature Profile' },
+      'T107_C_5cm_Avg': { description: 'Snowpack temperature profile at 5 CM', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature Profile' },
+      'T107_C_10cm_Avg': { description: 'Snowpack temperature profile at 10 CM', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature Profile' },
+      'T107_C_15cm_Avg': { description: 'Snowpack temperature profile at 15 CM', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature Profile' },
+      'T107_C_20cm_Avg': { description: 'Snowpack temperature profile at 20 CM', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature Profile' },
+      'T107_C_30cm_Avg': { description: 'Snowpack temperature profile at 30 CM', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature Profile' },
+      'T107_C_50cm_Avg': { description: 'Snowpack temperature profile at 50 CM', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature Profile' },
+      'T107_C_100cm_Avg': { description: 'Snowpack temperature profile at 100 CM', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature Profile' },
+      'T107_C_150cm_Avg': { description: 'Snowpack temperature profile at 150 CM', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature Profile' },
+      'T107_C_200cm_Avg': { description: 'Snowpack temperature profile at 200 CM', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature Profile' },
+      'T107_C_250cm_Avg': { description: 'Snowpack temperature profile at 250 CM', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature Profile' },
+      'T107_C_290cm_Avg': { description: 'Snowpack temperature profile at 290 CM', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature Profile' }
     }
   }
 };
