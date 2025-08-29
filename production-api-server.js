@@ -13,9 +13,17 @@ app.use(cors({
 
 app.use(express.json());
 
-// Simple API request logger to verify routing in production
+// Enhanced API request logger with full debugging
 app.use('/api', (req, _res, next) => {
-  console.log('[API]', req.method, req.originalUrl);
+  console.log('[API REQUEST]', req.method, req.originalUrl);
+  console.log('[API PARAMS]', req.params);
+  console.log('[API QUERY]', req.query);
+  next();
+});
+
+// Add route existence check
+app.use('/api/databases/:database/tables/:table/locations', (req, res, next) => {
+  console.log('[LOCATIONS ROUTE HIT]', req.params);
   next();
 });
 
