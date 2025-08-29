@@ -137,7 +137,8 @@ async function connectDB() {
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0,
-      multipleStatements: false
+      multipleStatements: false,
+      ssl: process.env.MYSQL_SSL_MODE === 'DISABLED' ? undefined : { rejectUnauthorized: false }
     });
     
     // Test connection
