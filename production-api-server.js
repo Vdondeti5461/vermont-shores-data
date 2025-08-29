@@ -179,12 +179,18 @@ app.get('/api/databases/:database/locations', async (req, res) => {
       tableList = allTables.map(table => Object.values(table)[0]);
     }
 
-    // Use information_schema to find tables that contain a Location column (fast)
+    // Use information_schema to find tables that contain a Location column (case-insensitive)
     const [locTableRows] = await pool.execute(
-      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND COLUMN_NAME IN ('Location','location')`,
+      `SELECT TABLE_NAME, COLUMN_NAME 
+       FROM INFORMATION_SCHEMA.COLUMNS 
+       WHERE TABLE_SCHEMA = ? AND LOWER(COLUMN_NAME) = 'location'`,
       [dbName]
     );
-    let validTables = locTableRows.map((r) => r.TABLE_NAME);
+    const tableLocMap = locTableRows.reduce((acc, r) => {
+      acc[r.TABLE_NAME] = r.COLUMN_NAME; // preserve exact case of column name per table
+      return acc;
+    }, {});
+    let validTables = Object.keys(tableLocMap);
 
     // If specific tables were requested, intersect with valid tables
     if (tables) {
@@ -194,21 +200,19 @@ app.get('/api/databases/:database/locations', async (req, res) => {
 
     // Additional filtering for season-based databases
     if (database === 'seasonal_clean_data') {
-      // Only filter seasonal database for season-specific tables
       validTables = validTables.filter((t) => t.startsWith('cleaned_data_season_'));
     }
-    // For final_clean_data, show all tables that have Location column
 
     if (validTables.length === 0) {
       return res.json([]);
     }
 
-    // Build union query with proper MySQL syntax
-    const unionQueries = validTables.map(table => 
-      `(SELECT DISTINCT Location as name FROM \`${table}\` WHERE Location IS NOT NULL AND Location != '' LIMIT 100)`
-    );
+    // Build union query with schema-qualified tables and exact Location column per table
+    const unionQueries = validTables.map((table) => {
+      const col = tableLocMap[table];
+      return `(SELECT DISTINCT TRIM(\`${col}\`) AS name FROM \`${dbName}\`.\`${table}\` WHERE \`${col}\` IS NOT NULL AND \`${col}\` <> '')`;
+    });
 
-    // Proper MySQL UNION syntax with ORDER BY at the end
     const query = `SELECT DISTINCT name FROM (${unionQueries.join(' UNION ALL ')}) AS combined_locations ORDER BY name`;
 
     const [rows] = await pool.execute(query);
