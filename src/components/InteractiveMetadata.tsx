@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { 
   MapPin, 
   Database, 
@@ -213,81 +212,63 @@ const InteractiveMetadata = () => {
     }));
   };
 
-  const LocationCard = ({ location }: { location: typeof LOCATION_DATA[0] }) => (
-    <HoverCard>
-      <HoverCardTrigger asChild>
-        <Card className="cursor-pointer transition-all hover:shadow-md hover:border-primary/50">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <Badge variant="secondary" className="font-mono">{location.code}</Badge>
-              <Badge variant="outline" className="text-xs">{location.elev}m</Badge>
-            </div>
-            <h4 className="font-medium text-sm mb-1">{location.name}</h4>
-            <p className="text-xs text-muted-foreground">{location.region}</p>
-          </CardContent>
-        </Card>
-      </HoverCardTrigger>
-      <HoverCardContent className="w-80">
-        <div className="space-y-3">
-          <div>
-            <h4 className="font-semibold">{location.name}</h4>
-            <p className="text-sm text-muted-foreground">{location.code} - {location.region}</p>
+  const LocationCard = ({ location }: { location: typeof LOCATION_DATA[0] }) => {
+    const [showDetails, setShowDetails] = useState(false);
+    
+    return (
+      <Card className="cursor-pointer transition-all hover:shadow-md hover:border-primary/50">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <Badge variant="secondary" className="font-mono">{location.code}</Badge>
+            <Badge variant="outline" className="text-xs">{location.elev}m</Badge>
           </div>
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <span className="font-medium">Latitude:</span>
-              <p>{location.lat.toFixed(4)}°</p>
+          <h4 className="font-medium text-sm mb-1">{location.name}</h4>
+          <p className="text-xs text-muted-foreground">{location.region}</p>
+          
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="mt-2 p-0 h-auto text-xs"
+            onClick={() => setShowDetails(!showDetails)}
+          >
+            {showDetails ? 'Hide' : 'Show'} Details
+          </Button>
+          
+          {showDetails && (
+            <div className="mt-3 pt-3 border-t space-y-2">
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div>
+                  <span className="font-medium">Latitude:</span>
+                  <p>{location.lat.toFixed(4)}°</p>
+                </div>
+                <div>
+                  <span className="font-medium">Longitude:</span>
+                  <p>{location.lng.toFixed(4)}°</p>
+                </div>
+              </div>
             </div>
-            <div>
-              <span className="font-medium">Longitude:</span>
-              <p>{location.lng.toFixed(4)}°</p>
-            </div>
-            <div>
-              <span className="font-medium">Elevation:</span>
-              <p>{location.elev} meters</p>
-            </div>
-            <div>
-              <span className="font-medium">Region:</span>
-              <p>{location.region}</p>
-            </div>
-          </div>
-        </div>
-      </HoverCardContent>
-    </HoverCard>
-  );
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
 
   const AttributeItem = ({ attrName, tableId }: { attrName: string, tableId: string }) => {
     const attr = TABLE_DATA[tableId as keyof typeof TABLE_DATA]?.attributes[attrName];
     if (!attr) return null;
 
     return (
-      <HoverCard>
-        <HoverCardTrigger asChild>
-          <div className="p-3 bg-muted/30 rounded-lg cursor-pointer transition-all hover:bg-muted/50">
-            <div className="flex items-center justify-between mb-1">
-              <span className="font-medium text-sm">{attrName}</span>
-              <Badge variant="outline" className="text-xs">{attr.type}</Badge>
-            </div>
-            <p className="text-xs text-muted-foreground">{attr.desc}</p>
-          </div>
-        </HoverCardTrigger>
-        <HoverCardContent className="w-80">
-          <div className="space-y-2">
-            <h4 className="font-semibold">{attrName}</h4>
-            <p className="text-sm">{attr.desc}</p>
-            <div className="grid grid-cols-2 gap-4 pt-2">
-              <div>
-                <span className="text-xs font-medium text-muted-foreground">Unit</span>
-                <p className="text-sm">{attr.unit}</p>
-              </div>
-              <div>
-                <span className="text-xs font-medium text-muted-foreground">Measurement Type</span>
-                <p className="text-sm">{attr.type}</p>
-              </div>
-            </div>
-          </div>
-        </HoverCardContent>
-      </HoverCard>
+      <div className="p-3 bg-muted/30 rounded-lg">
+        <div className="flex items-center justify-between mb-1">
+          <span className="font-medium text-sm">{attrName}</span>
+          <Badge variant="outline" className="text-xs">{attr.type}</Badge>
+        </div>
+        <p className="text-xs text-muted-foreground mb-2">{attr.desc}</p>
+        <div className="flex gap-4 text-xs">
+          <span className="text-muted-foreground">Unit: <span className="font-mono">{attr.unit}</span></span>
+          <span className="text-muted-foreground">Type: <span className="font-mono">{attr.type}</span></span>
+        </div>
+      </div>
     );
   };
 
