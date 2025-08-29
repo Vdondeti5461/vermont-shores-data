@@ -14,6 +14,7 @@ interface NetworkSite {
   elevation: number;
   type: 'ranch_brook' | 'distributed' | 'database';
   status?: 'active' | 'maintenance';
+  region?: string;
 }
 
 interface InteractiveMapProps {
@@ -27,28 +28,28 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
 
   // Exact survey data with precise coordinates and elevations
   const defaultSites: NetworkSite[] = [
-    { id: 1, name: "Mansfield East Ranch Brook 1", shortName: "RB01", latitude: 44.5232, longitude: -72.8086, elevation: 1075, type: "ranch_brook", status: "active" },
-    { id: 2, name: "Mansfield East Ranch Brook 2", shortName: "RB02", latitude: 44.5178, longitude: -72.8104, elevation: 910, type: "ranch_brook", status: "active" },
-    { id: 3, name: "Mansfield East Ranch Brook 3", shortName: "RB03", latitude: 44.5148, longitude: -72.8091, elevation: 795, type: "ranch_brook", status: "active" },
-    { id: 4, name: "Mansfield East Ranch Brook 4", shortName: "RB04", latitude: 44.5110, longitude: -72.8028, elevation: 640, type: "ranch_brook", status: "active" },
-    { id: 5, name: "Mansfield East Ranch Brook 5", shortName: "RB05", latitude: 44.5045, longitude: -72.7995, elevation: 505, type: "ranch_brook", status: "active" },
-    { id: 6, name: "Mansfield East Ranch Brook 6", shortName: "RB06", latitude: 44.5037, longitude: -72.7835, elevation: 414, type: "ranch_brook", status: "active" },
-    { id: 7, name: "Mansfield East Ranch Brook 7", shortName: "RB07", latitude: 44.5153, longitude: -72.7851, elevation: 613, type: "ranch_brook", status: "active" },
-    { id: 8, name: "Mansfield East Ranch Brook 8", shortName: "RB08", latitude: 44.5095, longitude: -72.7021, elevation: 472, type: "ranch_brook", status: "active" },
-    { id: 9, name: "Mansfield East Ranch Brook 9", shortName: "RB09", latitude: 44.4891, longitude: -72.7929, elevation: 847, type: "ranch_brook", status: "active" },
-    { id: 10, name: "Mansfield East Ranch Brook 10", shortName: "RB10", latitude: 44.4951, longitude: -72.7864, elevation: 624, type: "ranch_brook", status: "active" },
-    { id: 11, name: "Mansfield East Ranch Brook 11", shortName: "RB11", latitude: 44.5055, longitude: -72.7714, elevation: 388, type: "ranch_brook", status: "active" },
-    { id: 12, name: "Mansfield East FEMC", shortName: "RB12", latitude: 44.5188, longitude: -72.7985, elevation: 884, type: "ranch_brook", status: "active" },
-    { id: 13, name: "Spear Street", shortName: "SPST", latitude: 44.4526, longitude: -73.1918, elevation: 87, type: "distributed", status: "active" },
-    { id: 14, name: "Sleepers R3/Main", shortName: "SR01", latitude: 44.4830, longitude: -72.1646, elevation: 553, type: "distributed", status: "active" },
-    { id: 15, name: "Sleepers W1/R11", shortName: "SR11", latitude: 44.4500, longitude: -72.0671, elevation: 225, type: "distributed", status: "active" },
-    { id: 16, name: "Sleepers R25", shortName: "SR25", latitude: 44.4768, longitude: -72.1258, elevation: 357, type: "distributed", status: "maintenance" },
-    { id: 17, name: "Jericho clearing", shortName: "JRCL", latitude: 44.4479, longitude: -73.0023, elevation: 199, type: "distributed", status: "active" },
-    { id: 18, name: "Jericho Forest", shortName: "JRFO", latitude: 44.4478, longitude: -73.0027, elevation: 196, type: "distributed", status: "active" },
-    { id: 19, name: "Mansfield West Proctor", shortName: "PROC", latitude: 44.5286, longitude: -72.8867, elevation: 418, type: "ranch_brook", status: "active" },
-    { id: 20, name: "Potash Brook", shortName: "PTSH", latitude: 44.4449, longitude: -73.2143, elevation: 45, type: "distributed", status: "active" },
-    { id: 21, name: "Mansfield SUMMIT", shortName: "SUMM", latitude: 44.5280, longitude: -72.8150, elevation: 1169, type: "ranch_brook", status: "active" },
-    { id: 22, name: "Mansfield West SCAN", shortName: "UNDR", latitude: 44.5351, longitude: -72.8346, elevation: 698, type: "ranch_brook", status: "maintenance" }
+    { id: 1, name: "Mansfield East Ranch Brook 1", shortName: "RB01", latitude: 44.5232, longitude: -72.8086, elevation: 1075, type: "ranch_brook", status: "active", region: "Mansfield East" },
+    { id: 2, name: "Mansfield East Ranch Brook 2", shortName: "RB02", latitude: 44.5178, longitude: -72.8104, elevation: 910, type: "ranch_brook", status: "active", region: "Mansfield East" },
+    { id: 3, name: "Mansfield East Ranch Brook 3", shortName: "RB03", latitude: 44.5148, longitude: -72.8091, elevation: 795, type: "ranch_brook", status: "active", region: "Mansfield East" },
+    { id: 4, name: "Mansfield East Ranch Brook 4", shortName: "RB04", latitude: 44.5110, longitude: -72.8028, elevation: 640, type: "ranch_brook", status: "active", region: "Mansfield East" },
+    { id: 5, name: "Mansfield East Ranch Brook 5", shortName: "RB05", latitude: 44.5045, longitude: -72.7995, elevation: 505, type: "ranch_brook", status: "active", region: "Mansfield East" },
+    { id: 6, name: "Mansfield East Ranch Brook 6", shortName: "RB06", latitude: 44.5037, longitude: -72.7835, elevation: 414, type: "ranch_brook", status: "active", region: "Mansfield East" },
+    { id: 7, name: "Mansfield East Ranch Brook 7", shortName: "RB07", latitude: 44.5153, longitude: -72.7851, elevation: 613, type: "ranch_brook", status: "active", region: "Mansfield East" },
+    { id: 8, name: "Mansfield East Ranch Brook 8", shortName: "RB08", latitude: 44.5095, longitude: -72.7021, elevation: 472, type: "ranch_brook", status: "active", region: "Mansfield East" },
+    { id: 9, name: "Mansfield East Ranch Brook 9", shortName: "RB09", latitude: 44.4891, longitude: -72.7929, elevation: 847, type: "ranch_brook", status: "active", region: "Mansfield East" },
+    { id: 10, name: "Mansfield East Ranch Brook 10", shortName: "RB10", latitude: 44.4951, longitude: -72.7864, elevation: 624, type: "ranch_brook", status: "active", region: "Mansfield East" },
+    { id: 11, name: "Mansfield East Ranch Brook 11", shortName: "RB11", latitude: 44.5055, longitude: -72.7714, elevation: 388, type: "ranch_brook", status: "active", region: "Mansfield East" },
+    { id: 12, name: "Mansfield East FEMC", shortName: "RB12", latitude: 44.5188, longitude: -72.7985, elevation: 884, type: "ranch_brook", status: "active", region: "Mansfield East" },
+    { id: 13, name: "Spear Street", shortName: "SPST", latitude: 44.4526, longitude: -73.1918, elevation: 87, type: "distributed", status: "active", region: "Urban" },
+    { id: 14, name: "Sleepers R3/Main", shortName: "SR01", latitude: 44.4830, longitude: -72.1646, elevation: 553, type: "distributed", status: "active", region: "Sleepers River" },
+    { id: 15, name: "Sleepers W1/R11", shortName: "SR11", latitude: 44.4500, longitude: -72.0671, elevation: 225, type: "distributed", status: "active", region: "Sleepers River" },
+    { id: 16, name: "Sleepers R25", shortName: "SR25", latitude: 44.4768, longitude: -72.1258, elevation: 357, type: "distributed", status: "maintenance", region: "Sleepers River" },
+    { id: 17, name: "Jericho clearing", shortName: "JRCL", latitude: 44.4479, longitude: -73.0023, elevation: 199, type: "distributed", status: "active", region: "Jericho" },
+    { id: 18, name: "Jericho Forest", shortName: "JRFO", latitude: 44.4478, longitude: -73.0027, elevation: 196, type: "distributed", status: "active", region: "Jericho" },
+    { id: 19, name: "Mansfield West Proctor", shortName: "PROC", latitude: 44.5286, longitude: -72.8867, elevation: 418, type: "ranch_brook", status: "active", region: "Mansfield West" },
+    { id: 20, name: "Potash Brook", shortName: "PTSH", latitude: 44.4449, longitude: -73.2143, elevation: 45, type: "distributed", status: "active", region: "Urban" },
+    { id: 21, name: "Mansfield SUMMIT", shortName: "SUMM", latitude: 44.5280, longitude: -72.8150, elevation: 1169, type: "ranch_brook", status: "active", region: "Mansfield West" },
+    { id: 22, name: "Mansfield West SCAN", shortName: "UNDR", latitude: 44.5351, longitude: -72.8346, elevation: 698, type: "ranch_brook", status: "maintenance", region: "Mansfield West" }
   ];
 
   const mapSites = sites.length > 0 ? sites : defaultSites;
@@ -96,17 +97,31 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
           });
         };
 
-        // Add site markers - using theme colors that match network overview
+        // Add site markers - using region-based colors to match network overview
         mapSites.forEach((site) => {
-          let color = 'hsl(var(--primary))'; // Blue for distributed sites
-          let typeLabel = 'Distributed';
+          let color = 'hsl(var(--primary))'; // Default blue
+          let typeLabel = site.region || 'Regional';
           
-          if (site.type === 'ranch_brook') {
-            color = 'hsl(var(--destructive))'; // Red for ranch brook sites
-            typeLabel = 'Ranch Brook';
-          } else if (site.type === 'database') {
-            color = 'hsl(var(--secondary))'; // Green for database stations
-            typeLabel = 'Database Station';
+          // Color by region to match network overview differentiation
+          switch(site.region) {
+            case 'Mansfield East':
+              color = 'hsl(var(--destructive))'; // Red for Mansfield East (Ranch Brook)
+              break;
+            case 'Mansfield West':
+              color = 'hsl(var(--warning))'; // Yellow/orange for Mansfield West (Summit area)
+              break;
+            case 'Sleepers River':
+              color = 'hsl(var(--primary))'; // Blue for Sleepers River
+              break;
+            case 'Jericho':
+              color = 'hsl(var(--secondary))'; // Green for Jericho
+              break;
+            case 'Urban':
+              color = 'hsl(var(--accent))'; // Purple for Urban sites
+              break;
+            default:
+              color = 'hsl(var(--muted-foreground))'; // Gray for undefined
+              break;
           }
           
           const status = site.status || 'active';
@@ -131,7 +146,7 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
                   <strong>Coordinates:</strong> ${site.latitude.toFixed(4)}°N, ${site.longitude.toFixed(4)}°W
                 </p>
                 <p style="margin: 0 0 4px 0; font-size: 12px;">
-                  <strong>Type:</strong> ${typeLabel}
+                  <strong>Region:</strong> ${typeLabel}
                 </p>
                 <p style="margin: 0; font-size: 12px;">
                   <strong>Status:</strong> <span style="color: ${statusColor};">${statusLabel}</span>
@@ -205,13 +220,19 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
           </div>
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="text-destructive border-destructive/30">
-              {mapSites.filter(s => s.type === 'ranch_brook').length} Mansfield
-            </Badge>
-            <Badge variant="outline" className="text-primary border-primary/30">
-              {mapSites.filter(s => s.type === 'distributed').length} Regional
+              {mapSites.filter(s => s.region === 'Mansfield East').length} Mansfield East
             </Badge>
             <Badge variant="outline" className="text-warning border-warning/30">
-              {mapSites.filter(s => s.status === 'maintenance').length} Maintenance
+              {mapSites.filter(s => s.region === 'Mansfield West').length} Mansfield West
+            </Badge>
+            <Badge variant="outline" className="text-primary border-primary/30">
+              {mapSites.filter(s => s.region === 'Sleepers River').length} Sleepers River
+            </Badge>
+            <Badge variant="outline" className="text-secondary border-secondary/30">
+              {mapSites.filter(s => s.region === 'Jericho').length} Jericho
+            </Badge>
+            <Badge variant="outline" className="text-accent border-accent/30">
+              {mapSites.filter(s => s.region === 'Urban').length} Urban
             </Badge>
           </div>
         </div>
@@ -259,14 +280,26 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-xs">
                 <div className="w-3 h-3 rounded-full bg-destructive border border-white"></div>
-                <span>Mansfield Sites ({mapSites.filter(s => s.type === 'ranch_brook').length})</span>
+                <span>Mansfield East ({mapSites.filter(s => s.region === 'Mansfield East').length})</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <div className="w-3 h-3 rounded-full bg-warning border border-white"></div>
+                <span>Mansfield West ({mapSites.filter(s => s.region === 'Mansfield West').length})</span>
               </div>
               <div className="flex items-center gap-2 text-xs">
                 <div className="w-3 h-3 rounded-full bg-primary border border-white"></div>
-                <span>Regional Sites ({mapSites.filter(s => s.type === 'distributed').length})</span>
+                <span>Sleepers River ({mapSites.filter(s => s.region === 'Sleepers River').length})</span>
               </div>
               <div className="flex items-center gap-2 text-xs">
-                <div className="w-3 h-3 rounded-full bg-warning border border-white opacity-60"></div>
+                <div className="w-3 h-3 rounded-full bg-secondary border border-white"></div>
+                <span>Jericho ({mapSites.filter(s => s.region === 'Jericho').length})</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <div className="w-3 h-3 rounded-full bg-accent border border-white"></div>
+                <span>Urban ({mapSites.filter(s => s.region === 'Urban').length})</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs mt-2 pt-2 border-t border-muted">
+                <div className="w-3 h-3 rounded-full bg-muted border border-white opacity-60"></div>
                 <span>Under Maintenance ({mapSites.filter(s => s.status === 'maintenance').length})</span>
               </div>
             </div>
