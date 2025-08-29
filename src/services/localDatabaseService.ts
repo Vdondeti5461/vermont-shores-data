@@ -74,6 +74,9 @@ export interface DatabaseInfo {
   id: string;
   name: string;
   database_name: string;
+  originalKey?: string;
+  category?: string;
+  order?: number;
 }
 
 export interface SeasonInfo {
@@ -102,16 +105,60 @@ export class LocalDatabaseService {
     PRECIPITATION: 'Precipitation'
   } as const;
 
+  // Database mapping configuration - only show 4 main databases
+  static readonly DATABASE_MAPPING = {
+    'crrels2s_main': {
+      id: 'raw_data',
+      name: 'Raw Data',
+      displayName: 'Raw Environmental Data',
+      category: 'raw',
+      order: 1
+    },
+    'crrels2s_processeddata': {
+      id: 'initial_clean',
+      name: 'Initial Clean Data',
+      displayName: 'Initially Processed Data',
+      category: 'processed',
+      order: 2
+    },
+    'crrels2s_vtclimaterepository_processed': {
+      id: 'final_clean',
+      name: 'Final Clean Data', 
+      displayName: 'Final Processed Data',
+      category: 'clean',
+      order: 3
+    },
+    'crrels2s_cleaned_data_seasons': {
+      id: 'season_data',
+      name: 'Season Data',
+      displayName: 'Seasonal Analysis Data',
+      category: 'seasonal',
+      order: 4
+    }
+  };
+
   static async getDatabasesInfo(): Promise<DatabasesResponse> {
     try {
       const response = await fetch(`${this.baseUrl}/api/databases`);
       if (!response.ok) throw new Error('Failed to fetch databases info');
       const data = await response.json();
-      const databases: DatabaseInfo[] = (data.databases || []).map((d: any) => ({
-        id: d.key,
-        name: d.displayName || d.key,
-        database_name: d.name,
-      }));
+      
+      // Filter and map only the databases we want to expose
+      const databases: DatabaseInfo[] = (data.databases || [])
+        .filter((d: any) => this.DATABASE_MAPPING[d.key as keyof typeof this.DATABASE_MAPPING])
+        .map((d: any) => {
+          const mapping = this.DATABASE_MAPPING[d.key as keyof typeof this.DATABASE_MAPPING];
+          return {
+            id: mapping.id,
+            name: mapping.displayName,
+            database_name: d.name,
+            originalKey: d.key,
+            category: mapping.category,
+            order: mapping.order
+          };
+        })
+        .sort((a: any, b: any) => a.order - b.order);
+      
       const seasons: SeasonInfo[] = data.seasons || [];
       const tables: string[] = data.tables || [];
       return { databases, seasons, tables };
@@ -121,9 +168,17 @@ export class LocalDatabaseService {
     }
   }
 
+  static getOriginalDatabaseKey(mappedId: string): string {
+    const mapping = Object.values(this.DATABASE_MAPPING).find(m => m.id === mappedId);
+    return mapping ? Object.keys(this.DATABASE_MAPPING).find(key => 
+      this.DATABASE_MAPPING[key as keyof typeof this.DATABASE_MAPPING] === mapping
+    ) || mappedId : mappedId;
+  }
+
   static async getLocations(database: string = 'raw_data'): Promise<LocationData[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/databases/${database}/locations`);
+      const originalKey = this.getOriginalDatabaseKey(database);
+      const response = await fetch(`${this.baseUrl}/api/databases/${originalKey}/locations`);
       if (!response.ok) throw new Error('Failed to fetch locations');
       const data = await response.json();
       return data;
@@ -135,7 +190,8 @@ export class LocalDatabaseService {
 
   static async getTables(database: string = 'raw_data'): Promise<any[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/databases/${database}/tables`);
+      const originalKey = this.getOriginalDatabaseKey(database);
+      const response = await fetch(`${this.baseUrl}/api/databases/${originalKey}/tables`);
       if (!response.ok) throw new Error('Failed to fetch tables');
       const data = await response.json();
       return data.tables || [];
@@ -162,7 +218,8 @@ export class LocalDatabaseService {
       if (season) params.append('season', season);
       params.append('limit', limit.toString());
 
-      const response = await fetch(`${this.baseUrl}/api/databases/${database}/data/${table}?${params}`);
+      const originalKey = this.getOriginalDatabaseKey(database);
+      const response = await fetch(`${this.baseUrl}/api/databases/${originalKey}/data/${table}?${params}`);
       if (!response.ok) throw new Error(`Failed to fetch ${table} data`);
       const data = await response.json();
       return data;
@@ -174,7 +231,8 @@ export class LocalDatabaseService {
 
   static async getTableMetadata(table: string, database: string = 'raw_data'): Promise<TableMetadata | null> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/databases/${database}/tables/${table}/attributes`);
+      const originalKey = this.getOriginalDatabaseKey(database);
+      const response = await fetch(`${this.baseUrl}/api/databases/${originalKey}/tables/${table}/attributes`);
       if (!response.ok) throw new Error(`Failed to fetch ${table} metadata`);
       const data = await response.json();
       const columns = (data.attributes || []).map((col: any) => ({
@@ -239,7 +297,8 @@ export class LocalDatabaseService {
       if (season) params.append('season', season);
       if (columns && columns.length > 0) params.append('attributes', columns.join(','));
 
-      const response = await fetch(`${this.baseUrl}/api/databases/${database}/download/${table}?${params}`);
+      const originalKey = this.getOriginalDatabaseKey(database);
+      const response = await fetch(`${this.baseUrl}/api/databases/${originalKey}/download/${table}?${params}`);
       if (!response.ok) throw new Error(`Failed to download ${table} data`);
       
       const blob = await response.blob();

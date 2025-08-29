@@ -19,20 +19,21 @@ const DatabaseSelector: React.FC<DatabaseSelectorProps> = ({
 }) => {
   const getDatabaseBadgeVariant = (databaseId: string) => {
     switch (databaseId) {
-      case 'processed_data': return 'default';
-      case 'cleaned_data': return 'secondary';
-      case 'processed_clean': return 'outline';
+      case 'raw_data': return 'destructive';
+      case 'initial_clean': return 'default';
+      case 'final_clean': return 'secondary';
+      case 'season_data': return 'outline';
       default: return 'outline';
     }
   };
 
   const getDatabaseLabel = (databaseId: string) => {
     switch (databaseId) {
-      case 'processed_data': return 'High Quality';
-      case 'cleaned_data': return 'Cleaned';
-      case 'processed_clean': return 'Enhanced';
-      case 'main_data': return 'Core Data';
-      default: return 'Raw Data';
+      case 'raw_data': return 'Raw Data';
+      case 'initial_clean': return 'Initial Clean';
+      case 'final_clean': return 'Final Clean';
+      case 'season_data': return 'Seasonal';
+      default: return 'Data';
     }
   };
 
