@@ -7,12 +7,10 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// CORS configuration - Allow production domains
+// CORS configuration
 app.use(cors({
-  origin: ['https://www.uvm.edu', 'https://vdondeti.w3.uvm.edu', 'http://localhost:5173', 'http://localhost:5174'],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  origin: ['https://www.uvm.edu', 'https://vdondeti.w3.uvm.edu', 'http://localhost:5173'],
+  credentials: true
 }));
 
 app.use(express.json());

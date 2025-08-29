@@ -19,8 +19,8 @@ export const getApiBaseUrl = (): string => {
     return 'http://localhost:3001';
   }
 
-  // 4) Production default: use dedicated API host
-  return 'https://vdondeti.w3.uvm.edu';
+  // 4) Production default: same-origin (expects web server to reverse-proxy /api to backend)
+  return w ? w.location.origin : '';
 };
 
 export const API_BASE_URL = getApiBaseUrl();
