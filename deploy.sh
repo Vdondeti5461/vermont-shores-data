@@ -6,8 +6,20 @@ cd ~/site-src
 
 # Pull latest changes from GitHub
 echo "🔄 Pulling latest changes from GitHub..."
-git config pull.rebase true
-git pull origin main
+# Always fetch latest and force-sync local tree to remote to avoid divergence prompts
+git fetch origin main
+
+# Safety: save current local state (branch + stash) before resetting
+_git_ts=$(date +%F-%H%M%S)
+_backup_branch="local-backup-${_git_ts}"
+(git branch "${_backup_branch}" >/dev/null 2>&1 && echo "🛟 Created backup branch: ${_backup_branch}") || true
+(git stash push -u -m "deploy backup ${_git_ts}" >/dev/null 2>&1 && echo "🧳 Stashed any uncommitted changes (if any)") || true
+
+# Force align working tree to remote main
+echo "📥 Resetting working tree to origin/main..."
+git reset --hard origin/main
+# Clean untracked files that may interfere with builds
+git clean -fd
 
 # Check if package.json changed and install dependencies if needed
 if git diff HEAD~1 HEAD --name-only | grep -q package.json 2>/dev/null || [ ! -d "node_modules" ]; then
