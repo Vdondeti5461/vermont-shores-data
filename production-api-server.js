@@ -143,7 +143,8 @@ app.get('/api/databases/:database/locations', async (req, res) => {
     const { database } = req.params;
     const dbName = getDatabaseName(database);
 
-    let locations = [];
+    let allLocations = new Set();
+    let locationsList = [];
 
     try {
       const [locTableRows] = await pool.execute(
@@ -153,23 +154,30 @@ app.get('/api/databases/:database/locations', async (req, res) => {
       );
       const tablesWithLocation = locTableRows.map((r) => r.TABLE_NAME);
 
+      // Get locations from ALL tables, not just the first one
       for (const tableName of tablesWithLocation) {
         try {
           const [rows] = await pool.execute(
             `SELECT DISTINCT \`Location\` AS name FROM \`${dbName}\`.\`${tableName}\` 
              WHERE \`Location\` IS NOT NULL AND \`Location\` <> '' LIMIT 100`
           );
-          const tableLocations = rows.map((row, i) => ({
-            id: i + 1,
-            name: row.name,
-            displayName: row.name,
-            latitude: 44.26 + (Math.random() - 0.5) * 0.1,
-            longitude: -72.58 + (Math.random() - 0.5) * 0.1,
-            elevation: 300 + Math.random() * 1000
-          }));
-          locations = [...locations, ...tableLocations];
-          if (locations.length > 0) break;
-        } catch (_) {
+          
+          // Add all unique locations
+          rows.forEach(row => {
+            if (!allLocations.has(row.name)) {
+              allLocations.add(row.name);
+              locationsList.push({
+                id: locationsList.length + 1,
+                name: row.name,
+                displayName: row.name,
+                latitude: 44.26 + (Math.random() - 0.5) * 0.1,
+                longitude: -72.58 + (Math.random() - 0.5) * 0.1,
+                elevation: 300 + Math.random() * 1000
+              });
+            }
+          });
+        } catch (tableErr) {
+          console.error(`Error querying table ${tableName}:`, tableErr.message);
           continue;
         }
       }
@@ -177,13 +185,14 @@ app.get('/api/databases/:database/locations', async (req, res) => {
       console.error('Error finding locations:', err);
     }
 
-    if (locations.length === 0) {
-      locations = [
+    if (locationsList.length === 0) {
+      locationsList = [
         { id: 1, name: 'Station_001', displayName: 'Station 001', latitude: 44.26, longitude: -72.58, elevation: 400 }
       ];
     }
 
-    res.json(locations);
+    console.log(`Found ${locationsList.length} unique locations for database ${database}`);
+    res.json(locationsList);
   } catch (error) {
     console.error('Error fetching locations:', error);
     res.status(500).json({ error: error.message });
