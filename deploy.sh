@@ -6,8 +6,13 @@ cd ~/site-src
 
 # Pull latest changes from GitHub
 echo "🔄 Pulling latest changes from GitHub..."
-# Always fetch latest and force-sync local tree to remote to avoid divergence prompts
-git fetch origin main
+# Always fetch latest and force-update remote tracking branch to handle divergence
+echo "📡 Fetching origin/main..."
+if ! git fetch origin +main:refs/remotes/origin/main; then
+  echo "⚠️ Fetch encountered an issue. Setting pull strategy to merge and retrying..."
+  git config --global pull.rebase false || true
+  git fetch origin +main:refs/remotes/origin/main
+fi
 
 # Safety: save current local state (branch + stash) before resetting
 _git_ts=$(date +%F-%H%M%S)
