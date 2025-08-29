@@ -154,14 +154,23 @@ const MultiDatabaseDownload = () => {
   const fetchLocations = async (database: string, table?: string) => {
     try {
       if (table) {
-        // Use direct table-specific endpoint for exact locations from that table
-        const url = `${API_BASE_URL}/api/databases/${database}/tables/${table}/locations`;
+        // Get distinct values from the Location attribute in the specific table
+        const url = `${API_BASE_URL}/api/databases/${database}/tables/${table}/attributes/Location/distinct`;
         const response = await fetch(url);
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         const data = await response.json();
-        setLocations(Array.isArray(data) ? data : data.locations || []);
+        // Convert distinct values to location objects for consistent interface
+        const locationObjects = (data.values || data || []).map((value: string) => ({
+          id: value,
+          name: value,
+          displayName: value,
+          latitude: 0,
+          longitude: 0,
+          elevation: 0
+        }));
+        setLocations(locationObjects);
       } else {
         // General locations endpoint
         const url = `${API_BASE_URL}/api/databases/${database}/locations`;
