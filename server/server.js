@@ -12,12 +12,12 @@ app.use(express.json());
 // Database connection pool (no specific database)
 let pool;
 
-// Known database configurations - Updated for web5.uvm.edu
+// Known database configurations - Updated based on actual webdb5.uvm.edu schemas
 const DATABASES = {
-  'raw_data': 'crrels2s_main',
-  'initial_clean_data': 'crrels2s_processeddata',
-  'final_clean_data': 'crrels2s_processeddata',
-  'seasonal_clean_data': 'crrels2s_cleaned_data_seasons'
+  'raw_data': 'CRRELS2S_MAIN',
+  'initial_clean_data': 'CRRELS2S_VTClimateRepository_Processed', 
+  'final_clean_data': 'CRRELS2S_ProcessedData',
+  'seasonal_clean_data': 'CRRELS2S_cleaned_data_seasons'
 };
 
 // Location metadata with complete information
