@@ -396,12 +396,13 @@ const MultiDatabaseDownload = () => {
                         {startDate ? format(startDate, "PPP") : "Select start date"}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
+                    <PopoverContent className="w-auto p-0 z-50" align="start">
                       <Calendar
                         mode="single"
                         selected={startDate}
                         onSelect={setStartDate}
                         initialFocus
+                        className="p-3 pointer-events-auto"
                       />
                     </PopoverContent>
                   </Popover>
@@ -415,12 +416,13 @@ const MultiDatabaseDownload = () => {
                         {endDate ? format(endDate, "PPP") : "Select end date"}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
+                    <PopoverContent className="w-auto p-0 z-50" align="start">
                       <Calendar
                         mode="single"
                         selected={endDate}
                         onSelect={setEndDate}
                         initialFocus
+                        className="p-3 pointer-events-auto"
                       />
                     </PopoverContent>
                   </Popover>

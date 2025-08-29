@@ -68,8 +68,17 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
       });
 
       if (mapRef.current && !mapInstanceRef.current) {
-        // Initialize map centered on Vermont
-        const map = L.map(mapRef.current).setView([44.5588, -72.5778], 9);
+        // Initialize map centered on Vermont with mobile-friendly settings
+        const map = L.map(mapRef.current, {
+          scrollWheelZoom: false,
+          tap: true,
+        }).setView([44.5588, -72.5778], 9);
+
+        // Ensure proper sizing on iOS Safari and after layout changes
+        setTimeout(() => map.invalidateSize(), 0);
+        const handleResize = () => map.invalidateSize();
+        window.addEventListener('resize', handleResize);
+        map.on('popupopen', () => setTimeout(() => map.invalidateSize(), 0));
 
         // Add OpenStreetMap tiles
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -217,7 +226,7 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
               Real-time visualization of {mapSites.length} monitoring stations across Vermont
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap justify-end text-xs sm:text-sm">
             <Badge variant="outline" className="text-destructive border-destructive/30">
               {mapSites.filter(s => s.elevation >= 1000).length} High Elevation (1000m+)
             </Badge>
@@ -241,8 +250,8 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
           {/* Map Container */}
           <div 
             ref={mapRef} 
-            className="w-full h-[600px] rounded-lg border overflow-hidden"
-            style={{ minHeight: '600px' }}
+            className="w-full rounded-lg border overflow-hidden md:h-[600px]"
+            style={{ height: 'calc(var(--vh, 1vh) * 60)', minHeight: 320, maxHeight: 600 }}
           />
           
           {/* Map Controls */}
@@ -251,7 +260,7 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
               variant="outline"
               size="sm"
               onClick={handleZoomIn}
-              className="bg-white/90 backdrop-blur-sm"
+              className="bg-white/90 backdrop-blur-sm min-h-[44px] min-w-[44px]"
             >
               <ZoomIn className="h-4 w-4" />
             </Button>
@@ -259,7 +268,7 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
               variant="outline"
               size="sm"
               onClick={handleZoomOut}
-              className="bg-white/90 backdrop-blur-sm"
+              className="bg-white/90 backdrop-blur-sm min-h-[44px] min-w-[44px]"
             >
               <ZoomOut className="h-4 w-4" />
             </Button>
@@ -267,7 +276,7 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
               variant="outline"
               size="sm"
               onClick={handleFitBounds}
-              className="bg-white/90 backdrop-blur-sm"
+              className="bg-white/90 backdrop-blur-sm min-h-[44px] min-w-[44px]"
             >
               <Maximize2 className="h-4 w-4" />
             </Button>

@@ -114,7 +114,7 @@ const DataDownloadPage = () => {
           </div>
 
           <Tabs defaultValue="browse" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
               <TabsTrigger value="browse">Browse & Download</TabsTrigger>
               <TabsTrigger value="api">API Documentation</TabsTrigger>
               <TabsTrigger value="bulk">Bulk Downloads</TabsTrigger>

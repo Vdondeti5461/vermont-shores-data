@@ -523,7 +523,7 @@ const DynamicDataBrowser = () => {
     <div className="space-y-6">
 
       <Tabs defaultValue="select" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
           <TabsTrigger value="select">Data Selection</TabsTrigger>
           <TabsTrigger value="filters">Filters & Attributes</TabsTrigger>
           <TabsTrigger value="metadata">Metadata</TabsTrigger>
@@ -773,12 +773,13 @@ const DynamicDataBrowser = () => {
                         {startDate ? format(startDate, "PPP") : "Select start date"}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
+                    <PopoverContent className="w-auto p-0 z-50" align="start">
                       <Calendar
                         mode="single"
                         selected={startDate}
                         onSelect={setStartDate}
                         initialFocus
+                        className="p-3 pointer-events-auto"
                       />
                     </PopoverContent>
                   </Popover>
@@ -792,12 +793,13 @@ const DynamicDataBrowser = () => {
                         {endDate ? format(endDate, "PPP") : "Select end date"}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
+                    <PopoverContent className="w-auto p-0 z-50" align="start">
                       <Calendar
                         mode="single"
                         selected={endDate}
                         onSelect={setEndDate}
                         initialFocus
+                        className="p-3 pointer-events-auto"
                       />
                     </PopoverContent>
                   </Popover>
