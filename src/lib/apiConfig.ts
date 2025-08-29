@@ -19,19 +19,7 @@ export const getApiBaseUrl = (): string => {
     return 'http://localhost:3001';
   }
 
-  // 4) UVM server configuration - adjust this to your backend server URL
-  if (w && w.location.hostname.includes('uvm.edu')) {
-    // Option A: If you have backend running on same server with different port
-    return `https://${w.location.hostname}:3001`;
-    
-    // Option B: If you have backend on different server, uncomment and update:
-    // return 'https://your-backend-server.uvm.edu';
-    
-    // Option C: If using reverse proxy, uncomment:
-    // return w.location.origin;
-  }
-
-  // 5) Default fallback
+  // 4) Production default: same-origin (expects web server to reverse-proxy /api to backend)
   return w ? w.location.origin : '';
 };
 
