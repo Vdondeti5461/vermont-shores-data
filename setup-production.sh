@@ -19,11 +19,26 @@ fi
 echo "✅ Environment configuration:"
 grep -E "^(MYSQL_HOST|MYSQL_USER|PORT)" .env || echo "⚠️  Environment variables not found"
 
+# Ensure dependencies and export env for Node
+# Install node_modules if missing
+if [ ! -d node_modules ]; then
+  echo "📦 Installing dependencies (node_modules missing)..."
+  npm ci --omit=dev || npm i --omit=dev
+fi
+
+# Ensure required packages are present
+npm ls --depth=0 dotenv >/dev/null 2>&1 || { echo "📦 Installing dotenv..."; npm i dotenv --omit=dev -y >/dev/null 2>&1; }
+npm ls --depth=0 mysql2 >/dev/null 2>&1 || { echo "📦 Installing mysql2..."; npm i mysql2 --omit=dev -y >/dev/null 2>&1; }
+
+# Export .env to current shell so node -e can read process.env
+set -a
+. ./.env
+set +a
+
 # Test database connection
 echo "🔍 Testing database connection..."
 node -e "
 const mysql = require('mysql2/promise');
-require('dotenv').config();
 
 async function testConnection() {
   try {
@@ -35,7 +50,7 @@ async function testConnection() {
       ssl: { rejectUnauthorized: false }
     });
     
-    const [rows] = await connection.execute('SHOW DATABASES LIKE \"CRRELS2S_%\"');
+    const [rows] = await connection.execute('SHOW DATABASES LIKE \\\"CRRELS2S_%\\\"');
     console.log('✅ Database connection successful');
     console.log('📊 Available CRREL databases:', rows.length);
     await connection.end();
