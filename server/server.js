@@ -12,10 +12,10 @@ app.use(express.json());
 // Database connection pool (no specific database)
 let pool;
 
-// Known database configurations - Updated based on actual webdb5.uvm.edu schemas
+// Known database configurations - Your original working mapping
 const DATABASES = {
-  'raw_data': 'CRRELS2S_MAIN',
-  'initial_clean_data': 'CRRELS2S_VTClimateRepository_Processed', 
+  'raw_data': 'CRRELS2S_VTClimateRepository',
+  'initial_clean_data': 'CRRELS2S_VTClimateRepository_Processed',
   'final_clean_data': 'CRRELS2S_ProcessedData',
   'seasonal_clean_data': 'CRRELS2S_cleaned_data_seasons'
 };
@@ -130,6 +130,9 @@ const TABLE_METADATA = {
 async function connectDB() {
   try {
     // Create pool without specifying database for dynamic switching
+    // Add SSL for production webdb5.uvm.edu, keep simple for localhost
+    const isProduction = process.env.MYSQL_HOST === 'webdb5.uvm.edu';
+    
     pool = mysql.createPool({
       host: process.env.MYSQL_HOST,
       user: process.env.MYSQL_USER,
@@ -139,7 +142,7 @@ async function connectDB() {
       connectionLimit: 10,
       queueLimit: 0,
       multipleStatements: false,
-      ssl: { rejectUnauthorized: false } // Handle SSL without CA verification
+      ssl: isProduction ? { rejectUnauthorized: false } : undefined
     });
     
     // Test connection
@@ -482,6 +485,7 @@ app.get('/api/metadata/:table', async (req, res) => {
       return res.status(400).json({ error: 'Invalid table name' });
     }
     
+    // Use INFORMATION_SCHEMA instead of relying on env.MYSQL_DATABASE
     const query = `
       SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE, COLUMN_DEFAULT, COLUMN_COMMENT
       FROM INFORMATION_SCHEMA.COLUMNS
@@ -489,7 +493,9 @@ app.get('/api/metadata/:table', async (req, res) => {
       ORDER BY ORDINAL_POSITION
     `;
     
-    const [columns] = await pool.execute(query, [process.env.MYSQL_DATABASE, table]);
+    // Use raw_data as default schema for metadata lookup
+    const schema = DATABASES['raw_data'];
+    const [columns] = await pool.execute(query, [schema, table]);
     
     res.json({
       table_name: table,
@@ -627,7 +633,7 @@ app.get('/api/databases/:database/download/:table', async (req, res) => {
     const { location, start_date, end_date, attributes } = req.query;
     const { connection, databaseName } = await getConnectionWithDB(database);
 
-    // Discover actual column names (preserve case) and identify TIMESTAMP/Location columns  
+    // Discover actual column names (preserve case) and identify TIMESTAMP/Location columns using INFORMATION_SCHEMA
     const [colRows] = await connection.execute(
       `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? ORDER BY ORDINAL_POSITION`,
       [databaseName, table]
@@ -890,7 +896,7 @@ app.get('/health', async (req, res) => {
     res.json({ 
       status: 'healthy', 
       database: 'connected',
-      database_name: process.env.MYSQL_DATABASE,
+      host: process.env.MYSQL_HOST,
       timestamp: new Date().toISOString()
     });
   } catch (error) {
@@ -908,8 +914,9 @@ async function startServer() {
     await connectDB();
     const PORT = process.env.PORT || 3001;
     app.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
-      console.log(`📊 Database: ${process.env.MYSQL_DATABASE}`);
+      console.log(`🚀 Summit2Shore API server running on port ${PORT}`);
+      console.log(`📊 Health check: http://localhost:${PORT}/health`);
+      console.log(`🔗 API endpoints: http://localhost:${PORT}/api/*`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);
