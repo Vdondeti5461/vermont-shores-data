@@ -52,6 +52,7 @@ const LOCATION_METADATA = {
   'RB11': { name: 'Mansfield East Ranch Brook 11', latitude: 44.2679, longitude: -72.8021, elevation: 1000 },
   'RB12': { name: 'Mansfield East FEMC', latitude: 44.2685, longitude: -72.8015, elevation: 980 },
   'SPER': { name: 'Spear Street', latitude: 44.4759, longitude: -73.1959, elevation: 120 },
+  'SPST': { name: 'Spear Street', latitude: 44.4759, longitude: -73.1959, elevation: 120 },
   'SR01': { name: 'Sleepers R3/Main', latitude: 44.2891, longitude: -72.8211, elevation: 900 },
   'SR11': { name: 'Sleepers W1/R11', latitude: 44.2885, longitude: -72.8205, elevation: 920 },
   'SR25': { name: 'Sleepers R25', latitude: 44.2879, longitude: -72.8199, elevation: 940 },
@@ -180,16 +181,36 @@ app.get('/api/databases/:database/locations', async (req, res) => {
     }
 
     // Use information_schema to find tables that contain a Location column (case-insensitive)
-    const [locTableRows] = await pool.execute(
+    const [locCols] = await pool.execute(
       `SELECT TABLE_NAME, COLUMN_NAME 
        FROM INFORMATION_SCHEMA.COLUMNS 
-       WHERE TABLE_SCHEMA = ? AND LOWER(COLUMN_NAME) = 'location'`,
+       WHERE TABLE_SCHEMA = ? AND (
+         LOWER(COLUMN_NAME) = 'location' OR
+         LOWER(COLUMN_NAME) LIKE '%location%' OR
+         LOWER(COLUMN_NAME) IN ('site','sitename','site_code','station','stationname')
+       )`,
       [dbName]
     );
-    const tableLocMap = locTableRows.reduce((acc, r) => {
-      acc[r.TABLE_NAME] = r.COLUMN_NAME; // preserve exact case of column name per table
-      return acc;
-    }, {});
+    // Build best location column per table using a heuristic
+    const candidates = new Map();
+    for (const r of locCols) {
+      const arr = candidates.get(r.TABLE_NAME) || [];
+      arr.push(r.COLUMN_NAME);
+      candidates.set(r.TABLE_NAME, arr);
+    }
+    function scoreCol(name) {
+      const n = String(name).toLowerCase();
+      if (n === 'location') return 100;
+      if (n.endsWith('location') || n.includes('location')) return 90;
+      if (n === 'site' || n === 'sitename' || n === 'site_code') return 80;
+      if (n === 'station' || n === 'stationname') return 70;
+      return 0;
+    }
+    const tableLocMap = {};
+    for (const [table, cols] of candidates.entries()) {
+      cols.sort((a, b) => scoreCol(b) - scoreCol(a));
+      tableLocMap[table] = cols[0];
+    }
     let validTables = Object.keys(tableLocMap);
 
     // If specific tables were requested, intersect with valid tables
@@ -217,20 +238,34 @@ app.get('/api/databases/:database/locations', async (req, res) => {
 
     const [rows] = await pool.execute(query);
 
-    // Use actual location metadata with proper coordinates
-    const locationsWithCoords = rows.map((loc, index) => {
-      const metadata = LOCATION_METADATA[loc.name];
-      return {
-        id: index + 1,
-        name: loc.name,
-        displayName: metadata ? metadata.name : loc.name,
-        latitude: metadata ? metadata.latitude : 44.0 + (index * 0.01),
-        longitude: metadata ? metadata.longitude : -72.5 - (index * 0.01),
-        elevation: metadata ? metadata.elevation : 1000 + (index * 10)
-      };
+    // Normalize aliases to canonical codes and attach metadata
+    const aliasMap = {
+      'Sleepers_R25': 'SR25',
+      'Sleepers_W1': 'SR11',
+      'SleepersMain_SR01': 'SR01',
+      'SPST': 'SPER'
+    };
+
+    const seen = new Set();
+    const result = [];
+    rows.forEach((loc, idx) => {
+      const raw = String(loc.name || '').trim();
+      if (!raw) return;
+      const code = aliasMap[raw] || raw;
+      if (seen.has(code)) return;
+      seen.add(code);
+      const meta = LOCATION_METADATA[code] || LOCATION_METADATA[raw];
+      result.push({
+        id: result.length + 1,
+        name: code,
+        displayName: meta?.name || raw,
+        latitude: meta?.latitude ?? 44.0 + (idx * 0.01),
+        longitude: meta?.longitude ?? -72.5 - (idx * 0.01),
+        elevation: meta?.elevation ?? 1000 + (idx * 10)
+      });
     });
 
-    res.json(locationsWithCoords);
+    res.json(result);
   } catch (error) {
     console.error('Error fetching locations:', error);
     res.status(500).json({ error: error.message });
