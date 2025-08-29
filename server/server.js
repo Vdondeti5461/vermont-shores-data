@@ -1,6 +1,11 @@
 const express = require('express');
 const mysql = require('mysql2/promise');
 const cors = require('cors');
+const path = require('path');
+
+// Import route handlers
+const bulkDownloadRoutes = require('./routes/bulkDownload');
+
 require('dotenv').config();
 
 const app = express();
@@ -887,6 +892,9 @@ function getAttributeCategory(attributeName) {
   if (lowerName === 'location') return 'Location';
   return 'Other';
 }
+
+// Routes
+app.use('/api/bulk-download', bulkDownloadRoutes);
 
 // Health check endpoint
 app.get('/health', async (req, res) => {

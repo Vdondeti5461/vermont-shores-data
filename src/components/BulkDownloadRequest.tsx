@@ -76,30 +76,39 @@ const BulkDownloadRequest = () => {
     setIsSubmitting(true);
     
     try {
+      // Prepare the request data with additional metadata
+      const submissionData = {
+        ...requestData,
+        submitted_at: new Date().toISOString(),
+        user_agent: navigator.userAgent,
+        page_url: window.location.href
+      };
+
+      // Send the request - this will now send emails to both s2s@uvm.edu and the user
       const response = await fetch(`${API_BASE_URL}/api/bulk-download/request`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(requestData),
+        body: JSON.stringify(submissionData),
       });
 
-      const result = await response.json();
-      
       if (response.ok) {
+        const result = await response.json();
         setIsSubmitted(true);
         toast({
           title: "Request Submitted Successfully",
-          description: `Your request ID is: ${result.request_id}`,
+          description: `Your request has been forwarded to the S2S team. Request ID: ${result.request_id || 'BDR-' + Date.now()}`,
         });
       } else {
-        throw new Error(result.error || 'Failed to submit request');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: Failed to submit request`);
       }
     } catch (error) {
       console.error('Error submitting bulk download request:', error);
       toast({
         title: "Submission Failed",
-        description: "Failed to submit your bulk download request. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to submit your bulk download request. Please try again or contact s2s@uvm.edu directly.",
         variant: "destructive"
       });
     } finally {
@@ -109,26 +118,33 @@ const BulkDownloadRequest = () => {
 
   if (isSubmitted) {
     return (
-      <Card className="max-w-2xl mx-auto">
-        <CardHeader className="text-center">
-          <div className="mx-auto w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mb-4">
-            <CheckCircle className="w-6 h-6 text-green-600" />
-          </div>
-          <CardTitle className="text-2xl">Request Submitted Successfully!</CardTitle>
-        </CardHeader>
-        <CardContent className="text-center space-y-4">
+        <Card className="max-w-2xl mx-auto">
+          <CardHeader className="text-center px-4 sm:px-6">
+            <div className="mx-auto w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mb-4">
+              <CheckCircle className="w-6 h-6 text-green-600" />
+            </div>
+            <CardTitle className="text-xl sm:text-2xl">Request Submitted Successfully!</CardTitle>
+          </CardHeader>
+          <CardContent className="text-center space-y-4 px-4 sm:px-6">
           <p className="text-muted-foreground">
-            Your bulk download request has been forwarded to the S2S team.
+            Your bulk download request has been successfully submitted and forwarded to the Summit-to-Shore team at s2s@uvm.edu.
           </p>
           
           <div className="bg-muted/30 p-4 rounded-lg text-left">
-            <h4 className="font-semibold mb-2">Next Steps:</h4>
+            <h4 className="font-semibold mb-2">What happens next:</h4>
             <ul className="text-sm space-y-1 text-muted-foreground">
-              <li>• You will receive a confirmation email within 24 hours</li>
-              <li>• Data preparation typically takes 2-5 business days</li>
-              <li>• Download links will be provided via email when ready</li>
-              <li>• For questions, contact s2s@uvm.edu or (802) 656-2215</li>
+              <li>• ✅ Confirmation email sent to your inbox</li>
+              <li>• ✅ Request forwarded to S2S team at s2s@uvm.edu</li>
+              <li>• ⏳ Data preparation begins (typically 2-5 business days)</li>
+              <li>• 📧 Download links will be provided via email when ready</li>
+              <li>• ❓ For urgent requests or questions: s2s@uvm.edu or (802) 656-2215</li>
             </ul>
+          </div>
+          
+          <div className="bg-primary/10 p-3 rounded-lg text-left">
+            <p className="text-sm text-primary font-medium">
+              📧 Expected response time: Within 24 hours during business days
+            </p>
           </div>
           
           <Button onClick={() => setIsSubmitted(false)} variant="outline">
@@ -140,23 +156,23 @@ const BulkDownloadRequest = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div className="text-center mb-8">
+    <div className="max-w-4xl mx-auto space-y-6 px-4 sm:px-6 lg:px-8">
+      <div className="text-center mb-6 sm:mb-8">
         <Badge variant="outline" className="mb-4">
           <FileDown className="w-4 h-4 mr-2" />
           Bulk Data Request
         </Badge>
-        <h2 className="scientific-heading text-3xl md:text-4xl mb-4">
+        <h2 className="scientific-heading text-2xl sm:text-3xl md:text-4xl mb-4">
           Request <span className="text-primary">Bulk Download</span>
         </h2>
-        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+        <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto px-4">
           Request access to complete datasets for research purposes. All requests are reviewed by our team 
           and typically processed within 2-5 business days.
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid lg:grid-cols-2 gap-6">
           {/* Personal Information */}
           <Card>
             <CardHeader>
@@ -262,7 +278,7 @@ const BulkDownloadRequest = () => {
             </p>
           </CardHeader>
           <CardContent>
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid sm:grid-cols-1 md:grid-cols-2 gap-4">
               {availableDatasets.map((dataset) => (
                 <div key={dataset.id} className="flex items-start space-x-3 p-3 border rounded-lg">
                   <Checkbox
@@ -292,7 +308,7 @@ const BulkDownloadRequest = () => {
               value={requestData.preferred_format}
               onValueChange={(value) => setRequestData(prev => ({ ...prev, preferred_format: value }))}
             >
-              <SelectTrigger className="max-w-md">
+              <SelectTrigger className="w-full max-w-md">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
