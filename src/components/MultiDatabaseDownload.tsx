@@ -153,11 +153,12 @@ const MultiDatabaseDownload = () => {
 
   const fetchLocations = async (database: string, table?: string) => {
     try {
-      // New API always returns all 22 locations regardless of database/table
-      const url = `${API_BASE_URL}/api/databases/${database}/locations`;
+      // Fetch locations for the selected table (ensures exact set, e.g., 22 for table1)
+      const params = table ? `?tables=${encodeURIComponent(table)}` : '';
+      const url = `${API_BASE_URL}/api/databases/${database}/locations${params}`;
       const response = await fetch(url);
       const data = await response.json();
-      setLocations(data);
+      setLocations(Array.isArray(data) ? data : data.locations || []);
     } catch (error) {
       console.error('Error fetching locations:', error);
       toast({
@@ -167,7 +168,6 @@ const MultiDatabaseDownload = () => {
       });
     }
   };
-
   const handleDownload = async () => {
     if (!selectedDatabase || !selectedTable) {
       toast({
