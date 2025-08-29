@@ -276,4 +276,24 @@ All colors MUST be HSL. Scientific, professional theme with UVM branding.
       font-size: 1.25rem;
     }
   }
+
+  /* Custom marker animations for interactive map */
+  @keyframes pulse {
+    0% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.1);
+      opacity: 0.7;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  .custom-marker.data-mismatch {
+    animation: pulse 2s infinite;
+  }
 }

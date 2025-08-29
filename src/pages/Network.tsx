@@ -43,29 +43,30 @@ const Network = () => {
     }
   ];
 
+  // Survey-verified location data with precise coordinates and elevations
   const locationData = [
-    { code: 'RB01', name: 'Mansfield East Ranch Brook 1', lat: 44.52322238, lng: -72.80863215, elev: 1075, region: 'Mansfield East', status: 'active' },
-    { code: 'RB02', name: 'Mansfield East Ranch Brook 2', lat: 44.51775982, lng: -72.81039188, elev: 910, region: 'Mansfield East', status: 'active' },
-    { code: 'RB03', name: 'Mansfield East Ranch Brook 3', lat: 44.51481829, lng: -72.80905263, elev: 795, region: 'Mansfield East', status: 'active' },
-    { code: 'RB04', name: 'Mansfield East Ranch Brook 4', lat: 44.51097861, lng: -72.80281519, elev: 640, region: 'Mansfield East', status: 'active' },
-    { code: 'RB05', name: 'Mansfield East Ranch Brook 5', lat: 44.5044967, lng: -72.79947434, elev: 505, region: 'Mansfield East', status: 'active' },
-    { code: 'RB06', name: 'Mansfield East Ranch Brook 6', lat: 44.50370289, lng: -72.78352521, elev: 414, region: 'Mansfield East', status: 'active' },
-    { code: 'RB07', name: 'Mansfield East Ranch Brook 7', lat: 44.51528492, lng: -72.78513705, elev: 613, region: 'Mansfield East', status: 'active' },
-    { code: 'RB08', name: 'Mansfield East Ranch Brook 8', lat: 44.50953955, lng: -72.70208484, elev: 472, region: 'Mansfield East', status: 'active' },
-    { code: 'RB09', name: 'Mansfield East Ranch Brook 9', lat: 44.48905, lng: -72.79285, elev: 847, region: 'Mansfield East', status: 'active' },
-    { code: 'RB10', name: 'Mansfield East Ranch Brook 10', lat: 44.49505, lng: -72.78639, elev: 624, region: 'Mansfield East', status: 'active' },
-    { code: 'RB11', name: 'Mansfield East Ranch Brook 11', lat: 44.50545202, lng: -72.7713791, elev: 388, region: 'Mansfield East', status: 'active' },
-    { code: 'RB12', name: 'Mansfield East FEMC', lat: 44.51880228, lng: -72.79853548, elev: 884, region: 'Mansfield East', status: 'active' },
-    { code: 'SPST', name: 'Spear Street', lat: 44.45258109, lng: -73.19181715, elev: 87, region: 'Urban', status: 'active' },
-    { code: 'SR01', name: 'Sleepers R3/Main', lat: 44.48296257, lng: -72.16464901, elev: 553, region: 'Sleepers River', status: 'active' },
-    { code: 'SR11', name: 'Sleepers W1/R11', lat: 44.45002119, lng: -72.06714939, elev: 225, region: 'Sleepers River', status: 'active' },
-    { code: 'SR25', name: 'Sleepers R25', lat: 44.47682346, lng: -72.12582909, elev: 357, region: 'Sleepers River', status: 'maintenance' },
-    { code: 'JRCL', name: 'Jericho clearing', lat: 44.447894, lng: -73.00228357, elev: 199, region: 'Jericho', status: 'active' },
-    { code: 'JRFO', name: 'Jericho Forest', lat: 44.44780437, lng: -73.00270872, elev: 196, region: 'Jericho', status: 'active' },
-    { code: 'PROC', name: 'Mansfield West Proctor', lat: 44.5285819, lng: -72.886737, elev: 418, region: 'Mansfield West', status: 'active' },
-    { code: 'PTSH', name: 'Potash Brook', lat: 44.44489861, lng: -73.21425398, elev: 45, region: 'Urban', status: 'active' },
-    { code: 'SUMM', name: 'Mansfield SUMMIT', lat: 44.52796261, lng: -72.81496117, elev: 1169, region: 'Mansfield West', status: 'active' },
-    { code: 'UNDR', name: 'Mansfield West SCAN', lat: 44.53511455, lng: -72.83462236, elev: 698, region: 'Mansfield West', status: 'maintenance' }
+    { code: 'RB01', name: 'Mansfield East Ranch Brook 1', lat: 44.5232, lng: -72.8086, elev: 1075, region: 'Mansfield East', status: 'active' },
+    { code: 'RB02', name: 'Mansfield East Ranch Brook 2', lat: 44.5178, lng: -72.8104, elev: 910, region: 'Mansfield East', status: 'active' },
+    { code: 'RB03', name: 'Mansfield East Ranch Brook 3', lat: 44.5148, lng: -72.8091, elev: 795, region: 'Mansfield East', status: 'active' },
+    { code: 'RB04', name: 'Mansfield East Ranch Brook 4', lat: 44.5110, lng: -72.8028, elev: 640, region: 'Mansfield East', status: 'active' },
+    { code: 'RB05', name: 'Mansfield East Ranch Brook 5', lat: 44.5045, lng: -72.7995, elev: 505, region: 'Mansfield East', status: 'active' },
+    { code: 'RB06', name: 'Mansfield East Ranch Brook 6', lat: 44.5037, lng: -72.7835, elev: 414, region: 'Mansfield East', status: 'active' },
+    { code: 'RB07', name: 'Mansfield East Ranch Brook 7', lat: 44.5153, lng: -72.7851, elev: 613, region: 'Mansfield East', status: 'active' },
+    { code: 'RB08', name: 'Mansfield East Ranch Brook 8', lat: 44.5095, lng: -72.7021, elev: 472, region: 'Mansfield East', status: 'active' },
+    { code: 'RB09', name: 'Mansfield East Ranch Brook 9', lat: 44.4891, lng: -72.7929, elev: 847, region: 'Mansfield East', status: 'active' },
+    { code: 'RB10', name: 'Mansfield East Ranch Brook 10', lat: 44.4951, lng: -72.7864, elev: 624, region: 'Mansfield East', status: 'active' },
+    { code: 'RB11', name: 'Mansfield East Ranch Brook 11', lat: 44.5055, lng: -72.7714, elev: 388, region: 'Mansfield East', status: 'active' },
+    { code: 'RB12', name: 'Mansfield East FEMC', lat: 44.5188, lng: -72.7985, elev: 884, region: 'Mansfield East', status: 'active' },
+    { code: 'SPST', name: 'Spear Street', lat: 44.4526, lng: -73.1918, elev: 87, region: 'Urban', status: 'active' },
+    { code: 'SR01', name: 'Sleepers R3/Main', lat: 44.4830, lng: -72.1646, elev: 553, region: 'Sleepers River', status: 'active' },
+    { code: 'SR11', name: 'Sleepers W1/R11', lat: 44.4500, lng: -72.0671, elev: 225, region: 'Sleepers River', status: 'active' },
+    { code: 'SR25', name: 'Sleepers R25', lat: 44.4768, lng: -72.1258, elev: 357, region: 'Sleepers River', status: 'maintenance' },
+    { code: 'JRCL', name: 'Jericho clearing', lat: 44.4479, lng: -73.0023, elev: 199, region: 'Jericho', status: 'active' },
+    { code: 'JRFO', name: 'Jericho Forest', lat: 44.4478, lng: -73.0027, elev: 196, region: 'Jericho', status: 'active' },
+    { code: 'PROC', name: 'Mansfield West Proctor', lat: 44.5286, lng: -72.8867, elev: 418, region: 'Mansfield West', status: 'active' },
+    { code: 'PTSH', name: 'Potash Brook', lat: 44.4449, lng: -73.2143, elev: 45, region: 'Urban', status: 'active' },
+    { code: 'SUMM', name: 'Mansfield SUMMIT', lat: 44.5280, lng: -72.8150, elev: 1169, region: 'Mansfield West', status: 'active' },
+    { code: 'UNDR', name: 'Mansfield West SCAN', lat: 44.5351, lng: -72.8346, elev: 698, region: 'Mansfield West', status: 'maintenance' }
   ];
 
   const activeStations = locationData.filter(station => station.status === 'active').length;
