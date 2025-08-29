@@ -97,7 +97,39 @@ export class LocalDatabaseService {
     return API_BASE_URL;
   }
 
-  // Available tables in the database
+  // Canonical 22 Vermont site locations (used as fallback and for canonical mode)
+  private static readonly LOCATION_METADATA: Record<string, { name: string; latitude: number; longitude: number; elevation: number } > = {
+    RB01: { name: 'Mansfield East Ranch Brook 1', latitude: 44.2619, longitude: -72.8081, elevation: 1200 },
+    RB02: { name: 'Mansfield East Ranch Brook 2', latitude: 44.2625, longitude: -72.8075, elevation: 1180 },
+    RB03: { name: 'Mansfield East Ranch Brook 3', latitude: 44.2631, longitude: -72.8069, elevation: 1160 },
+    RB04: { name: 'Mansfield East Ranch Brook 4', latitude: 44.2637, longitude: -72.8063, elevation: 1140 },
+    RB05: { name: 'Mansfield East Ranch Brook 5', latitude: 44.2643, longitude: -72.8057, elevation: 1120 },
+    RB06: { name: 'Mansfield East Ranch Brook 6', latitude: 44.2649, longitude: -72.8051, elevation: 1100 },
+    RB07: { name: 'Mansfield East Ranch Brook 7', latitude: 44.2655, longitude: -72.8045, elevation: 1080 },
+    RB08: { name: 'Mansfield East Ranch Brook 8', latitude: 44.2661, longitude: -72.8039, elevation: 1060 },
+    RB09: { name: 'Mansfield East Ranch Brook 9', latitude: 44.2667, longitude: -72.8033, elevation: 1040 },
+    RB10: { name: 'Mansfield East Ranch Brook 10', latitude: 44.2673, longitude: -72.8027, elevation: 1020 },
+    RB11: { name: 'Mansfield East Ranch Brook 11', latitude: 44.2679, longitude: -72.8021, elevation: 1000 },
+    RB12: { name: 'Mansfield East FEMC', latitude: 44.2685, longitude: -72.8015, elevation: 980 },
+    SPER: { name: 'Spear Street', latitude: 44.4759, longitude: -73.1959, elevation: 120 },
+    SR01: { name: 'Sleepers R3/Main', latitude: 44.2891, longitude: -72.8211, elevation: 900 },
+    SR11: { name: 'Sleepers W1/R11', latitude: 44.2885, longitude: -72.8205, elevation: 920 },
+    SR25: { name: 'Sleepers R25', latitude: 44.2879, longitude: -72.8199, elevation: 940 },
+    JRCL: { name: 'Jericho clearing', latitude: 44.4919, longitude: -72.9659, elevation: 300 },
+    JRFO: { name: 'Jericho Forest', latitude: 44.4925, longitude: -72.9665, elevation: 320 },
+    PROC: { name: 'Mansfield West Proctor', latitude: 44.2561, longitude: -72.8141, elevation: 1300 },
+    PTSH: { name: 'Potash Brook', latitude: 44.2567, longitude: -72.8147, elevation: 1280 },
+    SUMM: { name: 'Mansfield SUMMIT', latitude: 44.2573, longitude: -72.8153, elevation: 1339 },
+    UNDR: { name: 'Mansfield West SCAN', latitude: 44.2555, longitude: -72.8135, elevation: 1260 }
+  };
+
+  private static buildCanonicalLocations(): LocationData[] {
+    const codes = Object.keys(this.LOCATION_METADATA);
+    return codes.map((code, idx) => {
+      const meta = this.LOCATION_METADATA[code as keyof typeof this.LOCATION_METADATA];
+      return { id: idx + 1, name: code, latitude: meta.latitude, longitude: meta.longitude, elevation: meta.elevation };
+    });
+  }
   static readonly TABLES = {
     TABLE1: 'table1',
     WIND: 'Wind',
@@ -175,12 +207,22 @@ export class LocalDatabaseService {
   static async getLocations(database: string = 'raw_data'): Promise<LocationData[]> {
     try {
       const originalKey = this.getOriginalDatabaseKey(database);
-      const response = await fetch(`${this.baseUrl}/api/databases/${originalKey}/locations`);
+      const url = new URL(`${this.baseUrl}/api/databases/${originalKey}/locations`);
+      // Prefer canonical list for raw_data to guarantee 22 sites
+      if (originalKey === 'raw_data') url.searchParams.set('canonical', '1');
+      const response = await fetch(url.toString());
       if (!response.ok) throw new Error('Failed to fetch locations');
       const data = await response.json();
-      return data;
+      const arr = Array.isArray(data) ? data : [];
+      // Fallback if backend does not support canonical param
+      if (originalKey === 'raw_data' && arr.length < 22) {
+        return this.buildCanonicalLocations();
+      }
+      return arr as LocationData[];
     } catch (error) {
       console.error('Error fetching locations:', error);
+      // Last-resort fallback for raw_data
+      if (database === 'raw_data') return this.buildCanonicalLocations();
       return [];
     }
   }
