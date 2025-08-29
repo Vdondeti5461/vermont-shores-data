@@ -13,145 +13,202 @@ app.use(cors({
 
 app.use(express.json());
 
-// Database configuration for web5.uvm.edu
-const dbConfig = {
-  host: 'web5.uvm.edu',
-  user: process.env.MYSQL_USER || 'crrels2s_admin',
-  password: process.env.MYSQL_PASSWORD || 'y0m5dxldXSLP',
-  port: Number(process.env.MYSQL_PORT) || 3306,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
-};
+// Database connection pool (no specific database - switch per request)
+let pool;
 
-// Create connection pool
-const pool = mysql.createPool(dbConfig);
+async function connectDB() {
+  try {
+    pool = mysql.createPool({
+      host: 'web5.uvm.edu',
+      user: process.env.MYSQL_USER || 'crrels2s_admin',
+      password: process.env.MYSQL_PASSWORD || 'y0m5dxldXSLP',
+      port: Number(process.env.MYSQL_PORT) || 3306,
+      waitForConnections: true,
+      connectionLimit: 10,
+      queueLimit: 0,
+      multipleStatements: false
+    });
+    
+    const connection = await pool.getConnection();
+    console.log('✅ Connected to MySQL server: web5.uvm.edu');
+    connection.release();
+  } catch (error) {
+    console.error('❌ Database connection failed:', error);
+    throw error;
+  }
+}
 
-// Database configurations (4 databases as specified)
+// Known database configurations
 const DATABASES = {
-  raw_data: 'CRRELS2S_VTClimateRepository',
-  initial_clean_data: 'CRRELS2S_VTClimateRepository_Processed', 
-  final_clean_data: 'CRRELS2S_ProcessedData',
-  seasonal_clean_data: 'CRREL52S_cleaned_data_seasons'
+  'raw_data': 'CRRELS2S_VTClimateRepository',
+  'initial_clean_data': 'CRRELS2S_VTClimateRepository_Processed',
+  'final_clean_data': 'CRRELS2S_ProcessedData',
+  'seasonal_clean_data': 'CRRELS2S_cleaned_data_seasons'
 };
 
-// Table metadata as provided by user
+// Helper function to get connection with specific database
+async function getConnectionWithDB(databaseKey = 'raw_data') {
+  const databaseName = DATABASES[databaseKey];
+  if (!databaseName) {
+    throw new Error(`Unknown database key: ${databaseKey}`);
+  }
+  
+  const connection = await pool.getConnection();
+  await connection.query(`USE \`${databaseName}\``);
+  return { connection, databaseName };
+}
+
+// Location metadata with complete information
+const LOCATION_METADATA = {
+  'RB01': { name: 'Mansfield East Ranch Brook 1', latitude: 44.2619, longitude: -72.8081, elevation: 1200 },
+  'RB02': { name: 'Mansfield East Ranch Brook 2', latitude: 44.2625, longitude: -72.8075, elevation: 1180 },
+  'RB03': { name: 'Mansfield East Ranch Brook 3', latitude: 44.2631, longitude: -72.8069, elevation: 1160 },
+  'RB04': { name: 'Mansfield East Ranch Brook 4', latitude: 44.2637, longitude: -72.8063, elevation: 1140 },
+  'RB05': { name: 'Mansfield East Ranch Brook 5', latitude: 44.2643, longitude: -72.8057, elevation: 1120 },
+  'RB06': { name: 'Mansfield East Ranch Brook 6', latitude: 44.2649, longitude: -72.8051, elevation: 1100 },
+  'RB07': { name: 'Mansfield East Ranch Brook 7', latitude: 44.2655, longitude: -72.8045, elevation: 1080 },
+  'RB08': { name: 'Mansfield East Ranch Brook 8', latitude: 44.2661, longitude: -72.8039, elevation: 1060 },
+  'RB09': { name: 'Mansfield East Ranch Brook 9', latitude: 44.2667, longitude: -72.8033, elevation: 1040 },
+  'RB10': { name: 'Mansfield East Ranch Brook 10', latitude: 44.2673, longitude: -72.8027, elevation: 1020 },
+  'RB11': { name: 'Mansfield East Ranch Brook 11', latitude: 44.2679, longitude: -72.8021, elevation: 1000 },
+  'RB12': { name: 'Mansfield East FEMC', latitude: 44.2685, longitude: -72.8015, elevation: 980 },
+  'SPER': { name: 'Spear Street', latitude: 44.4759, longitude: -73.1959, elevation: 120 },
+  'SR01': { name: 'Sleepers R3/Main', latitude: 44.2891, longitude: -72.8211, elevation: 900 },
+  'SR11': { name: 'Sleepers W1/R11', latitude: 44.2885, longitude: -72.8205, elevation: 920 },
+  'SR25': { name: 'Sleepers R25', latitude: 44.2879, longitude: -72.8199, elevation: 940 },
+  'JRCL': { name: 'Jericho clearing', latitude: 44.4919, longitude: -72.9659, elevation: 300 },
+  'JRFO': { name: 'Jericho Forest', latitude: 44.4925, longitude: -72.9665, elevation: 320 },
+  'PROC': { name: 'Mansfield West Proctor', latitude: 44.2561, longitude: -72.8141, elevation: 1300 },
+  'PTSH': { name: 'Potash Brook', latitude: 44.2567, longitude: -72.8147, elevation: 1280 },
+  'SUMM': { name: 'Mansfield SUMMIT', latitude: 44.2573, longitude: -72.8153, elevation: 1339 },
+  'UNDR': { name: 'Mansfield West SCAN', latitude: 44.2555, longitude: -72.8135, elevation: 1260 }
+};
+
+// Table metadata with detailed descriptions
 const TABLE_METADATA = {
-  table1: {
-    displayName: 'Table1 - Environmental Data',
-    description: 'Primary environmental data including temperature, humidity, soil measurements',
+  'table1': {
+    displayName: 'Primary Environmental Data',
+    description: 'Comprehensive environmental measurements including temperature, humidity, soil conditions, and radiation',
     attributes: {
-      'TS_LOC_REC': { description: 'TimeStamp Location Record', unit: 'No_Unit', type: 'TS' },
-      'TIMESTAMP': { description: 'TimeStamp', unit: 'No_Unit', type: 'TS' },
-      'LOCATION': { description: 'Location', unit: 'No_Unit', type: 'LOC' },
-      'Record': { description: 'Record Number', unit: 'No_Unit', type: 'RN' },
-      'Batt_Volt_Min': { description: 'Battery Voltage', unit: 'Volts', type: 'Min' },
-      'P_Temp': { description: 'Panel Temperature (Reference Temperature Measurement)', unit: 'Deg C', type: 'smp' },
-      'AirTC_Avg': { description: 'Air Temperature Average in Celcius', unit: 'Deg C', type: 'Avg' },
-      'RH': { description: 'Relative Humidity', unit: '%', type: 'Smp' },
-      'SHF': { description: 'Soil Heat Flux ( radiation Parameter)', unit: 'W/m^2', type: 'smp' },
-      'Soil_Moisture': { description: 'Soil Moisture', unit: 'wfv', type: 'smp' },
-      'Soil_Temperature_C': { description: 'Soil Temperature in Celcius', unit: 'Deg C', type: 'smp' },
-      'SWE': { description: 'Snow water Equivalent', unit: 'mm of H20', type: 'smp' },
-      'Ice_content': { description: 'Ice content of SnowPack', unit: '%', type: 'smp' },
-      'Water_Content': { description: 'Water Content of SnowPack', unit: '%', type: 'smp' },
-      'Snowpack_Density': { description: 'Snowpack Density', unit: 'kg/m^3', type: 'smp' },
-      'SW_in': { description: 'Short wave radiation incoming', unit: 'W/m^2', type: 'smp' },
-      'SW_out': { description: 'Short wave radiation outgoing', unit: 'W/m^2', type: 'smp' },
-      'LW_in': { description: 'Longwave radation incoming', unit: 'W/m^2', type: 'smp' },
-      'LW_out': { description: 'Longwave radiation outgoing', unit: 'W/m^2', type: 'smp' },
-      'Target_Depth': { description: 'Target depth', unit: 'cm', type: 'smp' },
-      'Qual': { description: 'Quality numbers (snow sensor)', unit: 'No_Unit', type: 'smp' },
-      'TCDT': { description: 'Temperature corrected distance value', unit: 'No_Unit', type: 'smp' },
-      'DBTCDT': { description: 'Snow Depth', unit: 'cm', type: 'smp' }
+      'TS_LOC_REC': { description: 'TimeStamp Location Record', unit: 'No_Unit', measurement_type: 'Identifier', category: 'System' },
+      'TIMESTAMP': { description: 'TimeStamp', unit: 'TS', measurement_type: 'No_Unit', category: 'Time' },
+      'LOCATION': { description: 'Location', unit: 'LOC', measurement_type: 'No_Unit', category: 'Location' },
+      'Record': { description: 'Record Number', unit: 'RN', measurement_type: 'No Unit', category: 'System' },
+      'Batt_Volt_Min': { description: 'Battery Voltage', unit: 'Volts', measurement_type: 'Min', category: 'System' },
+      'P_Temp': { description: 'Panel Temperature (Reference Temperature Measurement)', unit: 'Deg C', measurement_type: 'smp', category: 'Temperature' },
+      'AirTC_Avg': { description: 'Air Temperature Average in Celcius', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
+      'RH': { description: 'Relative Humidity', unit: '%', measurement_type: 'Smp', category: 'Humidity' },
+      'SHF': { description: 'Soil Heat Flux (radiation Parameter)', unit: 'W/m^2', measurement_type: 'smp', category: 'Radiation' },
+      'Soil_Moisture': { description: 'Soil Moisture', unit: 'wfv', measurement_type: 'smp', category: 'Soil' },
+      'Soil_Temperature_C': { description: 'Soil Temperature in Celcius', unit: 'Deg C', measurement_type: 'smp', category: 'Temperature' },
+      'SWE': { description: 'Snow water Equivalent', unit: 'mm of H20', measurement_type: 'smp', category: 'Snow' },
+      'Ice_content': { description: 'Ice content of SnowPack', unit: '%', measurement_type: 'smp', category: 'Snow' },
+      'Water_Content': { description: 'Water Content of SnowPack', unit: '%', measurement_type: 'smp', category: 'Snow' },
+      'Snowpack_Density': { description: 'Snowpack Density', unit: 'kg/m^3', measurement_type: 'smp', category: 'Snow' },
+      'SW_in': { description: 'Short wave radiation incoming', unit: 'W/m^2', measurement_type: 'smp', category: 'Radiation' },
+      'SW_out': { description: 'Short wave radiation outgoing', unit: 'W/m^2', measurement_type: 'smp', category: 'Radiation' },
+      'LW_in': { description: 'Longwave radation incoming', unit: 'W/m^2', measurement_type: 'smp', category: 'Radiation' },
+      'LW_out': { description: 'Longwave radiation outgoing', unit: 'W/m^2', measurement_type: 'smp', category: 'Radiation' },
+      'Target_Depth': { description: 'Target depth', unit: 'cm', measurement_type: 'smp', category: 'Snow' },
+      'Qual': { description: 'Quality numbers (snow sensor)', unit: 'No Unit', measurement_type: 'smp', category: 'Quality' },
+      'TCDT': { description: 'Temperature corrected distance value', unit: 'cm', measurement_type: 'smp', category: 'Snow' },
+      'DBTCDT': { description: 'Snow Depth', unit: 'cm', measurement_type: 'smp', category: 'Snow' },
+      'Target_Depth_Med': { description: 'Target depth - Median Data', unit: 'cm', measurement_type: 'Med', category: 'Snow' },
+      'Qual_Med': { description: 'Quality numbers (snow sensor) - Median Data', unit: 'No Unit', measurement_type: 'Med', category: 'Quality' },
+      'TCDT_Med': { description: 'Temperature corrected distance value - Median Data', unit: 'cm', measurement_type: 'Med', category: 'Snow' },
+      'DBTCDT_Med': { description: 'Snow Depth - Median Data', unit: 'cm', measurement_type: 'Med', category: 'Snow' },
+      'DataQualityFlag': { description: 'Data Quality Flag (1=Median Data, 0=Original Data)', unit: 'Flag', measurement_type: 'Flag', category: 'Quality' }
     }
   },
-  wind: {
-    displayName: 'Wind - Wind Measurements',
-    description: 'Wind speed and direction measurements',
+  'Wind': {
+    displayName: 'Wind Measurements',
+    description: 'Wind speed and direction measurements from meteorological stations',
     attributes: {
-      'TIMESTAMP': { description: 'TimeStamp', unit: 'No_Unit', type: 'TS' },
-      'LOCATION': { description: 'Location', unit: 'No_Unit', type: 'LOC' },
-      'Record': { description: 'Record Number', unit: 'No_Unit', type: 'RN' },
-      'WindDir': { description: 'Wind Direction', unit: 'deg', type: 'smp' },
-      'WS_ms_Max': { description: 'Max wind speed', unit: 'meters/second', type: 'Max' },
-      'WS_ms_TMx': { description: 'Wind Speed', unit: 'meters/second', type: 'TMx' },
-      'WS_ms': { description: 'Wind speed', unit: 'meters/second', type: 'smp' },
-      'WS_ms_S_WVT': { description: 'Wind Speed', unit: 'meters/second', type: 'Wvc' },
-      'WindDir_D1_WVT': { description: 'Wind Direction', unit: 'Deg', type: 'Wvc' },
-      'WindDir_SD1_WVT': { description: 'Wind Direction', unit: 'Deg', type: 'Wvc' },
-      'WS_ms_Min': { description: 'Min wind speed', unit: 'meters/second', type: 'Min' },
-      'WS_ms_TMn': { description: 'Wind Speed', unit: 'meters/second', type: 'TMn' }
+      'TIMESTAMP': { description: 'TimeStamp', unit: 'TS', measurement_type: 'No_Unit', category: 'Time' },
+      'LOCATION': { description: 'Location', unit: 'LOC', measurement_type: 'No_Unit', category: 'Location' },
+      'Record': { description: 'Record Number', unit: 'RN', measurement_type: 'No Unit', category: 'System' },
+      'WindDir': { description: 'Wind Direction', unit: 'deg', measurement_type: 'smp', category: 'Wind' },
+      'WS_ms_Max': { description: 'Max wind speed', unit: 'meters/second', measurement_type: 'Max', category: 'Wind' },
+      'WS_ms_TMx': { description: 'Wind Speed Time of Max', unit: 'meters/second', measurement_type: 'TMx', category: 'Wind' },
+      'WS_ms': { description: 'Wind speed', unit: 'meters/second', measurement_type: 'smp', category: 'Wind' },
+      'WS_ms_S_WVT': { description: 'Wind Speed Standard Deviation', unit: 'meters/second', measurement_type: 'Wvc', category: 'Wind' },
+      'WindDir_D1_WVT': { description: 'Wind Direction Vector', unit: 'Deg', measurement_type: 'Wvc', category: 'Wind' },
+      'WindDir_SD1_WVT': { description: 'Wind Direction Standard Deviation', unit: 'Deg', measurement_type: 'Wvc', category: 'Wind' },
+      'WS_ms_Min': { description: 'Min wind speed', unit: 'meters/second', measurement_type: 'Min', category: 'Wind' },
+      'WS_ms_TMn': { description: 'Wind Speed Time of Min', unit: 'meters/second', measurement_type: 'TMn', category: 'Wind' }
     }
   },
-  precipitation: {
-    displayName: 'Precipitation - Rainfall Data', 
-    description: 'Precipitation and rainfall measurements',
+  'Precipitation': {
+    displayName: 'Precipitation Data',
+    description: 'Precipitation measurements including intensity, accumulation, and bucket data',
     attributes: {
-      'TIMESTAMP': { description: 'TimeStamp', unit: 'No_Unit', type: 'TS' },
-      'LOCATION': { description: 'Location', unit: 'No_Unit', type: 'LOC' },
-      'Record': { description: 'Record Number', unit: 'No_Unit', type: 'RN' },
-      'Intensity_RT': { description: 'Intensity Real time', unit: 'mm/min', type: 'smp' },
-      'Accu_NRT': { description: 'Accmulated Non real time Precepitation', unit: 'mm', type: 'smp' },
-      'Accu_RT_NRT': { description: 'Accmulated real time - Non Real time Precepitation', unit: 'mm', type: 'smp' },
-      'Accu_Total_NRT': { description: 'Accmulated Total Non real time Precepitation', unit: 'mm', type: 'smp' },
-      'Bucket_NRT': { description: 'Bucket Percipitation Non real time', unit: 'mm', type: 'smp' },
-      'Bucket_RT': { description: 'Bucket Precipitation real time', unit: 'mm', type: 'smp' },
-      'Load_Temp': { description: 'Load Temperature (Battery)', unit: 'Deg C', type: 'smp' }
+      'TIMESTAMP': { description: 'TimeStamp', unit: 'TS', measurement_type: 'No_Unit', category: 'Time' },
+      'LOCATION': { description: 'Location', unit: 'LOC', measurement_type: 'No_Unit', category: 'Location' },
+      'Record': { description: 'Record Number', unit: 'RN', measurement_type: 'No Unit', category: 'System' },
+      'Intensity_RT': { description: 'Intensity Real time', unit: 'mm/min', measurement_type: 'smp', category: 'Precipitation' },
+      'Accu_NRT': { description: 'Accumulated Non real time Precipitation', unit: 'mm', measurement_type: 'smp', category: 'Precipitation' },
+      'Accu_RT_NRT': { description: 'Accumulated real time - Non Real time Precipitation', unit: 'mm', measurement_type: 'smp', category: 'Precipitation' },
+      'Accu_Total_NRT': { description: 'Accumulated Total Non real time Precipitation', unit: 'mm', measurement_type: 'smp', category: 'Precipitation' },
+      'Bucket_NRT': { description: 'Bucket Precipitation Non real time', unit: 'mm', measurement_type: 'smp', category: 'Precipitation' },
+      'Bucket_RT': { description: 'Bucket Precipitation real time', unit: 'mm', measurement_type: 'smp', category: 'Precipitation' },
+      'Load_Temp': { description: 'Load Temperature (Battery)', unit: 'Deg C', measurement_type: 'smp', category: 'Temperature' }
     }
   },
-  snowpktempprofile: {
-    displayName: 'SnowPkTempProfile - Snow Temperature Profile',
-    description: 'Snowpack temperature profile measurements at different depths',
+  'SnowPkTempProfile': {
+    displayName: 'Snow Pack Temperature Profile',
+    description: 'Snowpack temperature measurements at various depths from 0cm to 290cm',
     attributes: {
-      'TIMESTAMP': { description: 'TimeStamp', unit: 'No_Unit', type: 'TS' },
-      'LOCATION': { description: 'Location', unit: 'No_Unit', type: 'LOC' },
-      'Record': { description: 'Record Number', unit: 'No_Unit', type: 'RN' },
-      'T107_C_0cm_Avg': { description: 'Snowpack temperature profile at 0 CM', unit: 'Deg C', type: 'Avg' }
-      // Note: Additional temperature profiles from 0cm to 290cm will be dynamically discovered
+      'TIMESTAMP': { description: 'TimeStamp', unit: 'TS', measurement_type: 'No_Unit', category: 'Time' },
+      'LOCATION': { description: 'Location', unit: 'LOC', measurement_type: 'No_Unit', category: 'Location' },
+      'Record': { description: 'Record Number', unit: 'RN', measurement_type: 'No Unit', category: 'System' }
     }
   }
 };
 
-// 22 Locations as specified by user
-const LOCATION_CODES = {
-  'RB01': 'Mansfield East Ranch Brook 1',
-  'RB02': 'Mansfield East Ranch Brook 2', 
-  'RB03': 'Mansfield East Ranch Brook 3',
-  'RB04': 'Mansfield East Ranch Brook 4',
-  'RB05': 'Mansfield East Ranch Brook 5',
-  'RB06': 'Mansfield East Ranch Brook 6',
-  'RB07': 'Mansfield East Ranch Brook 7',
-  'RB08': 'Mansfield East Ranch Brook 8',
-  'RB09': 'Mansfield East Ranch Brook 9',
-  'RB10': 'Mansfield East Ranch Brook 10',
-  'RB11': 'Mansfield East Ranch Brook 11',
-  'RB12': 'Mansfield East FEMC',
-  'SPER': 'Spear Street',
-  'SR01': 'Sleepers R3/Main',
-  'SR11': 'Sleepers W1/R11', 
-  'SR25': 'Sleepers R25',
-  'JRCL': 'Jericho clearing',
-  'JRFO': 'Jericho Forest',
-  'PROC': 'Mansfield West Proctor',
-  'PTSH': 'Potash Brook',
-  'SUMM': 'Mansfield SUMMIT',
-  'UNDR': 'Mansfield West SCAN'
-};
 
 // Helper functions
-function getDatabaseName(key) {
-  return DATABASES[key] || DATABASES.raw_data;
-}
-
 function getDatabaseDescription(key) {
   const descriptions = {
-    raw_data: 'Raw environmental sensor data from Vermont monitoring stations',
-    initial_clean_data: 'Initially processed and cleaned environmental data',
-    final_clean_data: 'Final processed environmental data ready for analysis',
-    seasonal_clean_data: 'Seasonally aggregated and cleaned environmental data'
+    'raw_data': 'Raw data',
+    'initial_clean_data': 'Initial clean data',
+    'final_clean_data': 'Final Clean Data',
+    'seasonal_clean_data': 'season wise final clean data'
   };
-  return descriptions[key] || 'Environmental monitoring data';
+  return descriptions[key] || 'Environmental monitoring database';
+}
+
+function getTableDisplayName(tableName) {
+  const displayNames = {
+    'table1': 'Primary Environmental Data',
+    'Wind': 'Wind Measurements',
+    'SnowpkTempProfile': 'Snowpack Temperature Profile',
+    'Precipitation': 'Precipitation Data'
+  };
+  return displayNames[tableName] || tableName.replace(/([A-Z])/g, ' $1').trim();
+}
+
+function getTableDescription(tableName) {
+  const descriptions = {
+    'table1': 'Primary environmental measurements including temperature, humidity, and soil data',
+    'Wind': 'Wind speed and direction measurements',
+    'SnowpkTempProfile': 'Temperature measurements at various snowpack depths',
+    'Precipitation': 'Precipitation intensity and accumulation data'
+  };
+  return descriptions[tableName] || 'Environmental data measurements';
+}
+
+function getAttributeCategory(attributeName) {
+  const lowerName = attributeName.toLowerCase();
+  if (lowerName.includes('temp') || lowerName.includes('tc')) return 'Temperature';
+  if (lowerName.includes('wind') || lowerName.includes('ws')) return 'Wind';
+  if (lowerName.includes('precip') || lowerName.includes('rain')) return 'Precipitation';
+  if (lowerName.includes('snow') || lowerName.includes('swe')) return 'Snow';
+  if (lowerName.includes('soil')) return 'Soil';
+  if (lowerName.includes('radiation') || lowerName.includes('sw') || lowerName.includes('lw')) return 'Radiation';
+  if (lowerName.includes('humidity') || lowerName.includes('rh')) return 'Humidity';
+  if (lowerName === 'timestamp') return 'Time';
+  if (lowerName === 'location') return 'Location';
+  return 'Other';
 }
 
 // Health check endpoint
@@ -179,55 +236,58 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// Get all available databases
+// Get available databases
 app.get('/api/databases', async (req, res) => {
   try {
     const databases = Object.entries(DATABASES).map(([key, name]) => ({
       key,
       name,
-      displayName: key.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
+      displayName: key.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
       description: getDatabaseDescription(key)
     }));
-
+    
     res.json({ databases });
   } catch (error) {
     console.error('Error fetching databases:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Failed to fetch databases' });
   }
 });
 
-// Get tables for a specific database
+// Get available tables for a database
 app.get('/api/databases/:database/tables', async (req, res) => {
   try {
     const { database } = req.params;
-    const dbName = getDatabaseName(database);
-
-    // Get actual tables from database
-    const [rows] = await pool.execute(
-      'SELECT TABLE_NAME, TABLE_ROWS FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? ORDER BY TABLE_NAME',
-      [dbName]
+    const { connection, databaseName } = await getConnectionWithDB(database);
+    
+    // Fetch tables and approximate row counts from information_schema (fast)
+    const [infoRows] = await connection.execute(
+      `SELECT TABLE_NAME, TABLE_ROWS FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? ORDER BY TABLE_NAME`,
+      [databaseName]
     );
 
-    const tables = rows.map(row => {
-      const tableName = row.TABLE_NAME.toLowerCase();
-      const metadata = TABLE_METADATA[tableName] || {
-        displayName: row.TABLE_NAME,
-        description: `${row.TABLE_NAME} data table`
-      };
+    // Filter season-based tables for specific databases
+    let tableNames = infoRows.map((r) => r.TABLE_NAME);
+    if (database === 'seasonal_clean_data') {
+      // Only filter for seasonal database - it should contain tables starting with 'cleaned_data_season_'
+      tableNames = tableNames.filter((t) => t.startsWith('cleaned_data_season_'));
+    }
+    // For final_clean_data (CRRELS2S_ProcessedData), show all tables without filtering
 
-      return {
-        name: row.TABLE_NAME,
-        displayName: metadata.displayName,
-        description: metadata.description,
-        rowCount: Number(row.TABLE_ROWS) || 0,
-        primaryAttributes: ['TIMESTAMP', 'LOCATION']
-      };
-    });
-
-    res.json({ database: dbName, tables });
+    // Build table info without running COUNT(*) per table
+    const rowCountMap = new Map(infoRows.map((r) => [r.TABLE_NAME, r.TABLE_ROWS ?? 0]));
+    const tablesWithInfo = tableNames.map((tableName) => ({
+      name: tableName,
+      displayName: getTableDisplayName(tableName),
+      description: getTableDescription(tableName),
+      rowCount: rowCountMap.get(tableName) || 0,
+      primaryAttributes: ['TIMESTAMP', 'Location']
+    }));
+    
+    connection.release();
+    res.json({ database: databaseName, tables: tablesWithInfo });
   } catch (error) {
     console.error('Error fetching tables:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Failed to fetch tables' });
   }
 });
 
@@ -235,169 +295,215 @@ app.get('/api/databases/:database/tables', async (req, res) => {
 app.get('/api/databases/:database/tables/:table/attributes', async (req, res) => {
   try {
     const { database, table } = req.params;
-    const dbName = getDatabaseName(database);
+    const { connection, databaseName } = await getConnectionWithDB(database);
     
-    const [columns] = await pool.execute(`DESCRIBE \`${dbName}\`.\`${table}\``);
-
+    const [columns] = await connection.execute(`
+      SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE, COLUMN_DEFAULT, COLUMN_COMMENT
+      FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?
+      ORDER BY ORDINAL_POSITION
+    `, [databaseName, table]);
+    
     const tableKey = table.toLowerCase();
     const tableMetadata = TABLE_METADATA[tableKey];
 
     const attributes = columns.map(col => {
-      const attrMetadata = tableMetadata?.attributes?.[col.Field] || {};
+      const attrMetadata = tableMetadata?.attributes?.[col.COLUMN_NAME] || {};
       
       return {
-        name: col.Field,
-        type: col.Type,
-        nullable: col.Null === 'YES',
-        category: getCategoryFromColumnName(col.Field),
-        isPrimary: col.Key === 'PRI' || ['TIMESTAMP', 'LOCATION'].includes(col.Field),
-        comment: attrMetadata.description || col.Comment || '',
+        name: col.COLUMN_NAME,
+        type: col.DATA_TYPE,
+        nullable: col.IS_NULLABLE === 'YES',
+        default: col.COLUMN_DEFAULT,
+        comment: attrMetadata.description || col.COLUMN_COMMENT || '',
+        category: attrMetadata.category || getAttributeCategory(col.COLUMN_NAME),
+        isPrimary: ['TIMESTAMP', 'Location'].includes(col.COLUMN_NAME),
         unit: attrMetadata.unit || 'No_Unit',
-        measurementType: attrMetadata.type || 'smp'
+        measurementType: attrMetadata.measurement_type || 'smp'
       };
     });
-
-    res.json({ database: dbName, table, attributes });
+    
+    connection.release();
+    res.json({ 
+      database: databaseName, 
+      table, 
+      attributes,
+      primaryAttributes: attributes.filter(attr => attr.isPrimary)
+    });
   } catch (error) {
-    console.error('Error fetching table attributes:', error);
-    res.status(500).json({ error: error.message });
+    console.error('Error fetching attributes:', error);
+    res.status(500).json({ error: 'Failed to fetch attributes' });
   }
 });
 
-// Get locations - return all 22 locations for every database/table
+// Get unique locations from specific database and tables
 app.get('/api/databases/:database/locations', async (req, res) => {
   try {
-    // Always return all 22 locations regardless of database or table
-    // This matches user requirement: "show every Location available for tables it might be any database"
-    const locations = Object.entries(LOCATION_CODES).map(([code, name], index) => ({
-      id: index + 1,
-      name: code,
-      displayName: name,
-      latitude: 44.25 + (index * 0.01), // Dummy coordinates
-      longitude: -72.58 - (index * 0.01),
-      elevation: 500 + (index * 10)
-    }));
+    const { database } = req.params;
+    const { tables } = req.query; // comma-separated table names
+    const { connection, databaseName } = await getConnectionWithDB(database);
+    
+    let tableList = [];
+    if (tables) {
+      tableList = tables.split(',');
+    } else {
+      // Get all tables if none specified
+      const [allTables] = await connection.execute('SHOW TABLES');
+      tableList = allTables.map(table => Object.values(table)[0]);
+    }
+    
+    // Use information_schema to find tables that contain a Location column (fast)
+    const [locTableRows] = await connection.execute(
+      `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND COLUMN_NAME IN ('Location','location')`,
+      [databaseName]
+    );
+    let validTables = locTableRows.map((r) => r.TABLE_NAME);
 
-    res.json(locations);
+    // If specific tables were requested, intersect with valid tables
+    if (tables) {
+      const requested = new Set(tableList);
+      validTables = validTables.filter((t) => requested.has(t));
+    }
+
+    // Additional filtering for season-based databases
+    if (database === 'seasonal_clean_data') {
+      // Only filter seasonal database for season-specific tables
+      validTables = validTables.filter((t) => t.startsWith('cleaned_data_season_'));
+    }
+    // For final_clean_data, show all tables that have Location column
+    
+    if (validTables.length === 0) {
+      connection.release();
+      return res.json([]);
+    }
+    
+    // Build union query with proper MySQL syntax
+    const unionQueries = validTables.map(table => 
+      `(SELECT DISTINCT Location as name FROM \`${table}\` WHERE Location IS NOT NULL AND Location != '' LIMIT 100)`
+    );
+    
+    // Proper MySQL UNION syntax with ORDER BY at the end
+    const query = `SELECT DISTINCT name FROM (${unionQueries.join(' UNION ALL ')}) AS combined_locations ORDER BY name`;
+    
+    const [rows] = await connection.execute(query);
+    
+    // Use actual location metadata with proper coordinates
+    const locationsWithCoords = rows.map((loc, index) => {
+      const metadata = LOCATION_METADATA[loc.name];
+      return {
+        id: index + 1,
+        name: loc.name,
+        displayName: metadata ? metadata.name : loc.name,
+        latitude: metadata ? metadata.latitude : 44.0 + (index * 0.01),
+        longitude: metadata ? metadata.longitude : -72.5 - (index * 0.01),
+        elevation: metadata ? metadata.elevation : 1000 + (index * 10)
+      };
+    });
+    
+    connection.release();
+    res.json(locationsWithCoords);
   } catch (error) {
     console.error('Error fetching locations:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Failed to fetch locations' });
   }
 });
 
-// Data download endpoint
+// Download endpoint for CSV export with proper timestamp formatting
 app.get('/api/databases/:database/download/:table', async (req, res) => {
   try {
     const { database, table } = req.params;
     const { location, start_date, end_date, attributes } = req.query;
-    const dbName = getDatabaseName(database);
+    const { connection, databaseName } = await getConnectionWithDB(database);
 
-    // Build query conditions
-    let whereConditions = [];
-    let queryParams = [];
+    // Discover actual column names (preserve case) and identify TIMESTAMP/Location columns
+    const [colRows] = await connection.query(`SHOW COLUMNS FROM \`${table}\``);
+    const allCols = colRows.map((c) => c.Field);
+    const colMap = new Map(allCols.map((c) => [c.toLowerCase(), c]));
+    const tsCol = colMap.get('timestamp') || 'TIMESTAMP';
+    const locCol = colMap.get('location') || 'Location';
 
-    // Handle location filter (single or multiple)
-    if (location) {
-      const locations = Array.isArray(location) ? location : location.split(',');
-      const locationPlaceholders = locations.map(() => '?').join(',');
-      whereConditions.push(`LOCATION IN (${locationPlaceholders})`);
-      queryParams.push(...locations);
+    // Determine selected columns
+    let selected;
+    if (attributes) {
+      const requested = String(attributes)
+        .split(',')
+        .map((a) => a.trim())
+        .filter(Boolean);
+      // Map requested to actual case from DB
+      const mapped = requested.map((a) => colMap.get(a.toLowerCase()) || a);
+      selected = Array.from(new Set([tsCol, locCol, ...mapped])).filter((c) => allCols.includes(c));
+    } else {
+      selected = allCols;
     }
 
-    // Handle date filters
+    // Build SELECT list with SQL-side TIMESTAMP formatting
+    const selectList = selected
+      .map((c) => {
+        if (c.toLowerCase() === 'timestamp') {
+          return `DATE_FORMAT(\`${tsCol}\`, '%Y-%m-%d %H:%i:%s') AS \`TIMESTAMP\``;
+        }
+        return `\`${c}\``;
+      })
+      .join(', ');
+
+    // Build query with filters
+    let query = `SELECT ${selectList} FROM \`${table}\` WHERE 1=1`;
+    const params = [];
+
+    // Handle location filter (multiple locations)
+    if (location) {
+      const locations = location.split(',').map(l => l.trim()).filter(Boolean);
+      if (locations.length > 0) {
+        const locationPlaceholders = locations.map(() => '?').join(',');
+        query += ` AND \`${locCol}\` IN (${locationPlaceholders})`;
+        params.push(...locations);
+      }
+    }
+
     if (start_date) {
-      whereConditions.push(`TIMESTAMP >= ?`);
-      queryParams.push(start_date);
+      query += ` AND \`${tsCol}\` >= ?`;
+      params.push(start_date);
     }
 
     if (end_date) {
-      whereConditions.push(`TIMESTAMP <= ?`);
-      queryParams.push(end_date);
+      query += ` AND \`${tsCol}\` <= ?`;
+      params.push(end_date);
     }
 
-    // Build SELECT clause
-    let selectClause = '*';
-    if (attributes) {
-      const attrList = attributes.split(',').map(attr => `\`${attr.trim()}\``).join(', ');
-      selectClause = attrList;
-    }
+    query += ` ORDER BY \`${tsCol}\` DESC`;
 
-    // Build final query
-    let query = `SELECT ${selectClause} FROM \`${dbName}\`.\`${table}\``;
-    if (whereConditions.length > 0) {
-      query += ` WHERE ${whereConditions.join(' AND ')}`;
-    }
-    query += ` ORDER BY TIMESTAMP ASC`;
+    const [rows] = await connection.execute(query, params);
 
-    const [rows] = await pool.execute(query, queryParams);
-
-    // Set CSV headers
+    // Set headers for CSV download
+    const stamp = new Date().toISOString().split('T')[0];
+    const filename = `${database}_${table}_${stamp}.csv`;
     res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename="${database}_${table}_${new Date().toISOString().split('T')[0]}.csv"`);
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
 
-    // Generate CSV content
-    if (rows.length === 0) {
-      res.send('No data found for the specified criteria');
-      return;
+    // Stream CSV rows
+    if (rows.length > 0) {
+      const headers = Object.keys(rows[0]);
+      res.write(headers.join(',') + '\n');
+
+      rows.forEach((row) => {
+        const values = headers.map((h) => {
+          let v = row[h];
+          if (v === null || v === undefined) return '';
+          const s = String(v);
+          return s.includes(',') ? `"${s}"` : s;
+        });
+        res.write(values.join(',') + '\n');
+      });
     }
 
-    // CSV header
-    const headers = Object.keys(rows[0]);
-    let csvContent = headers.join(',') + '\n';
-
-    // CSV data rows - keep timestamps exactly as they are in database
-    for (const row of rows) {
-      const csvRow = headers.map(header => {
-        let value = row[header];
-        
-        // Keep timestamp exactly as stored in database (no formatting)
-        if (value instanceof Date) {
-          // If it's a Date object, format to YYYY-MM-DD HH:mm:ss
-          value = value.toISOString().replace('T', ' ').substring(0, 19);
-        } else if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}/)) {
-          // If it's already a string timestamp, keep as-is
-          value = value;
-        }
-        
-        // Handle null values and escape commas/quotes
-        if (value === null || value === undefined) {
-          return '';
-        }
-        
-        value = String(value);
-        if (value.includes(',') || value.includes('"') || value.includes('\n')) {
-          value = `"${value.replace(/"/g, '""')}"`;
-        }
-        
-        return value;
-      }).join(',');
-      
-      csvContent += csvRow + '\n';
-    }
-
-    res.send(csvContent);
+    connection.release();
+    res.end();
   } catch (error) {
     console.error('Error downloading data:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Failed to download data' });
   }
 });
 
-// Helper function to categorize columns
-function getCategoryFromColumnName(columnName) {
-  const name = columnName.toLowerCase();
-  
-  if (name.includes('temp') || name.includes('temperature')) return 'Temperature';
-  if (name.includes('wind')) return 'Wind';
-  if (name.includes('precip') || name.includes('rain')) return 'Precipitation';
-  if (name.includes('snow') || name.includes('ice')) return 'Snow/Ice';
-  if (name.includes('soil')) return 'Soil';
-  if (name.includes('radiation') || name.includes('sw_') || name.includes('lw_')) return 'Radiation';
-  if (name.includes('humidity') || name.includes('rh')) return 'Humidity';
-  if (name.includes('battery') || name.includes('volt') || name.includes('batt')) return 'System';
-  if (name.includes('timestamp') || name.includes('location') || name.includes('record')) return 'Metadata';
-  
-  return 'Other';
-}
 
 // Error handling middleware
 app.use((error, req, res, next) => {
@@ -406,8 +512,17 @@ app.use((error, req, res, next) => {
 });
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`Database host: ${dbConfig.host}`);
-});
+async function startServer() {
+  try {
+    await connectDB();
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on http://localhost:${PORT}`);
+      console.log(`📊 Database host: web5.uvm.edu`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+}
+
+startServer();

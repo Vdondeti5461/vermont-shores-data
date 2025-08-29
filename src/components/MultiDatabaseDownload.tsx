@@ -434,15 +434,23 @@ const MultiDatabaseDownload = () => {
         </div>
       )}
 
-      {/* Attributes Selection */}
-      {attributes.length > 0 && selectedLocations.length > 0 && (startDate || endDate) && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Select Attributes to Export
-            </CardTitle>
-          </CardHeader>
+      {/* Step 4: Attributes Selection - Only show after TIMESTAMP and Location are selected */}
+      {selectedDatabase && selectedTable && (startDate || endDate) && selectedLocations.length > 0 && attributes.length > 0 && (
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
+            <Badge variant="secondary">Step 4</Badge>
+            Optional: Select Specific Attributes
+          </h3>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Choose Data Attributes to Export
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Leave unselected to download all available attributes
+              </p>
+            </CardHeader>
           <CardContent>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
               {Object.entries(groupedAttributes).map(([category, attrs]) => (
@@ -466,6 +474,7 @@ const MultiDatabaseDownload = () => {
             </div>
           </CardContent>
         </Card>
+        </div>
       )}
 
       {/* Download Summary and Action */}
