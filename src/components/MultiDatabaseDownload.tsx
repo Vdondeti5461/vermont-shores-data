@@ -154,15 +154,21 @@ const MultiDatabaseDownload = () => {
   const fetchLocations = async (database: string, table?: string) => {
     try {
       if (table) {
-        // Use the existing compatible endpoint for table-specific locations
-        const url = `${API_BASE_URL}/api/databases/${database}/locations?tables=${encodeURIComponent(table)}`;
+        // Use direct table-specific endpoint for exact locations from that table
+        const url = `${API_BASE_URL}/api/databases/${database}/tables/${table}/locations`;
         const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
         const data = await response.json();
         setLocations(Array.isArray(data) ? data : data.locations || []);
       } else {
         // General locations endpoint
         const url = `${API_BASE_URL}/api/databases/${database}/locations`;
         const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
         const data = await response.json();
         setLocations(Array.isArray(data) ? data : data.locations || []);
       }
@@ -170,7 +176,7 @@ const MultiDatabaseDownload = () => {
       console.error('Error fetching locations:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch locations",
+        description: `Failed to fetch locations: ${error.message}`,
         variant: "destructive"
       });
     }
