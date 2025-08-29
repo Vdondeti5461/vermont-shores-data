@@ -377,13 +377,13 @@ app.get('/api/databases/:database/locations', async (req, res) => {
       return res.json([]);
     }
     
-    // Build union query with proper MySQL syntax
+    // Build union query to get ALL locations from all tables (no limits, no distinct per table)
     const unionQueries = validTables.map(table => 
-      `(SELECT DISTINCT Location as name FROM \`${table}\` WHERE Location IS NOT NULL AND Location != '' LIMIT 100)`
+      `(SELECT Location as name FROM \`${table}\` WHERE Location IS NOT NULL AND Location != '')`
     );
     
-    // Proper MySQL UNION syntax with ORDER BY at the end
-    const query = `SELECT DISTINCT name FROM (${unionQueries.join(' UNION ALL ')}) AS combined_locations ORDER BY name`;
+    // Get all locations, then make them distinct at the end
+    const query = `SELECT DISTINCT name FROM (${unionQueries.join(' UNION ALL ')}) AS all_locations ORDER BY name`;
     
     const [rows] = await connection.execute(query);
     
