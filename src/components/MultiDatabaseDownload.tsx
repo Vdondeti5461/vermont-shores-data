@@ -168,49 +168,37 @@ const MultiDatabaseDownload = () => {
 
     setIsLoading(true);
     try {
-      // If no locations selected, download all locations
-      const locationsToDownload = selectedLocations.length > 0 ? selectedLocations : [''];
-
-      // Download data for each selected location
-      for (const location of locationsToDownload) {
-        const params = new URLSearchParams();
-        
-        if (location) {
-          params.append('location', location);
-        }
-        
-        if (startDate) {
-          params.append('start_date', startDate.toISOString());
-        }
-        
-        if (endDate) {
-          params.append('end_date', endDate.toISOString());
-        }
-        
-        if (selectedAttributes.length > 0) {
-          params.append('attributes', selectedAttributes.join(','));
-        }
-
-        const url = `${API_BASE_URL}/api/databases/${selectedDatabase}/download/${selectedTable}?${params}`;
-        
-        // Create a temporary link and trigger download
-        const link = document.createElement('a');
-        link.href = url;
-        const locationSuffix = location ? `_${location}` : '_all_locations';
-        link.download = `${selectedDatabase}_${selectedTable}${locationSuffix}_data.csv`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        // Small delay between downloads to avoid overwhelming the server
-        if (locationsToDownload.length > 1) {
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
+      const params = new URLSearchParams();
+      
+      if (selectedLocations.length > 0) {
+        params.append('location', selectedLocations[0]); // For now, single location
       }
+      
+      if (startDate) {
+        params.append('start_date', startDate.toISOString());
+      }
+      
+      if (endDate) {
+        params.append('end_date', endDate.toISOString());
+      }
+      
+      if (selectedAttributes.length > 0) {
+        params.append('attributes', selectedAttributes.join(','));
+      }
+
+      const url = `${API_BASE_URL}/api/databases/${selectedDatabase}/download/${selectedTable}?${params}`;
+      
+      // Create a temporary link and trigger download
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${selectedDatabase}_${selectedTable}_data.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
 
       toast({
         title: "Download Started",
-        description: `Downloading data for ${locationsToDownload.length} location(s)`,
+        description: "Your data export has been initiated",
       });
     } catch (error) {
       console.error('Error downloading data:', error);
@@ -438,7 +426,7 @@ const MultiDatabaseDownload = () => {
                 <p>Database: {selectedDatabase ? databases.find(db => db.key === selectedDatabase)?.displayName : 'None selected'}</p>
                 <p>Table: {selectedTable ? tables.find(t => t.name === selectedTable)?.displayName : 'None selected'}</p>
                 <p>Attributes: {selectedAttributes.length} selected</p>
-                <p>Locations: {selectedLocations.length > 0 ? `${selectedLocations.length} selected (${selectedLocations.join(', ')})` : 'All locations (no filter)'}</p>
+                <p>Locations: {selectedLocations.length > 0 ? selectedLocations.join(', ') : 'All locations'}</p>
                 <p>Date Range: {startDate && endDate ? `${format(startDate, 'PP')} - ${format(endDate, 'PP')}` : 'All dates'}</p>
               </div>
             </div>
