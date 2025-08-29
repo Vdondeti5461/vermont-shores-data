@@ -352,11 +352,10 @@ app.get('/api/databases/:database/locations', async (req, res) => {
     
     let tableList = [];
     if (tables) {
-      tableList = tables.split(',');
-    } else {
-      // Get all tables if none specified
-      const [allTables] = await connection.execute('SHOW TABLES');
-      tableList = allTables.map(table => Object.values(table)[0]);
+      tableList = String(tables)
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean);
     }
     
     // Use information_schema to find tables that contain a Location column (fast)
