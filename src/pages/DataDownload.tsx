@@ -1,6 +1,6 @@
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import MultiDatabaseDownload from '@/components/MultiDatabaseDownload';
+import DynamicDataBrowser from '@/components/DynamicDataBrowser';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -97,7 +97,7 @@ const DataDownloadPage = () => {
               </p>
             </div>
 
-            <MultiDatabaseDownload />
+            <DynamicDataBrowser />
           </div>
         </section>
 

@@ -13,17 +13,30 @@ app.use(cors({
 
 app.use(express.json());
 
-// Enhanced API request logger with full debugging
+// Enhanced API request logger with comprehensive debugging
 app.use('/api', (req, _res, next) => {
-  console.log('[API REQUEST]', req.method, req.originalUrl);
-  console.log('[API PARAMS]', req.params);
-  console.log('[API QUERY]', req.query);
+  const timestamp = new Date().toISOString();
+  console.log(`\n=== [${timestamp}] API REQUEST ===`);
+  console.log(`Method: ${req.method}`);
+  console.log(`URL: ${req.originalUrl}`);
+  console.log(`Params:`, req.params);
+  console.log(`Query:`, req.query);
+  console.log(`Headers:`, {
+    'content-type': req.headers['content-type'],
+    'user-agent': req.headers['user-agent']?.substring(0, 50) + '...',
+    'origin': req.headers.origin
+  });
+  console.log('=====================================\n');
   next();
 });
 
-// Add route existence check
+// Route debugging middleware
 app.use('/api/databases/:database/tables/:table/locations', (req, res, next) => {
-  console.log('[LOCATIONS ROUTE HIT]', req.params);
+  console.log('🎯 [LOCATIONS ROUTE MATCHED]', {
+    database: req.params.database,
+    table: req.params.table,
+    timestamp: new Date().toISOString()
+  });
   next();
 });
 
@@ -354,30 +367,52 @@ app.get('/api/databases/:database/tables/:table/attributes', async (req, res) =>
   }
 });
 
-// Get distinct locations for a specific table
+// Get distinct locations for a specific table with enhanced debugging
 app.get('/api/databases/:database/tables/:table/locations', async (req, res) => {
+  const { database, table } = req.params;
+  console.log(`\n🔍 [LOCATIONS ENDPOINT] Starting request for ${database}/${table}`);
+  
   try {
-    const { database, table } = req.params;
-    const { connection } = await getConnectionWithDB(database);
+    console.log(`📋 [DB CONNECTION] Attempting connection to database: ${database}`);
+    const { connection, databaseName } = await getConnectionWithDB(database);
+    console.log(`✅ [DB CONNECTION] Connected to: ${databaseName}`);
 
-    // Case-safe column discovery
+    // Case-safe column discovery with detailed logging
+    console.log(`🔍 [SCHEMA CHECK] Checking columns in table: ${table}`);
     const [cols] = await connection.query(`SHOW COLUMNS FROM \`${table}\``);
+    console.log(`📊 [SCHEMA CHECK] Found ${cols.length} columns:`, cols.map(c => c.Field));
+    
     const colMap = new Map(cols.map(c => [c.Field.toLowerCase(), c.Field]));
     const locCol = colMap.get('location') || 'Location';
+    console.log(`🎯 [LOCATION COLUMN] Using column: ${locCol}`);
 
-    const [rows] = await connection.execute(
-      `SELECT DISTINCT \`${locCol}\` AS name FROM \`${table}\` 
-       WHERE \`${locCol}\` IS NOT NULL AND \`${locCol}\` <> '' 
-       ORDER BY \`${locCol}\``
-    );
+    // Query distinct locations with debugging
+    const query = `SELECT DISTINCT \`${locCol}\` AS name FROM \`${table}\` 
+                   WHERE \`${locCol}\` IS NOT NULL AND \`${locCol}\` <> '' 
+                   ORDER BY \`${locCol}\``;
+    console.log(`🔍 [SQL QUERY] Executing:`, query);
+    
+    const [rows] = await connection.execute(query);
+    console.log(`📊 [QUERY RESULT] Found ${rows.length} locations:`, rows.map(r => r.name));
 
     connection.release();
+    console.log(`✅ [LOCATIONS ENDPOINT] Success - returning ${rows.length} locations`);
 
     // Return array of strings (matches UI expectation)
-    res.json(rows.map(r => r.name));
+    const result = rows.map(r => r.name);
+    res.json(result);
+    
   } catch (error) {
-    console.error('Error fetching table locations:', error);
-    res.status(500).json({ error: 'Failed to fetch table locations' });
+    console.error(`❌ [LOCATIONS ENDPOINT] Error for ${database}/${table}:`, error);
+    console.error(`❌ [ERROR STACK]`, error.stack);
+    
+    res.status(500).json({ 
+      error: 'Failed to fetch table locations',
+      details: error.message,
+      database,
+      table,
+      timestamp: new Date().toISOString()
+    });
   }
 });
 
