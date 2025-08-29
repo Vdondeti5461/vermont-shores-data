@@ -97,31 +97,27 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
           });
         };
 
-        // Add site markers - using region-based colors to match network overview
+        // Add site markers - using elevation-based colors to match network overview elevation profile
         mapSites.forEach((site) => {
           let color = 'hsl(var(--primary))'; // Default blue
-          let typeLabel = site.region || 'Regional';
+          let elevationRange = 'Low Elevation';
           
-          // Color by region to match network overview differentiation
-          switch(site.region) {
-            case 'Mansfield East':
-              color = 'hsl(var(--destructive))'; // Red for Mansfield East (Ranch Brook)
-              break;
-            case 'Mansfield West':
-              color = 'hsl(var(--warning))'; // Yellow/orange for Mansfield West (Summit area)
-              break;
-            case 'Sleepers River':
-              color = 'hsl(var(--primary))'; // Blue for Sleepers River
-              break;
-            case 'Jericho':
-              color = 'hsl(var(--secondary))'; // Green for Jericho
-              break;
-            case 'Urban':
-              color = 'hsl(var(--accent))'; // Purple for Urban sites
-              break;
-            default:
-              color = 'hsl(var(--muted-foreground))'; // Gray for undefined
-              break;
+          // Color by elevation ranges to match network overview elevation profile
+          if (site.elevation >= 1000) {
+            color = 'hsl(var(--destructive))'; // Red for high elevation (1000m+)
+            elevationRange = 'High Elevation (1000m+)';
+          } else if (site.elevation >= 700) {
+            color = 'hsl(var(--warning))'; // Orange/yellow for medium-high (700-999m)
+            elevationRange = 'Medium-High (700-999m)';
+          } else if (site.elevation >= 400) {
+            color = 'hsl(var(--primary))'; // Blue for medium elevation (400-699m)
+            elevationRange = 'Medium (400-699m)';
+          } else if (site.elevation >= 200) {
+            color = 'hsl(var(--secondary))'; // Green for low-medium (200-399m)
+            elevationRange = 'Low-Medium (200-399m)';
+          } else {
+            color = 'hsl(var(--accent))'; // Purple for very low elevation (<200m)
+            elevationRange = 'Very Low (<200m)';
           }
           
           const status = site.status || 'active';
@@ -146,7 +142,10 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
                   <strong>Coordinates:</strong> ${site.latitude.toFixed(4)}°N, ${site.longitude.toFixed(4)}°W
                 </p>
                 <p style="margin: 0 0 4px 0; font-size: 12px;">
-                  <strong>Region:</strong> ${typeLabel}
+                  <strong>Elevation Range:</strong> ${elevationRange}
+                </p>
+                <p style="margin: 0 0 4px 0; font-size: 12px;">
+                  <strong>Region:</strong> ${site.region || 'Regional'}
                 </p>
                 <p style="margin: 0; font-size: 12px;">
                   <strong>Status:</strong> <span style="color: ${statusColor};">${statusLabel}</span>
@@ -220,19 +219,19 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
           </div>
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="text-destructive border-destructive/30">
-              {mapSites.filter(s => s.region === 'Mansfield East').length} Mansfield East
+              {mapSites.filter(s => s.elevation >= 1000).length} High Elevation (1000m+)
             </Badge>
             <Badge variant="outline" className="text-warning border-warning/30">
-              {mapSites.filter(s => s.region === 'Mansfield West').length} Mansfield West
+              {mapSites.filter(s => s.elevation >= 700 && s.elevation < 1000).length} Medium-High (700-999m)
             </Badge>
             <Badge variant="outline" className="text-primary border-primary/30">
-              {mapSites.filter(s => s.region === 'Sleepers River').length} Sleepers River
+              {mapSites.filter(s => s.elevation >= 400 && s.elevation < 700).length} Medium (400-699m)
             </Badge>
             <Badge variant="outline" className="text-secondary border-secondary/30">
-              {mapSites.filter(s => s.region === 'Jericho').length} Jericho
+              {mapSites.filter(s => s.elevation >= 200 && s.elevation < 400).length} Low-Medium (200-399m)
             </Badge>
             <Badge variant="outline" className="text-accent border-accent/30">
-              {mapSites.filter(s => s.region === 'Urban').length} Urban
+              {mapSites.filter(s => s.elevation < 200).length} Very Low (&lt;200m)
             </Badge>
           </div>
         </div>
@@ -276,27 +275,27 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
 
           {/* Legend */}
           <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg p-3 border shadow-lg">
-            <h4 className="font-semibold mb-2 text-sm">Network Legend</h4>
+            <h4 className="font-semibold mb-2 text-sm">Elevation Legend</h4>
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-xs">
                 <div className="w-3 h-3 rounded-full bg-destructive border border-white"></div>
-                <span>Mansfield East ({mapSites.filter(s => s.region === 'Mansfield East').length})</span>
+                <span>High Elevation 1000m+ ({mapSites.filter(s => s.elevation >= 1000).length})</span>
               </div>
               <div className="flex items-center gap-2 text-xs">
                 <div className="w-3 h-3 rounded-full bg-warning border border-white"></div>
-                <span>Mansfield West ({mapSites.filter(s => s.region === 'Mansfield West').length})</span>
+                <span>Medium-High 700-999m ({mapSites.filter(s => s.elevation >= 700 && s.elevation < 1000).length})</span>
               </div>
               <div className="flex items-center gap-2 text-xs">
                 <div className="w-3 h-3 rounded-full bg-primary border border-white"></div>
-                <span>Sleepers River ({mapSites.filter(s => s.region === 'Sleepers River').length})</span>
+                <span>Medium 400-699m ({mapSites.filter(s => s.elevation >= 400 && s.elevation < 700).length})</span>
               </div>
               <div className="flex items-center gap-2 text-xs">
                 <div className="w-3 h-3 rounded-full bg-secondary border border-white"></div>
-                <span>Jericho ({mapSites.filter(s => s.region === 'Jericho').length})</span>
+                <span>Low-Medium 200-399m ({mapSites.filter(s => s.elevation >= 200 && s.elevation < 400).length})</span>
               </div>
               <div className="flex items-center gap-2 text-xs">
                 <div className="w-3 h-3 rounded-full bg-accent border border-white"></div>
-                <span>Urban ({mapSites.filter(s => s.region === 'Urban').length})</span>
+                <span>Very Low &lt;200m ({mapSites.filter(s => s.elevation < 200).length})</span>
               </div>
               <div className="flex items-center gap-2 text-xs mt-2 pt-2 border-t border-muted">
                 <div className="w-3 h-3 rounded-full bg-muted border border-white opacity-60"></div>
