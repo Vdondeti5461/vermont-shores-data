@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 3001;
 
 // CORS configuration
 app.use(cors({
-  origin: ['https://www.uvm.edu', 'https://vdondeti.w3.uvm.edu', 'http://localhost:5173'],
+  origin: ['https://www.uvm.edu', 'https://vdondeti.w3.uvm.edu', 'http://localhost:5173', 'https://5d5ff90d-8cee-4075-81bd-555a25d8e14f.sandbox.lovable.dev'],
   credentials: true
 }));
 
