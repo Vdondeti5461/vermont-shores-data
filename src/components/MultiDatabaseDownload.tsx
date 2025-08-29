@@ -138,9 +138,9 @@ const MultiDatabaseDownload = () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/databases/${database}/tables/${table}/attributes`);
       const data = await response.json();
-      setAttributes(data.attributes);
-      // Auto-select primary attributes
-      setSelectedAttributes(data.primaryAttributes.map((attr: AttributeInfo) => attr.name));
+      setAttributes(data.attributes || []);
+      // Let the user pick after time & location selection
+      setSelectedAttributes([]);
     } catch (error) {
       console.error('Error fetching attributes:', error);
       toast({
@@ -154,9 +154,10 @@ const MultiDatabaseDownload = () => {
   const fetchLocations = async (database: string, table?: string) => {
     try {
       let url = `${API_BASE_URL}/api/databases/${database}/locations`;
-      if (table) {
-        url += `?tables=${table}`;
-      }
+      const params: string[] = [];
+      if (table) params.push(`tables=${encodeURIComponent(table)}`);
+      if (database === 'raw_data') params.push('canonical=1');
+      if (params.length) url += `?${params.join('&')}`;
       const response = await fetch(url);
       const data = await response.json();
       setLocations(data);
@@ -180,60 +181,61 @@ const MultiDatabaseDownload = () => {
       return;
     }
 
+    // Enforce primary filter order like earlier implementation
+    if (!startDate && !endDate) {
+      toast({
+        title: "Time Range Required",
+        description: "Please select a TIMESTAMP (start and/or end) before proceeding",
+        variant: "destructive"
+      });
+      return;
+    }
+    if (selectedLocations.length === 0) {
+      toast({
+        title: "Location Required",
+        description: "Please select at least one Location",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       const params = new URLSearchParams();
-      
-      // Handle multiple locations
+
+      // Handle locations (single selection for download filename parity)
       if (selectedLocations.length > 0) {
-        // If multiple locations selected, download each separately or combine
         if (selectedLocations.length === 1) {
           params.append('location', selectedLocations[0]);
         } else {
-          // For multiple locations, we'll need to modify the backend to handle this
-          // For now, let's download the first one but warn the user
           params.append('location', selectedLocations[0]);
           toast({
             title: "Multiple Locations",
-            description: `Downloading data for ${selectedLocations[0]} only. Multiple location downloads will be enhanced soon.`,
+            description: `Downloading data for ${selectedLocations[0]} only.`,
             variant: "default"
           });
         }
       }
-      
-      if (startDate) {
-        params.append('start_date', startDate.toISOString().split('T')[0]);
-      }
-      
-      if (endDate) {
-        params.append('end_date', endDate.toISOString().split('T')[0]);
-      }
-      
-      if (selectedAttributes.length > 0) {
-        params.append('attributes', selectedAttributes.join(','));
-      }
+
+      if (startDate) params.append('start_date', startDate.toISOString().split('T')[0]);
+      if (endDate) params.append('end_date', endDate.toISOString().split('T')[0]);
+      if (selectedAttributes.length > 0) params.append('attributes', selectedAttributes.join(','));
 
       const url = `${API_BASE_URL}/api/databases/${selectedDatabase}/download/${selectedTable}?${params}`;
-      
-      // Create a temporary link and trigger download
+
+      // Build filename: database_Table_YYYY-MM-DD.csv
+      const todayStamp = new Date().toISOString().split('T')[0];
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${selectedDatabase}_${selectedTable}_data.csv`;
+      link.download = `${selectedDatabase}_${selectedTable}_${todayStamp}.csv`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
 
-      toast({
-        title: "Download Started",
-        description: "Your data export has been initiated",
-      });
+      toast({ title: "Download Started", description: "Your data export has been initiated" });
     } catch (error) {
       console.error('Error downloading data:', error);
-      toast({
-        title: "Download Failed",
-        description: "Failed to download data",
-        variant: "destructive"
-      });
+      toast({ title: "Download Failed", description: "Failed to download data", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -441,7 +443,7 @@ const MultiDatabaseDownload = () => {
       )}
 
       {/* Attributes Selection */}
-      {attributes.length > 0 && (
+      {attributes.length > 0 && selectedLocations.length > 0 && (startDate || endDate) && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
