@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Download, Database, Table, MapPin, Calendar as CalendarIcon, AlertCircle, CheckCircle2, Info } from 'lucide-react';
-import MetadataDisplay from '@/components/MetadataDisplay';
+import InteractiveMetadata from '@/components/InteractiveMetadata';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { API_BASE_URL } from '@/lib/apiConfig';
@@ -891,7 +891,7 @@ const DynamicDataBrowser = () => {
         </TabsContent>
 
         <TabsContent value="metadata" className="space-y-6">
-          <MetadataDisplay />
+          <InteractiveMetadata />
         </TabsContent>
 
         <TabsContent value="download" className="space-y-6">
