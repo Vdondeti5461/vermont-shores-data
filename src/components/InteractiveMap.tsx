@@ -26,12 +26,12 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
 
   // Default sites if none provided
   const defaultSites: NetworkSite[] = [
-    { id: 6, name: "Site #6", shortName: "RB-06", latitude: 44.5036530380135, longitude: -72.7836409062135, elevation: 412, type: "ranch_brook" },
-    { id: 13, name: "Mansfield Summit", shortName: "RB-13", latitude: 44.5283751587457, longitude: -72.8146923602848, elevation: 1163, type: "ranch_brook" },
-    { id: 11, name: "Site #11", shortName: "RB-11", latitude: 44.5054945991154, longitude: -72.7713537523828, elevation: 380, type: "ranch_brook" },
-    { id: 22, name: "Potash Brook", shortName: "POTASH", latitude: 44.4448498951540, longitude: -73.2143236967372, elevation: 47, type: "distributed" },
-    { id: 21, name: "Spear St", shortName: "SPEAR", latitude: 44.4525602200818, longitude: -73.1919332892984, elevation: 86, type: "distributed" },
-    { id: 20, name: "Jericho (Forested)", shortName: "JER-F", latitude: 44.4478096390368, longitude: -73.0027073790982, elevation: 196, type: "distributed" },
+    { id: 6, name: "Mansfield East Ranch Brook 6", shortName: "RB-06", latitude: 44.2649, longitude: -72.8051, elevation: 975, type: "ranch_brook" },
+    { id: 13, name: "Mansfield Summit", shortName: "SUMM", latitude: 44.2573, longitude: -72.8153, elevation: 1339, type: "ranch_brook" },
+    { id: 11, name: "Mansfield East Ranch Brook 11", shortName: "RB-11", latitude: 44.2679, longitude: -72.8021, elevation: 1100, type: "ranch_brook" },
+    { id: 22, name: "Potash Brook", shortName: "PTSH", latitude: 44.2567, longitude: -72.8147, elevation: 1225, type: "distributed" },
+    { id: 21, name: "Spear Street", shortName: "SPER", latitude: 44.4759, longitude: -73.1959, elevation: 95, type: "distributed" },
+    { id: 20, name: "Jericho Forest", shortName: "JRFO", latitude: 44.4925, longitude: -72.9665, elevation: 215, type: "distributed" },
   ];
 
   const mapSites = sites.length > 0 ? sites : defaultSites;
