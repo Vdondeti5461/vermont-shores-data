@@ -186,8 +186,18 @@ app.get('/api/databases/:database/locations', async (req, res) => {
        FROM INFORMATION_SCHEMA.COLUMNS 
        WHERE TABLE_SCHEMA = ? AND (
          LOWER(COLUMN_NAME) = 'location' OR
+         LOWER(COLUMN_NAME) LIKE 'location_%' OR
+         LOWER(COLUMN_NAME) LIKE '%_location' OR
          LOWER(COLUMN_NAME) LIKE '%location%' OR
-         LOWER(COLUMN_NAME) IN ('site','sitename','site_code','station','stationname')
+         LOWER(COLUMN_NAME) IN (
+           'locationid','location_id','locationcode','location_code','locationname','location_name',
+           'site','sitename','site_id','siteid','sitecode','site_code',
+           'station','stationname','station_id','stationid','stationcode','station_code',
+           'loc','loc_id','locid'
+         ) OR
+         LOWER(COLUMN_NAME) LIKE 'site_%' OR LOWER(COLUMN_NAME) LIKE '%_site' OR
+         LOWER(COLUMN_NAME) LIKE 'station_%' OR LOWER(COLUMN_NAME) LIKE '%_station' OR
+         LOWER(COLUMN_NAME) LIKE 'loc_%' OR LOWER(COLUMN_NAME) LIKE '%_loc'
        )`,
       [dbName]
     );
