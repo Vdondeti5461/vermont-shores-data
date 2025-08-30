@@ -300,31 +300,49 @@ export class LocalDatabaseService {
     dataType: 'raw' | 'cleaned' | 'both' = 'both'
   ): Promise<{ timestamp: string; location: string; raw_depth?: number; cleaned_depth?: number; dbtcdt?: number }[]> {
     try {
-      // Use actual database names from your system
-      const dbName = database === 'raw' ? 'rawdata' : 'finalcleandata';
-      
-      const params = new URLSearchParams({
-        database: dbName,
-        ...(location && { location }),
-        ...(startDate && { start_date: startDate }),
-        ...(endDate && { end_date: endDate }),
-        ...(season && { season }),
-        ...(year && { year }),
-        data_type: dataType
-      });
+      // Map to server database keys
+      const dbKey = database === 'raw' ? 'raw_data' : 'final_clean_data';
 
-      const response = await fetch(`${API_BASE_URL}/api/snow-depth-series?${params}`, {
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        }
+      // If year is provided without explicit dates, derive full-year range
+      const start = startDate || (year ? `${year}-01-01` : undefined);
+      const end = endDate || (year ? `${year}-12-31` : undefined);
+
+      const params = new URLSearchParams();
+      if (location) params.set('location', location);
+      if (start) params.set('start_date', start);
+      if (end) params.set('end_date', end);
+      if (season && season !== 'all') params.set('season', season);
+      // Request only the necessary attributes when supported
+      params.set('attributes', 'TIMESTAMP,Location,DBTCDT');
+      // Reasonable upper bound for a year of hourly-ish data
+      params.set('limit', '20000');
+
+      const url = `${this.baseUrl}/api/databases/${dbKey}/data/table1?${params.toString()}`;
+      const response = await fetch(url, {
+        headers: { 'Accept': 'application/json' }
       });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      return await response.json();
+      const json = await response.json();
+      const rows: any[] = Array.isArray(json) ? json : (json.data || []);
+
+      const result = rows.map((row) => {
+        const timestamp = row.TIMESTAMP || row.timestamp || row.Timestamp || '';
+        const locationName = row.Location || row.LOCATION || row.location || '';
+        const value = Number(row.DBTCDT ?? row.dbtcdt ?? row.DBTCDT_Med ?? row.dbtcdt_med ?? 0);
+        return {
+          timestamp,
+          location: locationName,
+          dbtcdt: value,
+          raw_depth: database === 'raw' ? value : undefined,
+          cleaned_depth: database !== 'raw' ? value : undefined,
+        };
+      });
+
+      return result;
     } catch (error) {
       console.error('Failed to fetch snow depth time series:', error);
       // Return mock data for development with proper database context

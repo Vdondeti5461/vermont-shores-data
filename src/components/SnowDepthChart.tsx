@@ -37,7 +37,7 @@ const SnowDepthChart: React.FC<SnowDepthChartProps> = ({ className = '' }) => {
   // Available years and seasons
   const availableYears = ['2022', '2023', '2024'];
   const seasons = [
-    { value: '', label: 'All Seasons' },
+    { value: 'all', label: 'All Seasons' },
     { value: 'winter', label: 'Winter (Dec-Feb)' },
     { value: 'spring', label: 'Spring (Mar-May)' },
     { value: 'summer', label: 'Summer (Jun-Aug)' },
@@ -78,13 +78,14 @@ const SnowDepthChart: React.FC<SnowDepthChartProps> = ({ className = '' }) => {
         // Set date range based on year and season
         const startDate = `${selectedYear}-01-01`;
         const endDate = `${selectedYear}-12-31`;
+        const seasonParam = selectedSeason && selectedSeason !== 'all' ? selectedSeason : undefined;
         
         const snowData = await LocalDatabaseService.getSnowDepthTimeSeries(
           selectedDatabase,
           selectedLocation,
           startDate,
           endDate,
-          selectedSeason,
+          seasonParam,
           selectedYear,
           'both'
         );
@@ -95,10 +96,10 @@ const SnowDepthChart: React.FC<SnowDepthChartProps> = ({ className = '' }) => {
           date: new Date(item.timestamp).toLocaleDateString('en-US', { 
             month: 'short', 
             day: 'numeric',
-            year: selectedSeason ? undefined : '2-digit'
+            year: selectedSeason && selectedSeason !== 'all' ? undefined : '2-digit'
           }),
-          rawDepth: item.raw_depth || item.dbtcdt || 0,
-          cleanedDepth: item.cleaned_depth || item.dbtcdt || 0
+          rawDepth: item.raw_depth ?? (selectedDatabase === 'raw' ? item.dbtcdt : undefined),
+          cleanedDepth: item.cleaned_depth ?? (selectedDatabase === 'cleaned' ? item.dbtcdt : undefined)
         }));
         
         setData(chartData);
@@ -401,7 +402,7 @@ const SnowDepthChart: React.FC<SnowDepthChartProps> = ({ className = '' }) => {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>Time Period:</span>
-                  <span className="font-medium">{selectedYear} {selectedSeason ? `(${selectedSeason})` : '(Full Year)'}</span>
+                  <span className="font-medium">{selectedYear} {selectedSeason && selectedSeason !== 'all' ? `(${seasons.find(s => s.value === selectedSeason)?.label})` : '(Full Year)'}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>Location:</span>
