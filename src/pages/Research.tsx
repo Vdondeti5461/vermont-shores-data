@@ -148,11 +148,22 @@ const Research = () => {
             </div>
 
             <Tabs defaultValue="publications" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="publications">Publications</TabsTrigger>
-                <TabsTrigger value="projects">Active Projects</TabsTrigger>
-                <TabsTrigger value="awards">Awards & Grants</TabsTrigger>
-                <TabsTrigger value="outreach">Outreach</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 xs:grid-cols-4 gap-1 h-auto p-1">
+                <TabsTrigger value="publications" className="text-xs xs:text-sm py-2 px-2 xs:px-3">
+                  <span className="xs:hidden">Papers</span>
+                  <span className="hidden xs:inline">Publications</span>
+                </TabsTrigger>
+                <TabsTrigger value="projects" className="text-xs xs:text-sm py-2 px-2 xs:px-3">
+                  <span className="xs:hidden">Projects</span>
+                  <span className="hidden xs:inline">Active Projects</span>
+                </TabsTrigger>
+                <TabsTrigger value="awards" className="text-xs xs:text-sm py-2 px-2 xs:px-3">
+                  <span className="xs:hidden">Awards</span>
+                  <span className="hidden xs:inline">Awards & Grants</span>
+                </TabsTrigger>
+                <TabsTrigger value="outreach" className="text-xs xs:text-sm py-2 px-2 xs:px-3">
+                  Outreach
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="publications" className="mt-8">
@@ -165,31 +176,31 @@ const Research = () => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-4">
-                        <div className="border-l-4 border-primary pl-4">
-                          <h4 className="font-semibold">Climate-driven changes in montane forest ecosystems</h4>
-                          <p className="text-sm text-muted-foreground">
+                      <div className="space-y-3 xs:space-y-4">
+                        <div className="border-l-4 border-primary pl-3 xs:pl-4 py-2">
+                          <h4 className="font-semibold text-sm xs:text-base mb-1">Climate-driven changes in montane forest ecosystems</h4>
+                          <p className="text-xs xs:text-sm text-muted-foreground">
                             Journal of Environmental Change, 2024
                           </p>
-                          <p className="text-sm text-muted-foreground mt-1">
+                          <p className="text-xs xs:text-sm text-muted-foreground mt-1">
                             Smith, J., Johnson, M., et al.
                           </p>
                         </div>
-                        <div className="border-l-4 border-primary pl-4">
-                          <h4 className="font-semibold">Snow water equivalent trends in Vermont mountains</h4>
-                          <p className="text-sm text-muted-foreground">
+                        <div className="border-l-4 border-primary pl-3 xs:pl-4 py-2">
+                          <h4 className="font-semibold text-sm xs:text-base mb-1">Snow water equivalent trends in Vermont mountains</h4>
+                          <p className="text-xs xs:text-sm text-muted-foreground">
                             Hydrological Processes, 2023
                           </p>
-                          <p className="text-sm text-muted-foreground mt-1">
+                          <p className="text-xs xs:text-sm text-muted-foreground mt-1">
                             Davis, K., Wilson, R., et al.
                           </p>
                         </div>
-                        <div className="border-l-4 border-primary pl-4">
-                          <h4 className="font-semibold">Automated environmental monitoring networks</h4>
-                          <p className="text-sm text-muted-foreground">
+                        <div className="border-l-4 border-primary pl-3 xs:pl-4 py-2">
+                          <h4 className="font-semibold text-sm xs:text-base mb-1">Automated environmental monitoring networks</h4>
+                          <p className="text-xs xs:text-sm text-muted-foreground">
                             Environmental Monitoring and Assessment, 2023
                           </p>
-                          <p className="text-sm text-muted-foreground mt-1">
+                          <p className="text-xs xs:text-sm text-muted-foreground mt-1">
                             Brown, L., Anderson, T., et al.
                           </p>
                         </div>
@@ -203,17 +214,17 @@ const Research = () => {
               </TabsContent>
 
               <TabsContent value="projects" className="mt-8">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>NSF Climate Impacts Study</CardTitle>
-                      <Badge variant="secondary">2022-2025</Badge>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 xs:gap-6">
+                  <Card className="hover:shadow-lg transition-shadow touch:active:scale-98">
+                    <CardHeader className="pb-3 xs:pb-4">
+                      <CardTitle className="text-base xs:text-lg">NSF Climate Impacts Study</CardTitle>
+                      <Badge variant="secondary" className="w-fit text-xs">2022-2025</Badge>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-muted-foreground mb-3">
+                      <p className="text-xs xs:text-sm text-muted-foreground mb-2 xs:mb-3 leading-relaxed">
                         Multi-year study of climate change impacts on high-elevation ecosystems.
                       </p>
-                      <p className="text-sm text-muted-foreground">Funding: $1.2M</p>
+                      <p className="text-xs xs:text-sm text-muted-foreground font-medium">Funding: $1.2M</p>
                     </CardContent>
                   </Card>
 

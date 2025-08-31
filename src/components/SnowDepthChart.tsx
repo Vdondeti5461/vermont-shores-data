@@ -67,7 +67,7 @@ const SnowDepthChart: React.FC<SnowDepthChartProps> = ({ className = '' }) => {
     loadInitialData();
   }, []);
 
-  // Load snow depth data when filters change
+  // Load snow depth data when filters change  
   useEffect(() => {
     if (!selectedLocation) return;
 
@@ -80,37 +80,84 @@ const SnowDepthChart: React.FC<SnowDepthChartProps> = ({ className = '' }) => {
         const endDate = `${selectedYear}-12-31`;
         const seasonParam = selectedSeason && selectedSeason !== 'all' ? selectedSeason : undefined;
         
-        const snowData = await LocalDatabaseService.getSnowDepthTimeSeries(
-          selectedDatabase,
-          selectedLocation,
-          startDate,
-          endDate,
-          seasonParam,
-          selectedYear,
-          'both'
-        );
+        // Optimize: Use direct database names and parallel requests when comparing both
+        const databaseName = selectedDatabase === 'raw' ? 'rawdata' : 'finalcleandata';
         
-        // Transform data for chart
-        const chartData = snowData.map(item => ({
-          ...item,
-          date: new Date(item.timestamp).toLocaleDateString('en-US', { 
-            month: 'short', 
-            day: 'numeric',
-            year: selectedSeason && selectedSeason !== 'all' ? undefined : '2-digit'
-          }),
-          rawDepth: item.raw_depth ?? (selectedDatabase === 'raw' ? item.dbtcdt : undefined),
-          cleanedDepth: item.cleaned_depth ?? (selectedDatabase === 'cleaned' ? item.dbtcdt : undefined)
-        }));
-        
-        setData(chartData);
+        if (selectedDatabase === 'both') {
+          // Load both raw and clean data in parallel for comparison
+          const [rawData, cleanData] = await Promise.all([
+            LocalDatabaseService.getSnowDepthTimeSeries('rawdata', selectedLocation, startDate, endDate, seasonParam, selectedYear, 'both'),
+            LocalDatabaseService.getSnowDepthTimeSeries('finalcleandata', selectedLocation, startDate, endDate, seasonParam, selectedYear, 'both')
+          ]);
+          
+          // Merge data by timestamp for comparison
+          const mergedData = new Map();
+          
+          rawData.forEach(item => {
+            mergedData.set(item.timestamp, { 
+              ...item, 
+              rawDepth: item.dbtcdt || item.raw_depth,
+              timestamp: item.timestamp
+            });
+          });
+          
+          cleanData.forEach(item => {
+            const existing = mergedData.get(item.timestamp) || { timestamp: item.timestamp };
+            mergedData.set(item.timestamp, {
+              ...existing,
+              cleanedDepth: item.dbtcdt || item.cleaned_depth
+            });
+          });
+          
+          const chartData = Array.from(mergedData.values())
+            .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+            .map(item => ({
+              ...item,
+              date: new Date(item.timestamp).toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric',
+                year: selectedSeason && selectedSeason !== 'all' ? undefined : '2-digit'
+              })
+            }));
+          
+          setData(chartData);
+        } else {
+          // Single database request
+          const snowData = await LocalDatabaseService.getSnowDepthTimeSeries(
+            databaseName,
+            selectedLocation,
+            startDate,
+            endDate,
+            seasonParam,
+            selectedYear,
+            'both'
+          );
+          
+          // Transform data for chart
+          const chartData = snowData.map(item => ({
+            ...item,
+            date: new Date(item.timestamp).toLocaleDateString('en-US', { 
+              month: 'short', 
+              day: 'numeric',
+              year: selectedSeason && selectedSeason !== 'all' ? undefined : '2-digit'
+            }),
+            rawDepth: selectedDatabase === 'raw' ? (item.dbtcdt || item.raw_depth) : undefined,
+            cleanedDepth: selectedDatabase === 'cleaned' ? (item.dbtcdt || item.cleaned_depth) : undefined
+          }));
+          
+          setData(chartData);
+        }
       } catch (error) {
         console.error('Failed to load snow depth data:', error);
+        setData([]); // Set empty data on error
       } finally {
         setLoading(false);
       }
     };
 
-    loadSnowDepthData();
+    // Debounce the data loading to prevent rapid consecutive calls
+    const timeoutId = setTimeout(loadSnowDepthData, 100);
+    return () => clearTimeout(timeoutId);
   }, [selectedLocation, selectedDatabase, selectedYear, selectedSeason]);
 
   // Calculate statistics
@@ -194,6 +241,7 @@ const SnowDepthChart: React.FC<SnowDepthChartProps> = ({ className = '' }) => {
             <SelectContent>
               <SelectItem value="raw">Raw Data</SelectItem>
               <SelectItem value="cleaned">Final Clean</SelectItem>
+              <SelectItem value="both">Compare Both</SelectItem>
             </SelectContent>
           </Select>
 

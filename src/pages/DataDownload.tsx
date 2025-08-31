@@ -113,13 +113,25 @@ const DataDownloadPage = () => {
             </h2>
           </div>
 
-          <Tabs defaultValue="browse" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
-              <TabsTrigger value="browse">Browse & Download</TabsTrigger>
-              <TabsTrigger value="api">API Documentation</TabsTrigger>
-              <TabsTrigger value="bulk">Bulk Downloads</TabsTrigger>
-              <TabsTrigger value="feeds">Real-time Feeds</TabsTrigger>
-            </TabsList>
+            <Tabs defaultValue="browse" className="w-full">
+              <TabsList className="grid w-full grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-1 h-auto p-1">
+                <TabsTrigger value="browse" className="text-xs xs:text-sm py-2 px-3">
+                  <span className="sm:hidden">Browse</span>
+                  <span className="hidden sm:inline">Browse & Download</span>
+                </TabsTrigger>
+                <TabsTrigger value="api" className="text-xs xs:text-sm py-2 px-3">
+                  <span className="sm:hidden">API</span>
+                  <span className="hidden sm:inline">API Documentation</span>
+                </TabsTrigger>
+                <TabsTrigger value="bulk" className="text-xs xs:text-sm py-2 px-3">
+                  <span className="sm:hidden">Bulk</span>
+                  <span className="hidden sm:inline">Bulk Downloads</span>
+                </TabsTrigger>
+                <TabsTrigger value="feeds" className="text-xs xs:text-sm py-2 px-3">
+                  <span className="sm:hidden">Feeds</span>
+                  <span className="hidden sm:inline">Real-time Feeds</span>
+                </TabsTrigger>
+              </TabsList>
 
             <TabsContent value="browse" className="mt-6 xs:mt-8">
               <Card>
@@ -131,18 +143,18 @@ const DataDownloadPage = () => {
                     Use our web interface to explore, filter, and download data with custom parameters based on 
                     TIMESTAMP and Location as primary filtering criteria.
                   </p>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 xs:gap-4 mb-4 xs:mb-6">
-                    <div className="p-3 xs:p-4 bg-muted/50 rounded-lg">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 xs:gap-4 mb-4 xs:mb-6">
+                    <div className="p-3 xs:p-4 bg-muted/50 rounded-lg touch:active:scale-98 transition-transform">
                       <h4 className="font-semibold mb-2 text-sm xs:text-base">Database Selection</h4>
-                      <p className="text-xs xs:text-sm text-muted-foreground">Choose from raw, cleaned, or processed databases</p>
+                      <p className="text-xs xs:text-sm text-muted-foreground leading-relaxed">Choose from raw, cleaned, or processed databases</p>
                     </div>
-                    <div className="p-3 xs:p-4 bg-muted/50 rounded-lg">
+                    <div className="p-3 xs:p-4 bg-muted/50 rounded-lg touch:active:scale-98 transition-transform">
                       <h4 className="font-semibold mb-2 text-sm xs:text-base">Location & Time Filtering</h4>
-                      <p className="text-xs xs:text-sm text-muted-foreground">Filter by specific locations and date ranges</p>
+                      <p className="text-xs xs:text-sm text-muted-foreground leading-relaxed">Filter by specific locations and date ranges</p>
                     </div>
-                    <div className="p-3 xs:p-4 bg-muted/50 rounded-lg">
+                    <div className="p-3 xs:p-4 bg-muted/50 rounded-lg touch:active:scale-98 transition-transform sm:col-span-2 lg:col-span-1">
                       <h4 className="font-semibold mb-2 text-sm xs:text-base">Attribute Selection</h4>
-                      <p className="text-xs xs:text-sm text-muted-foreground">Choose specific environmental measurements</p>
+                      <p className="text-xs xs:text-sm text-muted-foreground leading-relaxed">Choose specific environmental measurements</p>
                     </div>
                   </div>
                   <p className="text-xs xs:text-sm text-muted-foreground mb-3 xs:mb-4">
@@ -165,34 +177,34 @@ const DataDownloadPage = () => {
                     </p>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
-                      <div className="p-4 bg-muted/50 rounded-lg">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Badge variant="secondary">GET</Badge>
-                          <code className="text-sm">/api/databases</code>
+                    <div className="space-y-3 xs:space-y-4">
+                      <div className="p-3 xs:p-4 bg-muted/50 rounded-lg">
+                        <div className="flex flex-col xs:flex-row xs:items-center gap-2 mb-2">
+                          <Badge variant="secondary" className="w-fit">GET</Badge>
+                          <code className="text-xs xs:text-sm break-all">/api/databases</code>
                         </div>
-                        <p className="text-sm text-muted-foreground">Get all available databases with metadata</p>
+                        <p className="text-xs xs:text-sm text-muted-foreground">Get all available databases with metadata</p>
                       </div>
-                      <div className="p-4 bg-muted/50 rounded-lg">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Badge variant="secondary">GET</Badge>
-                          <code className="text-sm">/api/databases/:db/tables</code>
+                      <div className="p-3 xs:p-4 bg-muted/50 rounded-lg">
+                        <div className="flex flex-col xs:flex-row xs:items-center gap-2 mb-2">
+                          <Badge variant="secondary" className="w-fit">GET</Badge>
+                          <code className="text-xs xs:text-sm break-all">/api/databases/:db/tables</code>
                         </div>
-                        <p className="text-sm text-muted-foreground">Get tables with performance optimization</p>
+                        <p className="text-xs xs:text-sm text-muted-foreground">Get tables with performance optimization</p>
                       </div>
-                      <div className="p-4 bg-muted/50 rounded-lg">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Badge variant="secondary">GET</Badge>
-                          <code className="text-sm">/api/databases/:db/locations</code>
+                      <div className="p-3 xs:p-4 bg-muted/50 rounded-lg">
+                        <div className="flex flex-col xs:flex-row xs:items-center gap-2 mb-2">
+                          <Badge variant="secondary" className="w-fit">GET</Badge>
+                          <code className="text-xs xs:text-sm break-all">/api/databases/:db/locations</code>
                         </div>
-                        <p className="text-sm text-muted-foreground">Get locations with accurate coordinates and elevation</p>
+                        <p className="text-xs xs:text-sm text-muted-foreground">Get locations with accurate coordinates and elevation</p>
                       </div>
-                      <div className="p-4 bg-muted/50 rounded-lg">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Badge variant="secondary">GET</Badge>
-                          <code className="text-sm">/api/databases/:db/download/:table</code>
+                      <div className="p-3 xs:p-4 bg-muted/50 rounded-lg">
+                        <div className="flex flex-col xs:flex-row xs:items-center gap-2 mb-2">
+                          <Badge variant="secondary" className="w-fit">GET</Badge>
+                          <code className="text-xs xs:text-sm break-all">/api/databases/:db/download/:table</code>
                         </div>
-                        <p className="text-sm text-muted-foreground">Download filtered data with proper timestamp formatting (YYYY-MM-DD HH:mm:ss)</p>
+                        <p className="text-xs xs:text-sm text-muted-foreground">Download filtered data with proper timestamp formatting (YYYY-MM-DD HH:mm:ss)</p>
                       </div>
                     </div>
                     <div className="mt-6 space-y-4">

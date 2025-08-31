@@ -3,6 +3,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import SnowDepthChart from '@/components/SnowDepthChart';
 import SnowDepthMap from '@/components/SnowDepthMap';
+import SeasonalCleanDataAnalysis from '@/components/SeasonalCleanDataAnalysis';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -103,23 +104,28 @@ const SnowAnalytics = () => {
             </div>
 
             <Tabs defaultValue="timeseries" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-4 h-auto gap-1 p-1">
-                <TabsTrigger value="timeseries" className="flex items-center gap-2 px-3 py-2 text-xs md:text-sm">
+              <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-5 h-auto gap-1 p-1">
+                <TabsTrigger value="timeseries" className="flex items-center gap-2 px-2 md:px-3 py-2 text-xs md:text-sm">
                   <TrendingUp className="h-3 w-3 md:h-4 md:w-4" />
                   <span className="hidden sm:inline">Time Series</span>
                   <span className="sm:hidden">Chart</span>
                 </TabsTrigger>
-                <TabsTrigger value="map" className="flex items-center gap-2 px-3 py-2 text-xs md:text-sm">
+                <TabsTrigger value="map" className="flex items-center gap-2 px-2 md:px-3 py-2 text-xs md:text-sm">
                   <Map className="h-3 w-3 md:h-4 md:w-4" />
                   <span className="hidden sm:inline">Spatial Map</span>
                   <span className="sm:hidden">Map</span>
                 </TabsTrigger>
-                <TabsTrigger value="comparison" className="flex items-center gap-2 px-3 py-2 text-xs md:text-sm">
+                <TabsTrigger value="seasonal" className="flex items-center gap-2 px-2 md:px-3 py-2 text-xs md:text-sm">
+                  <Calendar className="h-3 w-3 md:h-4 md:w-4" />
+                  <span className="hidden sm:inline">Seasonal</span>
+                  <span className="sm:hidden">Season</span>
+                </TabsTrigger>
+                <TabsTrigger value="comparison" className="flex items-center gap-2 px-2 md:px-3 py-2 text-xs md:text-sm">
                   <BarChart3 className="h-3 w-3 md:h-4 md:w-4" />
                   <span className="hidden sm:inline">Data Quality</span>
                   <span className="sm:hidden">Quality</span>
                 </TabsTrigger>
-                <TabsTrigger value="export" className="flex items-center gap-2 px-3 py-2 text-xs md:text-sm">
+                <TabsTrigger value="export" className="flex items-center gap-2 px-2 md:px-3 py-2 text-xs md:text-sm">
                   <Download className="h-3 w-3 md:h-4 md:w-4" />
                   Export
                 </TabsTrigger>
@@ -146,6 +152,10 @@ const SnowAnalytics = () => {
                     </Card>
                   </div>
                 )}
+              </TabsContent>
+
+              <TabsContent value="seasonal" className="mt-6">
+                <SeasonalCleanDataAnalysis className="w-full" />
               </TabsContent>
 
               <TabsContent value="comparison" className="mt-6">
