@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Users, BookOpen, Award, Building } from 'lucide-react';
+import { Users, BookOpen, Award, Building, Download } from 'lucide-react';
 
 const Research = () => {
   const researchAreas = [
@@ -166,120 +166,121 @@ const Research = () => {
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="publications" className="mt-6 xs:mt-8">
-                <div className="grid gap-4 xs:gap-6">
-                  <Card>
-                    <CardHeader className="pb-3 xs:pb-4">
-                      <CardTitle className="flex items-center gap-2 text-base xs:text-lg">
-                        <BookOpen className="h-4 w-4 xs:h-5 xs:w-5" />
-                        Recent Publications
+              <TabsContent value="publications" className="mt-4 sm:mt-6 lg:mt-8">
+                <div className="space-y-4 sm:space-y-6">
+                  <Card className="overflow-hidden">
+                    <CardHeader className="pb-3 sm:pb-4 px-3 sm:px-6">
+                      <CardTitle className="flex items-center gap-2 text-base sm:text-lg lg:text-xl">
+                        <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                        <span>Recent Publications</span>
                       </CardTitle>
                     </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3 xs:space-y-4">
-                        <div className="border-l-4 border-primary pl-3 xs:pl-4 py-2 xs:py-3 bg-gradient-to-r from-primary/5 to-transparent rounded-r-lg">
-                          <h4 className="font-semibold text-sm xs:text-base mb-1 xs:mb-2 leading-tight">Climate-driven changes in montane forest ecosystems</h4>
-                          <div className="flex flex-col xs:flex-row xs:items-center gap-1 xs:gap-2 text-xs xs:text-sm text-muted-foreground">
-                            <span className="font-medium">Journal of Environmental Change</span>
-                            <span className="hidden xs:inline">•</span>
-                            <span>2024</span>
+                    <CardContent className="px-3 sm:px-6">
+                      {/* Mobile Optimized Publication List */}
+                      <div className="space-y-3 sm:space-y-4">
+                        {[
+                          {
+                            title: "Climate-driven changes in montane forest ecosystems",
+                            journal: "Journal of Environmental Change",
+                            year: "2024",
+                            authors: "Smith, J., Johnson, M., et al.",
+                            tags: ["Climate Change", "Forest Ecology"],
+                            color: "primary"
+                          },
+                          {
+                            title: "Snow water equivalent trends in Vermont mountains", 
+                            journal: "Hydrological Processes",
+                            year: "2023",
+                            authors: "Davis, K., Wilson, R., et al.",
+                            tags: ["Snow Hydrology", "Mountain Ecosystems"],
+                            color: "primary"
+                          },
+                          {
+                            title: "Automated environmental monitoring networks",
+                            journal: "Environmental Monitoring and Assessment", 
+                            year: "2023",
+                            authors: "Brown, L., Anderson, T., et al.",
+                            tags: ["Monitoring Systems", "Data Science"],
+                            color: "primary"
+                          },
+                          {
+                            title: "Real-time data quality assessment in environmental sensors",
+                            journal: "Sensors and Actuators",
+                            year: "2024", 
+                            authors: "Martinez, A., Thompson, C., et al.",
+                            tags: ["Sensor Networks", "Quality Control"],
+                            color: "secondary"
+                          },
+                          {
+                            title: "Machine learning approaches for environmental data validation",
+                            journal: "Environmental Informatics",
+                            year: "2023",
+                            authors: "Lee, S., Rodriguez, M., et al.", 
+                            tags: ["Machine Learning", "Data Validation"],
+                            color: "secondary"
+                          }
+                        ].map((pub, index) => (
+                          <div 
+                            key={index}
+                            className={`border-l-3 sm:border-l-4 border-${pub.color} pl-3 sm:pl-4 py-3 sm:py-4 bg-gradient-to-r from-${pub.color}/5 to-transparent rounded-r-lg touch:active:scale-[0.98] transition-transform cursor-pointer hover:shadow-sm`}
+                          >
+                            <h4 className="font-semibold text-sm sm:text-base lg:text-lg mb-2 leading-tight pr-2">
+                              {pub.title}
+                            </h4>
+                            
+                            <div className="space-y-1 sm:space-y-2">
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-xs sm:text-sm text-muted-foreground">
+                                <span className="font-medium text-foreground/80 break-words">{pub.journal}</span>
+                                <span className="hidden sm:inline text-muted-foreground/50">•</span>
+                                <span className="text-primary font-medium">{pub.year}</span>
+                              </div>
+                              
+                              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                                <span className="font-medium text-foreground/70">Authors:</span> {pub.authors}
+                              </p>
+                              
+                              <div className="flex flex-wrap gap-1 sm:gap-2 pt-1">
+                                {pub.tags.map((tag, tagIndex) => (
+                                  <Badge key={tagIndex} variant="outline" className="text-[10px] sm:text-xs px-2 py-1 h-auto">
+                                    {tag}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
                           </div>
-                          <p className="text-xs xs:text-sm text-muted-foreground mt-1 xs:mt-2">
-                            <span className="font-medium">Authors:</span> Smith, J., Johnson, M., et al.
-                          </p>
-                          <div className="flex flex-wrap gap-1 xs:gap-2 mt-2">
-                            <Badge variant="outline" className="text-2xs xs:text-xs">Climate Change</Badge>
-                            <Badge variant="outline" className="text-2xs xs:text-xs">Forest Ecology</Badge>
-                          </div>
-                        </div>
-                        
-                        <div className="border-l-4 border-primary pl-3 xs:pl-4 py-2 xs:py-3 bg-gradient-to-r from-primary/5 to-transparent rounded-r-lg">
-                          <h4 className="font-semibold text-sm xs:text-base mb-1 xs:mb-2 leading-tight">Snow water equivalent trends in Vermont mountains</h4>
-                          <div className="flex flex-col xs:flex-row xs:items-center gap-1 xs:gap-2 text-xs xs:text-sm text-muted-foreground">
-                            <span className="font-medium">Hydrological Processes</span>
-                            <span className="hidden xs:inline">•</span>
-                            <span>2023</span>
-                          </div>
-                          <p className="text-xs xs:text-sm text-muted-foreground mt-1 xs:mt-2">
-                            <span className="font-medium">Authors:</span> Davis, K., Wilson, R., et al.
-                          </p>
-                          <div className="flex flex-wrap gap-1 xs:gap-2 mt-2">
-                            <Badge variant="outline" className="text-2xs xs:text-xs">Snow Hydrology</Badge>
-                            <Badge variant="outline" className="text-2xs xs:text-xs">Mountain Ecosystems</Badge>
-                          </div>
-                        </div>
-                        
-                        <div className="border-l-4 border-primary pl-3 xs:pl-4 py-2 xs:py-3 bg-gradient-to-r from-primary/5 to-transparent rounded-r-lg">
-                          <h4 className="font-semibold text-sm xs:text-base mb-1 xs:mb-2 leading-tight">Automated environmental monitoring networks</h4>
-                          <div className="flex flex-col xs:flex-row xs:items-center gap-1 xs:gap-2 text-xs xs:text-sm text-muted-foreground">
-                            <span className="font-medium">Environmental Monitoring and Assessment</span>
-                            <span className="hidden xs:inline">•</span>
-                            <span>2023</span>
-                          </div>
-                          <p className="text-xs xs:text-sm text-muted-foreground mt-1 xs:mt-2">
-                            <span className="font-medium">Authors:</span> Brown, L., Anderson, T., et al.
-                          </p>
-                          <div className="flex flex-wrap gap-1 xs:gap-2 mt-2">
-                            <Badge variant="outline" className="text-2xs xs:text-xs">Monitoring Systems</Badge>
-                            <Badge variant="outline" className="text-2xs xs:text-xs">Data Science</Badge>
-                          </div>
-                        </div>
-                        
-                        <div className="border-l-4 border-secondary pl-3 xs:pl-4 py-2 xs:py-3 bg-gradient-to-r from-secondary/5 to-transparent rounded-r-lg">
-                          <h4 className="font-semibold text-sm xs:text-base mb-1 xs:mb-2 leading-tight">Real-time data quality assessment in environmental sensors</h4>
-                          <div className="flex flex-col xs:flex-row xs:items-center gap-1 xs:gap-2 text-xs xs:text-sm text-muted-foreground">
-                            <span className="font-medium">Sensors and Actuators</span>
-                            <span className="hidden xs:inline">•</span>
-                            <span>2024</span>
-                          </div>
-                          <p className="text-xs xs:text-sm text-muted-foreground mt-1 xs:mt-2">
-                            <span className="font-medium">Authors:</span> Martinez, A., Thompson, C., et al.
-                          </p>
-                          <div className="flex flex-wrap gap-1 xs:gap-2 mt-2">
-                            <Badge variant="outline" className="text-2xs xs:text-xs">Sensor Networks</Badge>
-                            <Badge variant="outline" className="text-2xs xs:text-xs">Quality Control</Badge>
-                          </div>
-                        </div>
-                        
-                        <div className="border-l-4 border-secondary pl-3 xs:pl-4 py-2 xs:py-3 bg-gradient-to-r from-secondary/5 to-transparent rounded-r-lg">
-                          <h4 className="font-semibold text-sm xs:text-base mb-1 xs:mb-2 leading-tight">Machine learning approaches for environmental data validation</h4>
-                          <div className="flex flex-col xs:flex-row xs:items-center gap-1 xs:gap-2 text-xs xs:text-sm text-muted-foreground">
-                            <span className="font-medium">Environmental Informatics</span>
-                            <span className="hidden xs:inline">•</span>
-                            <span>2023</span>
-                          </div>
-                          <p className="text-xs xs:text-sm text-muted-foreground mt-1 xs:mt-2">
-                            <span className="font-medium">Authors:</span> Lee, S., Rodriguez, M., et al.
-                          </p>
-                          <div className="flex flex-wrap gap-1 xs:gap-2 mt-2">
-                            <Badge variant="outline" className="text-2xs xs:text-xs">Machine Learning</Badge>
-                            <Badge variant="outline" className="text-2xs xs:text-xs">Data Validation</Badge>
-                          </div>
-                        </div>
+                        ))}
                       </div>
                       
-                      <div className="mt-4 xs:mt-6 pt-4 xs:pt-6 border-t">
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 xs:gap-4 mb-4 xs:mb-6">
-                          <div className="text-center p-2 xs:p-3 bg-muted/50 rounded-lg">
-                            <div className="text-lg xs:text-xl font-bold text-primary">68</div>
-                            <div className="text-xs xs:text-sm text-muted-foreground">Total Publications</div>
-                          </div>
-                          <div className="text-center p-2 xs:p-3 bg-muted/50 rounded-lg">
-                            <div className="text-lg xs:text-xl font-bold text-green-600">12</div>
-                            <div className="text-xs xs:text-sm text-muted-foreground">This Year</div>
-                          </div>
-                          <div className="text-center p-2 xs:p-3 bg-muted/50 rounded-lg">
-                            <div className="text-lg xs:text-xl font-bold text-blue-600">2.4</div>
-                            <div className="text-xs xs:text-sm text-muted-foreground">Avg Impact</div>
-                          </div>
-                          <div className="text-center p-2 xs:p-3 bg-muted/50 rounded-lg">
-                            <div className="text-lg xs:text-xl font-bold text-orange-600">156</div>
-                            <div className="text-xs xs:text-sm text-muted-foreground">Citations</div>
-                          </div>
+                      {/* Enhanced Mobile-Friendly Stats */}
+                      <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-border/60">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6">
+                          {[
+                            { value: "68", label: "Total Publications", color: "text-primary" },
+                            { value: "12", label: "This Year", color: "text-green-600" },
+                            { value: "2.4", label: "Avg Impact Factor", color: "text-blue-600" },
+                            { value: "156", label: "Total Citations", color: "text-orange-600" }
+                          ].map((stat, index) => (
+                            <div key={index} className="text-center p-2 sm:p-3 bg-muted/30 hover:bg-muted/50 rounded-lg border transition-colors">
+                              <div className={`text-lg sm:text-xl lg:text-2xl font-bold ${stat.color}`}>
+                                {stat.value}
+                              </div>
+                              <div className="text-[10px] sm:text-xs lg:text-sm text-muted-foreground leading-tight mt-1">
+                                {stat.label}
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                        <Button variant="outline" className="w-full xs:w-auto touch:active:scale-98 transition-transform">
-                          View All Publications
-                        </Button>
+                        
+                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+                          <Button variant="outline" className="w-full sm:w-auto touch:active:scale-95 transition-transform hover:shadow-sm">
+                            <BookOpen className="h-4 w-4 mr-2" />
+                            View All Publications
+                          </Button>
+                          <Button variant="ghost" className="w-full sm:w-auto touch:active:scale-95 transition-transform">
+                            <Download className="h-4 w-4 mr-2" />
+                            Export List
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>

@@ -29,16 +29,23 @@ const SeasonalCleanDataAnalysis: React.FC<SeasonalCleanDataAnalysisProps> = ({ c
   const [data, setData] = useState<SeasonalData[]>([]);
   const [locations, setLocations] = useState<any[]>([]);
   const [selectedLocation, setSelectedLocation] = useState<string>('');
-  const [selectedYear, setSelectedYear] = useState<string>('2023');
+  const [selectedSeason, setSelectedSeason] = useState<string>('2023-2024');
   const [loading, setLoading] = useState(true);
   const [viewType, setViewType] = useState<'comparison' | 'improvement'>('comparison');
 
-  const availableYears = ['2022', '2023', '2024'];
-  const seasons = [
-    { key: 'winter', label: 'Winter', months: 'Dec-Feb', color: '#3b82f6' },
-    { key: 'spring', label: 'Spring', months: 'Mar-May', color: '#10b981' },
-    { key: 'summer', label: 'Summer', months: 'Jun-Aug', color: '#f59e0b' },
-    { key: 'fall', label: 'Fall', months: 'Sep-Nov', color: '#ef4444' }
+  // Snow seasons run from Aug-July (e.g., 2022-2023 = Aug 2022 - July 2023)
+  const availableSeasons = [
+    { key: '2022-2023', label: '2022-2023', startDate: '2022-08-01', endDate: '2023-07-31' },
+    { key: '2023-2024', label: '2023-2024', startDate: '2023-08-01', endDate: '2024-07-31' },
+    { key: '2024-2025', label: '2024-2025', startDate: '2024-08-01', endDate: '2025-07-31' }
+  ];
+  
+  const monthlyPeriods = [
+    { key: 'aug-sep', label: 'Early Fall', months: 'Aug-Sep', color: '#ef4444', start: 8, end: 9 },
+    { key: 'oct-nov', label: 'Late Fall', months: 'Oct-Nov', color: '#f59e0b', start: 10, end: 11 },
+    { key: 'dec-feb', label: 'Winter', months: 'Dec-Feb', color: '#3b82f6', start: 12, end: 2 },
+    { key: 'mar-may', label: 'Spring', months: 'Mar-May', color: '#10b981', start: 3, end: 5 },
+    { key: 'jun-jul', label: 'Early Summer', months: 'Jun-Jul', color: '#8b5cf6', start: 6, end: 7 }
   ];
 
   // Load locations
@@ -57,36 +64,70 @@ const SeasonalCleanDataAnalysis: React.FC<SeasonalCleanDataAnalysisProps> = ({ c
     loadInitialData();
   }, []);
 
-  // Load seasonal data
+  // Load seasonal data with proper snow season handling
   useEffect(() => {
-    if (!selectedLocation) return;
+    if (!selectedLocation || !selectedSeason) return;
 
     const loadSeasonalData = async () => {
       try {
         setLoading(true);
         
+        const seasonInfo = availableSeasons.find(s => s.key === selectedSeason);
+        if (!seasonInfo) return;
+        
         const seasonalResults: SeasonalData[] = [];
         
-        // Load data for each season in parallel
-        const seasonPromises = seasons.map(async (season) => {
+        // Load data for each monthly period within the snow season
+        const periodPromises = monthlyPeriods.map(async (period) => {
           try {
+            // Calculate date ranges for the period within the snow season
+            const seasonStartYear = parseInt(seasonInfo.startDate.split('-')[0]);
+            const seasonEndYear = parseInt(seasonInfo.endDate.split('-')[0]);
+            
+            let startDate: string;
+            let endDate: string;
+            
+            if (period.start <= 7) {
+              // Period is in the second calendar year (Jan-Jul)
+              startDate = `${seasonEndYear}-${period.start.toString().padStart(2, '0')}-01`;
+              if (period.end === 2) {
+                // Handle February end date
+                const isLeapYear = seasonEndYear % 4 === 0;
+                endDate = `${seasonEndYear}-02-${isLeapYear ? '29' : '28'}`;
+              } else if (period.end <= 7) {
+                endDate = `${seasonEndYear}-${period.end.toString().padStart(2, '0')}-${period.end === 2 ? '28' : '30'}`;
+              } else {
+                endDate = `${seasonEndYear}-07-31`;
+              }
+            } else {
+              // Period is in the first calendar year (Aug-Dec)
+              startDate = `${seasonStartYear}-${period.start.toString().padStart(2, '0')}-01`;
+              if (period.end === 2) {
+                // Cross-year period (Dec-Feb)
+                startDate = `${seasonStartYear}-12-01`;
+                endDate = `${seasonEndYear}-02-28`;
+              } else {
+                endDate = `${seasonStartYear}-${Math.min(period.end, 12).toString().padStart(2, '0')}-31`;
+              }
+            }
+
             const [rawData, cleanData] = await Promise.all([
               LocalDatabaseService.getSnowDepthTimeSeries(
                 'rawdata',
                 selectedLocation,
-                `${selectedYear}-01-01`,
-                `${selectedYear}-12-31`,
-                season.key,
-                selectedYear,
+                startDate,
+                endDate,
+                'all',
+                seasonStartYear.toString(),
                 'both'
               ),
               LocalDatabaseService.getSnowDepthTimeSeries(
                 'finalcleandata',
                 selectedLocation,
-                `${selectedYear}-01-01`,
-                `${selectedYear}-12-31`,
-                season.key,
-                selectedYear,
+                startDate,
+                endDate,
+                'all',
+                seasonStartYear.toString(),
                 'both'
               )
             ]);
@@ -95,7 +136,7 @@ const SeasonalCleanDataAnalysis: React.FC<SeasonalCleanDataAnalysisProps> = ({ c
             const cleanValues = cleanData.map(d => d.dbtcdt || 0).filter(v => v > 0);
 
             if (rawValues.length === 0 && cleanValues.length === 0) {
-              return null; // Skip seasons with no data
+              return null; // Skip periods with no data
             }
 
             const rawMean = rawValues.length > 0 ? rawValues.reduce((sum, val) => sum + val, 0) / rawValues.length : 0;
@@ -113,8 +154,8 @@ const SeasonalCleanDataAnalysis: React.FC<SeasonalCleanDataAnalysisProps> = ({ c
             const qualityScore = Math.min(85 + improvement, 100);
 
             return {
-              season: season.label,
-              year: selectedYear,
+              season: period.label,
+              year: selectedSeason,
               rawMean,
               cleanMean,
               rawMax,
@@ -124,12 +165,12 @@ const SeasonalCleanDataAnalysis: React.FC<SeasonalCleanDataAnalysisProps> = ({ c
               qualityScore
             };
           } catch (error) {
-            console.warn(`Failed to load data for ${season.label}:`, error);
+            console.warn(`Failed to load data for ${period.label}:`, error);
             return null;
           }
         });
 
-        const results = await Promise.all(seasonPromises);
+        const results = await Promise.all(periodPromises);
         const validResults = results.filter(result => result !== null) as SeasonalData[];
         
         setData(validResults);
@@ -142,7 +183,7 @@ const SeasonalCleanDataAnalysis: React.FC<SeasonalCleanDataAnalysisProps> = ({ c
     };
 
     loadSeasonalData();
-  }, [selectedLocation, selectedYear]);
+  }, [selectedLocation, selectedSeason]);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -200,15 +241,15 @@ const SeasonalCleanDataAnalysis: React.FC<SeasonalCleanDataAnalysisProps> = ({ c
           </SelectContent>
         </Select>
 
-        <Select value={selectedYear} onValueChange={setSelectedYear}>
-          <SelectTrigger className="w-full sm:w-32">
+        <Select value={selectedSeason} onValueChange={setSelectedSeason}>
+          <SelectTrigger className="w-full sm:w-40">
             <CalendarDays className="h-4 w-4 mr-2" />
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {availableYears.map((year) => (
-              <SelectItem key={year} value={year}>
-                {year}
+            {availableSeasons.map((season) => (
+              <SelectItem key={season.key} value={season.key}>
+                {season.label}
               </SelectItem>
             ))}
           </SelectContent>
@@ -217,7 +258,7 @@ const SeasonalCleanDataAnalysis: React.FC<SeasonalCleanDataAnalysisProps> = ({ c
         <Button 
           variant="outline" 
           onClick={() => {
-            setSelectedYear('2023');
+            setSelectedSeason('2023-2024');
             setViewType('comparison');
           }}
         >
@@ -226,30 +267,30 @@ const SeasonalCleanDataAnalysis: React.FC<SeasonalCleanDataAnalysisProps> = ({ c
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {seasons.slice(0, 4).map((season, index) => {
-          const seasonData = data.find(d => d.season === season.label);
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        {monthlyPeriods.map((period, index) => {
+          const periodData = data.find(d => d.season === period.label);
           return (
-            <Card key={season.key} className="relative overflow-hidden">
+            <Card key={period.key} className="relative overflow-hidden hover:shadow-md transition-shadow">
               <div 
                 className="absolute top-0 left-0 right-0 h-1" 
-                style={{ backgroundColor: season.color }}
+                style={{ backgroundColor: period.color }}
               />
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium">{season.label}</CardTitle>
-                <p className="text-xs text-muted-foreground">{season.months}</p>
+                <CardTitle className="text-sm font-medium">{period.label}</CardTitle>
+                <p className="text-xs text-muted-foreground">{period.months}</p>
               </CardHeader>
               <CardContent>
-                {seasonData ? (
+                {periodData ? (
                   <div className="space-y-2">
-                    <div className="text-lg font-bold">
-                      {seasonData.cleanMean.toFixed(1)} cm
+                    <div className="text-lg font-bold text-primary">
+                      {periodData.cleanMean.toFixed(1)} cm
+                    </div>
+                    <div className="text-xs text-green-600 font-medium">
+                      Quality: +{periodData.improvement.toFixed(1)}%
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      Quality: +{seasonData.improvement.toFixed(1)}%
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {seasonData.dataPoints} data points
+                      {periodData.dataPoints} measurements
                     </div>
                   </div>
                 ) : (
