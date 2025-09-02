@@ -148,20 +148,17 @@ const Research = () => {
             </div>
 
             <Tabs defaultValue="publications" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 xs:grid-cols-4 gap-1 h-auto p-1">
-                <TabsTrigger value="publications" className="text-xs xs:text-sm py-2 px-2 xs:px-3">
-                  <span className="xs:hidden">Papers</span>
-                  <span className="hidden xs:inline">Publications</span>
+              <TabsList className="flex w-full overflow-x-auto gap-2 h-auto p-1 -mx-4 px-4 sm:mx-0 whitespace-nowrap snap-x snap-mandatory">
+                <TabsTrigger value="publications" className="shrink-0 snap-start text-sm py-2 px-3 rounded-full">
+                  Publications
                 </TabsTrigger>
-                <TabsTrigger value="projects" className="text-xs xs:text-sm py-2 px-2 xs:px-3">
-                  <span className="xs:hidden">Projects</span>
-                  <span className="hidden xs:inline">Active Projects</span>
+                <TabsTrigger value="projects" className="shrink-0 snap-start text-sm py-2 px-3 rounded-full">
+                  Active Projects
                 </TabsTrigger>
-                <TabsTrigger value="awards" className="text-xs xs:text-sm py-2 px-2 xs:px-3">
-                  <span className="xs:hidden">Awards</span>
-                  <span className="hidden xs:inline">Awards & Grants</span>
+                <TabsTrigger value="awards" className="shrink-0 snap-start text-sm py-2 px-3 rounded-full">
+                  Awards & Grants
                 </TabsTrigger>
-                <TabsTrigger value="outreach" className="text-xs xs:text-sm py-2 px-2 xs:px-3">
+                <TabsTrigger value="outreach" className="shrink-0 snap-start text-sm py-2 px-3 rounded-full">
                   Outreach
                 </TabsTrigger>
               </TabsList>
