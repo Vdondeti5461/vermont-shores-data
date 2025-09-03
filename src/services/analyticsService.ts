@@ -105,18 +105,19 @@ const generateMockData = (locationId: string, season: Season): SnowDepthData[] =
 
 // Service functions that can be easily replaced with real API calls
 export class AnalyticsService {
-  // Simulate API delay
-  private static delay(ms: number = 500) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
+  // Cache for better performance
+  private static locationCache: Location[] | null = null;
+  private static seasonCache: Season[] | null = null;
   
   static async getLocations(): Promise<Location[]> {
-    await this.delay(200);
+    if (this.locationCache) return this.locationCache;
+    this.locationCache = mockLocations;
     return mockLocations;
   }
   
   static async getSeasons(): Promise<Season[]> {
-    await this.delay(200);
+    if (this.seasonCache) return this.seasonCache;
+    this.seasonCache = mockSeasons;
     return mockSeasons;
   }
   
@@ -126,7 +127,8 @@ export class AnalyticsService {
     startDate?: string,
     endDate?: string
   ): Promise<SnowDepthData[]> {
-    await this.delay(800);
+    // Simulate minimal API delay for realism
+    await new Promise(resolve => setTimeout(resolve, 100));
     
     const targetLocations = locationIds.length > 0 ? locationIds : mockLocations.map(l => l.id);
     const targetSeason = mockSeasons.find(s => s.id === seasonId) || mockSeasons[0];
@@ -152,7 +154,8 @@ export class AnalyticsService {
   }
   
   static async getLocationSummary(locationId: string, seasonId: string) {
-    await this.delay(300);
+    // Minimal delay for realism
+    await new Promise(resolve => setTimeout(resolve, 50));
     
     const data = await this.getSnowDepthData([locationId], seasonId);
     const depths = data.map(d => d.snow_depth_clean);
