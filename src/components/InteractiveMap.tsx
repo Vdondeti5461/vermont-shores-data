@@ -193,38 +193,43 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
   // Update marker selection when selectedSiteId changes
   useEffect(() => {
     if (mapInstanceRef.current && markersRef.current) {
-      Object.entries(markersRef.current).forEach(([siteId, marker]: [string, any]) => {
-        const site = mapSites.find(s => s.id === parseInt(siteId));
-        if (site) {
-          let color = '#3b82f6';
-          if (site.elevation >= 800) color = '#dc2626';
-          else if (site.elevation >= 400) color = '#f59e0b';
-          else color = '#16a34a';
+      const updateMarkers = async () => {
+        const L = await import('leaflet');
+        
+        const createIconForUpdate = (color: string, status: string = 'active', isSelected: boolean = false) => {
+          const opacity = status === 'maintenance' ? '0.7' : '1';
+          const size = isSelected ? '18px' : '14px';
+          const borderColor = isSelected ? '#ff0000' : 'white';
+          const borderWidth = isSelected ? '4px' : '2px';
+          const pulseEffect = isSelected ? 'animation: pulse 2s infinite;' : '';
+          const shadow = isSelected ? '0 0 15px rgba(255,0,0,0.6)' : '0 3px 6px rgba(0,0,0,0.4)';
           
-          const isSelected = selectedSiteId === parseInt(siteId);
-          const newIcon = createIcon(color, site.status || 'active', isSelected);
-          marker.setIcon(newIcon);
-        }
-      });
+          return L.divIcon({
+            className: `custom-marker ${status} ${isSelected ? 'selected' : ''}`,
+            html: `<div style="background-color: ${color}; width: ${size}; height: ${size}; border-radius: 50%; border: ${borderWidth} solid ${borderColor}; box-shadow: ${shadow}; opacity: ${opacity}; ${pulseEffect}"></div>`,
+            iconSize: isSelected ? [26, 26] : [18, 18],
+            iconAnchor: isSelected ? [13, 13] : [9, 9],
+          });
+        };
+        
+        Object.entries(markersRef.current).forEach(([siteId, marker]: [string, any]) => {
+          const site = mapSites.find(s => s.id === parseInt(siteId));
+          if (site) {
+            let color = '#3b82f6';
+            if (site.elevation >= 800) color = '#dc2626';
+            else if (site.elevation >= 400) color = '#f59e0b';
+            else color = '#16a34a';
+            
+            const isSelected = selectedSiteId === parseInt(siteId);
+            const newIcon = createIconForUpdate(color, site.status || 'active', isSelected);
+            marker.setIcon(newIcon);
+          }
+        });
+      };
+      
+      updateMarkers();
     }
   }, [selectedSiteId, mapSites]);
-
-  const createIcon = (color: string, status: string = 'active', isSelected: boolean = false) => {
-    const L = require('leaflet');
-    const opacity = status === 'maintenance' ? '0.7' : '1';
-    const size = isSelected ? '18px' : '14px';
-    const borderColor = isSelected ? '#ff0000' : 'white';
-    const borderWidth = isSelected ? '4px' : '2px';
-    const pulseEffect = isSelected ? 'animation: pulse 2s infinite;' : '';
-    const shadow = isSelected ? '0 0 15px rgba(255,0,0,0.6)' : '0 3px 6px rgba(0,0,0,0.4)';
-    
-    return L.divIcon({
-      className: `custom-marker ${status} ${isSelected ? 'selected' : ''}`,
-      html: `<div style="background-color: ${color}; width: ${size}; height: ${size}; border-radius: 50%; border: ${borderWidth} solid ${borderColor}; box-shadow: ${shadow}; opacity: ${opacity}; ${pulseEffect}"></div>`,
-      iconSize: isSelected ? [26, 26] : [18, 18],
-      iconAnchor: isSelected ? [13, 13] : [9, 9],
-    });
-  };
 
   const handleSiteSelection = (siteId: string) => {
     const id = parseInt(siteId);
