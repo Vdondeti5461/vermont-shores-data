@@ -72,11 +72,11 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
       });
 
       if (mapRef.current && !mapInstanceRef.current) {
-        // Initialize map centered on Vermont with proper bounds
+        // Initialize map centered on Vermont with proper bounds for S2S network
         const map = L.map(mapRef.current, {
           scrollWheelZoom: false,
           tap: true,
-        }).setView([44.26, -72.58], 8); // Centered on Vermont state
+        }).setView([44.5, -72.7], 9); // Better center for Vermont S2S sites
 
         // Ensure proper sizing on iOS Safari and after layout changes
         setTimeout(() => map.invalidateSize(), 0);
