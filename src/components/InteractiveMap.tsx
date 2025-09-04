@@ -28,6 +28,7 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any>({});
   const [selectedSiteId, setSelectedSiteId] = useState<number | null>(null);
+  const [selectedSite, setSelectedSite] = useState<NetworkSite | null>(null);
 
   // Vermont S2S Network Sites - Based on actual survey data from spreadsheet
   const defaultSites: NetworkSite[] = [
@@ -157,6 +158,7 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
 
           marker.on('click', () => {
             setSelectedSiteId(site.id);
+            setSelectedSite(site);
             if (onSiteClick) {
               onSiteClick(site);
             }
@@ -230,14 +232,21 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
     
     const site = mapSites.find(s => s.id === id);
     if (site && mapInstanceRef.current) {
-      // Center map on selected site
-      mapInstanceRef.current.setView([site.latitude, site.longitude], 12);
+      setSelectedSite(site);
       
-      // Open popup for selected marker
-      const marker = markersRef.current[id];
-      if (marker) {
-        marker.openPopup();
-      }
+      // Center map on selected site with smooth animation
+      mapInstanceRef.current.setView([site.latitude, site.longitude], 13, {
+        animate: true,
+        duration: 1.0
+      });
+      
+      // Open popup for selected marker after a short delay
+      setTimeout(() => {
+        const marker = markersRef.current[id];
+        if (marker) {
+          marker.openPopup();
+        }
+      }, 500);
       
       if (onSiteClick) {
         onSiteClick(site);
@@ -276,28 +285,65 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
         </CardHeader>
         <CardContent className="space-y-4">
           <Select onValueChange={handleSiteSelection} value={selectedSiteId?.toString() || ""}>
-            <SelectTrigger>
+            <SelectTrigger className="bg-background border-border">
               <SelectValue placeholder="Choose location..." />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-background border-border z-50 max-h-72">
               {mapSites
                 .sort((a, b) => a.name.localeCompare(b.name))
                 .map((site) => (
-                <SelectItem key={site.id} value={site.id.toString()}>
+                <SelectItem key={site.id} value={site.id.toString()} className="hover:bg-muted">
                   <div className="flex items-center gap-2">
                     <div 
-                      className="w-3 h-3 rounded-full border border-white"
+                      className="w-3 h-3 rounded-full border border-white shadow-sm"
                       style={{
                         backgroundColor: site.elevation >= 800 ? '#dc2626' : 
                                        site.elevation >= 400 ? '#f59e0b' : '#16a34a'
                       }}
                     />
-                    {site.name}
+                    <span className="truncate">{site.name}</span>
                   </div>
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
+          
+          {/* Selected Site Metadata */}
+          {selectedSite && (
+            <div className="p-4 border rounded-lg bg-muted/30 space-y-3">
+              <div className="flex items-center gap-2">
+                <div 
+                  className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
+                  style={{
+                    backgroundColor: selectedSite.elevation >= 800 ? '#dc2626' : 
+                                   selectedSite.elevation >= 400 ? '#f59e0b' : '#16a34a'
+                  }}
+                />
+                <h4 className="font-semibold text-sm">{selectedSite.shortName}</h4>
+              </div>
+              <div className="text-xs space-y-2">
+                <div><span className="font-medium">Name:</span> {selectedSite.name}</div>
+                <div><span className="font-medium">Elevation:</span> {selectedSite.elevation}m</div>
+                <div><span className="font-medium">Zone:</span> {
+                  selectedSite.elevation >= 800 ? 'Alpine' :
+                  selectedSite.elevation >= 400 ? 'Montane' : 'Valley'
+                }</div>
+                <div><span className="font-medium">Network:</span> {
+                  selectedSite.type === 'ranch_brook' ? 'Ranch Brook' : 'Distributed'
+                }</div>
+                <div><span className="font-medium">Coordinates:</span></div>
+                <div className="ml-2 text-xs text-muted-foreground">
+                  Lat: {selectedSite.latitude.toFixed(4)}°<br/>
+                  Lon: {selectedSite.longitude.toFixed(4)}°
+                </div>
+                <div><span className="font-medium">Status:</span> 
+                  <Badge variant={selectedSite.status === 'active' ? 'default' : 'secondary'} className="ml-2 text-xs">
+                    {selectedSite.status === 'active' ? 'Active' : 'Maintenance'}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          )}
           
           {/* Site Statistics */}
           <div className="space-y-3 text-sm">
