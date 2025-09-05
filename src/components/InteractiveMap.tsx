@@ -23,11 +23,18 @@ interface InteractiveMapProps {
   onSiteClick?: (site: NetworkSite) => void;
 }
 
+// Normalize a code from shortName or name (e.g., "RB-01" -> "RB01", "SUMM" stays "SUMM")
+const normalizeCode = (shortName?: string, name?: string) => {
+  return ((shortName || name || '').replace(/[^A-Za-z0-9]/g, '')).toUpperCase();
+};
+
 const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
   const mapRef = useRef<any>(null);
   const mapInstanceRef = useRef<any>(null);
-  const markersRef = useRef<any>({});
+  const markersRef = useRef<{ byId: Record<number, any>; byCode: Record<string, any> }>({ byId: {}, byCode: {} });
+  const siteMapRef = useRef<{ byId: Record<number, NetworkSite>; byCode: Record<string, NetworkSite> }>({ byId: {}, byCode: {} });
   const [selectedSiteId, setSelectedSiteId] = useState<number | null>(null);
+  const [selectedSiteCode, setSelectedSiteCode] = useState<string | null>(null);
   const [selectedSite, setSelectedSite] = useState<NetworkSite | null>(null);
 
   // Vermont S2S Network Sites - Based on actual survey data with correct shortNames
@@ -116,10 +123,14 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
           });
         };
 
+        // Prepare marker maps
+        markersRef.current = { byId: {}, byCode: {} };
+        siteMapRef.current = { byId: {}, byCode: {} };
+
         // Add site markers with enhanced styling
         mapSites.forEach((site) => {
-          console.log('Creating marker for site:', site.id, site.shortName, site.name);
-          
+          const code = normalizeCode(site.shortName, site.name);
+
           let color = '#3b82f6'; // Default blue
           let elevationRange = 'Valley';
           
@@ -148,7 +159,7 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
                   ${site.shortName} - ${site.name}
                 </h3>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px;">
-                  <div><strong>ID:</strong> ${site.id}</div>
+                  <div><strong>Code:</strong> ${code}</div>
                   <div><strong>Short Name:</strong> ${site.shortName}</div>
                   <div><strong>Elevation:</strong> ${site.elevation}m</div>
                   <div><strong>Zone:</strong> ${elevationRange}</div>
@@ -160,17 +171,17 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
               </div>
             `);
 
-          // Store marker reference with site ID as key
-          markersRef.current[site.id] = marker;
-          console.log('Stored marker for site ID:', site.id, 'Marker:', marker);
+          // Store marker and site references by ID and code
+          markersRef.current.byId[site.id] = marker;
+          markersRef.current.byCode[code] = marker;
+          siteMapRef.current.byId[site.id] = site;
+          siteMapRef.current.byCode[code] = site;
 
           marker.on('click', () => {
-            console.log('Marker clicked for site:', site.id, site.shortName);
             setSelectedSiteId(site.id);
+            setSelectedSiteCode(code);
             setSelectedSite(site);
-            if (onSiteClick) {
-              onSiteClick(site);
-            }
+            if (onSiteClick) onSiteClick(site);
           });
         });
 
@@ -221,15 +232,16 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
           });
         };
         
-        Object.entries(markersRef.current).forEach(([siteId, marker]: [string, any]) => {
-          const site = mapSites.find(s => s.id === parseInt(siteId));
+        Object.entries(markersRef.current.byId).forEach(([siteId, marker]: [string, any]) => {
+          const id = parseInt(siteId, 10);
+          const site = siteMapRef.current.byId[id] || mapSites.find(s => s.id === id);
           if (site) {
             let color = '#3b82f6';
             if (site.elevation >= 800) color = '#dc2626';
             else if (site.elevation >= 400) color = '#f59e0b';
             else color = '#16a34a';
             
-            const isSelected = selectedSiteId === parseInt(siteId);
+            const isSelected = selectedSiteId === id;
             const newIcon = createIconForUpdate(color, site.status || 'active', isSelected);
             marker.setIcon(newIcon);
           }
@@ -240,44 +252,43 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
     }
   }, [selectedSiteId, mapSites]);
 
-  const handleSiteSelection = (siteId: string) => {
-    const id = parseInt(siteId);
-    console.log('Site selection - ID:', id, 'String ID:', siteId);
-    
-    // Find the site using the exact ID
-    const site = mapSites.find(s => s.id === id);
-    console.log('Found site:', site);
-    console.log('Available sites:', mapSites.map(s => ({ id: s.id, name: s.name, shortName: s.shortName })));
-    
+  const handleSiteSelection = (value: string) => {
+    // Value can be an ID ("13") or a code ("SUMM", "RB01", etc.)
+    const maybeId = parseInt(value, 10);
+    let site: NetworkSite | undefined;
+    let code: string | null = null;
+
+    if (!Number.isNaN(maybeId) && siteMapRef.current.byId[maybeId]) {
+      site = siteMapRef.current.byId[maybeId];
+      code = normalizeCode(site.shortName, site.name);
+    } else {
+      code = normalizeCode(value);
+      site = siteMapRef.current.byCode[code] || mapSites.find((s) => normalizeCode(s.shortName, s.name) === code);
+    }
+
     if (site && mapInstanceRef.current) {
-      setSelectedSiteId(id);
+      const siteCode = code || normalizeCode(site.shortName, site.name);
+      setSelectedSiteId(site.id);
+      setSelectedSiteCode(siteCode);
       setSelectedSite(site);
-      
-      console.log('Setting selected site:', site.shortName, '-', site.name);
-      
+
       // Center map on selected site with smooth animation
       mapInstanceRef.current.setView([site.latitude, site.longitude], 13, {
         animate: true,
-        duration: 1.0
+        duration: 1.0,
       });
-      
+
       // Open popup for selected marker after a short delay
       setTimeout(() => {
-        const marker = markersRef.current[id];
+        const markerById = markersRef.current.byId[site.id];
+        const markerByCode = markersRef.current.byCode[siteCode];
+        const marker = markerById || markerByCode;
         if (marker) {
-          console.log('Opening popup for site:', site.shortName);
           marker.openPopup();
-        } else {
-          console.error('Marker not found for site ID:', id);
         }
-      }, 500);
-      
-      if (onSiteClick) {
-        onSiteClick(site);
-      }
-    } else {
-      console.error('Site not found for ID:', id);
-      console.log('Available site IDs:', mapSites.map(s => s.id));
+      }, 400);
+
+      if (onSiteClick) onSiteClick(site);
     }
   };
 
