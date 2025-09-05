@@ -115,6 +115,8 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
 
         // Add site markers with enhanced styling
         mapSites.forEach((site) => {
+          console.log('Creating marker for site:', site.id, site.shortName, site.name);
+          
           let color = '#3b82f6'; // Default blue
           let elevationRange = 'Valley';
           
@@ -143,6 +145,8 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
                   ${site.shortName} - ${site.name}
                 </h3>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px;">
+                  <div><strong>ID:</strong> ${site.id}</div>
+                  <div><strong>Short Name:</strong> ${site.shortName}</div>
                   <div><strong>Elevation:</strong> ${site.elevation}m</div>
                   <div><strong>Zone:</strong> ${elevationRange}</div>
                   <div><strong>Latitude:</strong> ${site.latitude.toFixed(4)}°</div>
@@ -153,10 +157,12 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
               </div>
             `);
 
-          // Store marker reference for selection highlighting
+          // Store marker reference with site ID as key
           markersRef.current[site.id] = marker;
+          console.log('Stored marker for site ID:', site.id, 'Marker:', marker);
 
           marker.on('click', () => {
+            console.log('Marker clicked for site:', site.id, site.shortName);
             setSelectedSiteId(site.id);
             setSelectedSite(site);
             if (onSiteClick) {
@@ -233,11 +239,18 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
 
   const handleSiteSelection = (siteId: string) => {
     const id = parseInt(siteId);
-    setSelectedSiteId(id);
+    console.log('Site selection - ID:', id, 'String ID:', siteId);
     
+    // Find the site using the exact ID
     const site = mapSites.find(s => s.id === id);
+    console.log('Found site:', site);
+    console.log('Available sites:', mapSites.map(s => ({ id: s.id, name: s.name, shortName: s.shortName })));
+    
     if (site && mapInstanceRef.current) {
+      setSelectedSiteId(id);
       setSelectedSite(site);
+      
+      console.log('Setting selected site:', site.shortName, '-', site.name);
       
       // Center map on selected site with smooth animation
       mapInstanceRef.current.setView([site.latitude, site.longitude], 13, {
@@ -249,13 +262,19 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
       setTimeout(() => {
         const marker = markersRef.current[id];
         if (marker) {
+          console.log('Opening popup for site:', site.shortName);
           marker.openPopup();
+        } else {
+          console.error('Marker not found for site ID:', id);
         }
       }, 500);
       
       if (onSiteClick) {
         onSiteClick(site);
       }
+    } else {
+      console.error('Site not found for ID:', id);
+      console.log('Available site IDs:', mapSites.map(s => s.id));
     }
   };
 
@@ -306,7 +325,7 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
                                        site.elevation >= 400 ? '#f59e0b' : '#16a34a'
                       }}
                     />
-                    <span className="truncate">{site.name}</span>
+                    <span className="truncate">{site.shortName} - {site.name}</span>
                   </div>
                 </SelectItem>
               ))}
