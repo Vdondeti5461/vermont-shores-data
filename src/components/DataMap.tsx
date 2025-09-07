@@ -70,17 +70,8 @@ const DataMap = () => {
   const locations: Location[] = locationsData || [];
   const recentData: RecentData[] = [];
 
-  // Merge real database locations with network sites if available
-  const allSites: NetworkSite[] = locations.length > 0 ? locations.map(loc => ({
-    id: loc.id,
-    name: loc.name,
-    shortName: loc.name.substring(0, 10),
-    latitude: loc.latitude,
-    longitude: loc.longitude,
-    elevation: loc.elevation || 0,
-    type: 'database' as const,
-    description: `Database location at ${loc.elevation}m elevation`
-  })) : networkSites;
+  // Always use the survey-verified 22-network sites to ensure consistent mapping
+  const allSites: NetworkSite[] = networkSites;
 
   const getElevationColor = (elevation: number, type: string) => {
     if (type === 'ranch_brook') {
