@@ -319,7 +319,7 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Select onValueChange={handleSiteSelection} value={selectedSiteCode || ""}>
+          <Select onValueChange={handleSiteSelection} value={selectedSiteId?.toString() || ""}>
             <SelectTrigger className="bg-background border-border">
               <SelectValue placeholder="Choose location..." />
             </SelectTrigger>
@@ -327,7 +327,7 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
               {mapSites
                 .sort((a, b) => a.name.localeCompare(b.name))
                 .map((site) => (
-                <SelectItem key={site.id} value={normalizeCode(site.shortName, site.name)} className="hover:bg-muted">
+                <SelectItem key={site.id} value={site.id.toString()} className="hover:bg-muted">
                   <div className="flex items-center gap-2">
                     <div 
                       className="w-3 h-3 rounded-full border border-white shadow-sm"
@@ -372,8 +372,8 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
                   Lon: {selectedSite.longitude.toFixed(4)}°
                 </div>
                 <div><span className="font-medium">Status:</span> 
-                  <Badge variant={(selectedSite.status ?? 'active') === 'active' ? 'default' : 'secondary'} className="ml-2 text-xs">
-                    {(selectedSite.status ?? 'active') === 'active' ? 'Active' : 'Maintenance'}
+                  <Badge variant={selectedSite.status === 'active' ? 'default' : 'secondary'} className="ml-2 text-xs">
+                    {selectedSite.status === 'active' ? 'Active' : 'Maintenance'}
                   </Badge>
                 </div>
               </div>
