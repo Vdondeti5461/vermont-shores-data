@@ -38,33 +38,30 @@ interface NetworkSite {
 const DataMap = () => {
   const { toast } = useToast();
   
-  // Summit 2 Shore Network Sites - Actual Coordinates from your data
+  // Summit 2 Shore Network Sites - Exact 22 locations from spreadsheet
   const networkSites: NetworkSite[] = [
-    // Ranch Brook Sites (Mount Mansfield)
-    { id: 6, name: "Site #6", shortName: "RB-06", latitude: 44.5036530380135, longitude: -72.7836409062135, elevation: 412, type: "ranch_brook" },
-    { id: 13, name: "Mansfield Summit", shortName: "RB-13", latitude: 44.5283751587457, longitude: -72.8146923602848, elevation: 1163, type: "ranch_brook" },
-    { id: 11, name: "Site #11", shortName: "RB-11", latitude: 44.5054945991154, longitude: -72.7713537523828, elevation: 380, type: "ranch_brook" },
-    { id: 14, name: "West SCAN", shortName: "RB-14", latitude: 44.5350071258492, longitude: -72.8346030483568, elevation: 705, type: "ranch_brook" },
-    { id: 10, name: "Site #10", shortName: "RB-10", latitude: 44.4950487144400, longitude: -72.7863919308848, elevation: 324, type: "ranch_brook" },
-    { id: 3, name: "Site #3", shortName: "RB-03", latitude: 44.5148205082645, longitude: -72.8091001764497, elevation: 795, type: "ranch_brook" },
-    { id: 1, name: "Site #1", shortName: "RB-01", latitude: 44.5232172356824, longitude: -72.8086814178174, elevation: 1072, type: "ranch_brook" },
-    { id: 4, name: "Site #4", shortName: "RB-04", latitude: 44.5109883266970, longitude: -72.8028011229860, elevation: 639, type: "ranch_brook" },
-    { id: 8, name: "Site #8", shortName: "RB-08", latitude: 44.5095676726570, longitude: -72.7823748064730, elevation: 472, type: "ranch_brook" },
-    { id: 7, name: "Site #7", shortName: "RB-07", latitude: 44.5149713130170, longitude: -72.7853509497577, elevation: 613, type: "ranch_brook" },
-    { id: 2, name: "Site #2", shortName: "RB-02", latitude: 44.5177774030582, longitude: -72.8103971233262, elevation: 911, type: "ranch_brook" },
-    { id: 5, name: "Site #5", shortName: "RB-05", latitude: 44.5044687478697, longitude: -72.7993524769469, elevation: 507, type: "ranch_brook" },
-    { id: 9, name: "Site #9", shortName: "RB-09", latitude: 44.4890572884939, longitude: -72.7928489865410, elevation: 846, type: "ranch_brook" },
-    
-    // Distributed Sites Across Vermont
-    { id: 20, name: "Jericho (Forested)", shortName: "JER-F", latitude: 44.4478096390368, longitude: -73.0027073790982, elevation: 196, type: "distributed" },
-    { id: 16, name: "Sleepers R3/Main", shortName: "SLP-R3", latitude: 44.4830135845911, longitude: -72.1646653898307, elevation: 553, type: "distributed" },
-    { id: 21, name: "Spear St", shortName: "SPEAR", latitude: 44.4525602200818, longitude: -73.1919332892984, elevation: 86, type: "distributed" },
-    { id: 19, name: "Jericho (Clearing)", shortName: "JER-C", latitude: 44.4477475517057, longitude: -73.0024839526755, elevation: 198, type: "distributed" },
-    { id: 17, name: "Sleepers R25", shortName: "SLP-R25", latitude: 44.4767396396551, longitude: -72.1259510549582, elevation: 360, type: "distributed" },
-    { id: 15, name: "Proctor Maple", shortName: "PROC", latitude: 44.5285025067839, longitude: -72.8667089154594, elevation: 422, type: "distributed" },
-    { id: 22, name: "Potash Brook", shortName: "POTASH", latitude: 44.4448498951540, longitude: -73.2143236967372, elevation: 47, type: "distributed" },
-    { id: 18, name: "Sleepers W1/R11", shortName: "SLP-W1", latitude: 44.4999008208884, longitude: -72.0671042476799, elevation: 226, type: "distributed" },
-    { id: 12, name: "FEMC", shortName: "FEMC", latitude: 44.5188601707834, longitude: -72.7979001248108, elevation: 872, type: "distributed" }
+    { id: 1, name: "Mansfield Summit", shortName: "SUMMIT", latitude: 44.5284, longitude: -72.8147, elevation: 1163, type: "distributed", description: "Mansfield Summit station" },
+    { id: 2, name: "Site #1", shortName: "RB-01", latitude: 44.5232, longitude: -72.8087, elevation: 1072, type: "ranch_brook", description: "Ranch Brook Site #1" },
+    { id: 3, name: "Site #2", shortName: "RB-02", latitude: 44.5178, longitude: -72.8104, elevation: 911, type: "ranch_brook", description: "Ranch Brook Site #2" },
+    { id: 4, name: "FEMC", shortName: "FEMC", latitude: 44.5189, longitude: -72.7979, elevation: 872, type: "distributed", description: "FEMC station" },
+    { id: 5, name: "Site #9", shortName: "RB-09", latitude: 44.4891, longitude: -72.7928, elevation: 846, type: "ranch_brook", description: "Ranch Brook Site #9" },
+    { id: 6, name: "Site #3", shortName: "RB-03", latitude: 44.5148, longitude: -72.8091, elevation: 795, type: "ranch_brook", description: "Ranch Brook Site #3" },
+    { id: 7, name: "West SCAN", shortName: "RB-14", latitude: 44.535, longitude: -72.8346, elevation: 705, type: "ranch_brook", description: "West SCAN station" },
+    { id: 8, name: "Site #4", shortName: "RB-04", latitude: 44.511, longitude: -72.8028, elevation: 639, type: "ranch_brook", description: "Ranch Brook Site #4" },
+    { id: 9, name: "Site #7", shortName: "RB-07", latitude: 44.515, longitude: -72.7854, elevation: 613, type: "ranch_brook", description: "Ranch Brook Site #7" },
+    { id: 10, name: "Sleepers R3/Main", shortName: "SLP-R3", latitude: 44.483, longitude: -72.1647, elevation: 553, type: "distributed", description: "Sleepers R3/Main station" },
+    { id: 11, name: "Site #5", shortName: "RB-05", latitude: 44.5045, longitude: -72.7994, elevation: 507, type: "ranch_brook", description: "Ranch Brook Site #5" },
+    { id: 12, name: "Site #8", shortName: "RB-08", latitude: 44.5096, longitude: -72.7824, elevation: 472, type: "ranch_brook", description: "Ranch Brook Site #8" },
+    { id: 13, name: "Proctor Maple", shortName: "PROC", latitude: 44.5285, longitude: -72.8667, elevation: 422, type: "distributed", description: "Proctor Maple station" },
+    { id: 14, name: "Site #6", shortName: "RB-06", latitude: 44.5037, longitude: -72.7836, elevation: 412, type: "ranch_brook", description: "Ranch Brook Site #6" },
+    { id: 15, name: "Site #11", shortName: "RB-11", latitude: 44.5055, longitude: -72.7714, elevation: 380, type: "ranch_brook", description: "Ranch Brook Site #11" },
+    { id: 16, name: "Sleepers R25", shortName: "SLP-R25", latitude: 44.4767, longitude: -72.126, elevation: 360, type: "distributed", description: "Sleepers R25 station" },
+    { id: 17, name: "Site #10", shortName: "RB-10", latitude: 44.495, longitude: -72.7864, elevation: 324, type: "ranch_brook", description: "Ranch Brook Site #10" },
+    { id: 18, name: "Sleepers W1/R11", shortName: "SLP-W1", latitude: 44.4999, longitude: -72.0671, elevation: 226, type: "distributed", description: "Sleepers W1/R11 station" },
+    { id: 19, name: "Jericho (Clearing)", shortName: "JER-C", latitude: 44.4477, longitude: -73.0025, elevation: 198, type: "distributed", description: "Jericho Clearing station" },
+    { id: 20, name: "Jericho (Forested)", shortName: "JER-F", latitude: 44.4478, longitude: -73.0027, elevation: 196, type: "distributed", description: "Jericho Forested station" },
+    { id: 21, name: "Spear St", shortName: "SPEAR", latitude: 44.4526, longitude: -73.1919, elevation: 86, type: "distributed", description: "Spear Street station" },
+    { id: 22, name: "Potash Brook", shortName: "POTASH", latitude: 44.4448, longitude: -73.2143, elevation: 47, type: "distributed", description: "Potash Brook station" }
   ];
   
   // Fetch locations from local MySQL database
@@ -257,7 +254,7 @@ const DataMap = () => {
                       .sort((a, b) => a.elevation - b.elevation)
                       .map((site, index) => {
                         const position = ((site.elevation - 47) / (1163 - 47)) * 100;
-                        const isSummit = site.shortName === 'RB-13';
+                        const isSummit = site.shortName === 'SUMMIT';
                         const isRanchBrook = site.type === 'ranch_brook';
                         
                         return (
@@ -305,7 +302,7 @@ const DataMap = () => {
                     {networkSites
                       .sort((a, b) => b.elevation - a.elevation)
                       .map((site, index) => {
-                        const isSummit = site.shortName === 'RB-13';
+                        const isSummit = site.shortName === 'SUMMIT';
                         const isRanchBrook = site.type === 'ranch_brook';
                         const ecosystemZone = site.elevation >= 800 ? 'Alpine' :
                                              site.elevation >= 500 ? 'Montane' : 'Valley';
@@ -390,7 +387,7 @@ const DataMap = () => {
                     {networkSites
                       .sort((a, b) => b.elevation - a.elevation)
                       .map((site, index) => {
-                        const isSummit = site.shortName === 'RB-13';
+                        const isSummit = site.shortName === 'SUMMIT';
                         const isRanchBrook = site.type === 'ranch_brook';
                         const ecosystemZone = site.elevation >= 800 ? 'Alpine' :
                                              site.elevation >= 500 ? 'Montane' : 'Valley';
