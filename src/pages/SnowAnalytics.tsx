@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import SnowDepthChart from '@/components/SnowDepthChart';
+import Overview from '@/pages/analytics/Overview';
+import TimeSeries from '@/pages/analytics/TimeSeries';
 import SnowDepthMap from '@/components/SnowDepthMap';
 import SeasonalCleanDataAnalysis from '@/components/SeasonalCleanDataAnalysis';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Snowflake, BarChart3, Map, Download, Calendar, TrendingUp } from 'lucide-react';
+import { Snowflake, BarChart3, Map, Download, Calendar, TrendingUp, Activity, Gauge } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const SnowAnalytics = () => {
@@ -16,28 +17,40 @@ const SnowAnalytics = () => {
 
   const analyticsFeatures = [
     {
-      title: 'Time Series Analysis',
-      description: 'Compare raw vs cleaned snow depth measurements over time',
-      icon: TrendingUp,
+      title: 'Real-Time Monitoring',
+      description: 'Live conditions and current measurements from all stations',
+      icon: Activity,
+      color: 'bg-red-500'
+    },
+    {
+      title: 'Professional Analytics',
+      description: 'Industry-standard charts and meteorological displays',
+      icon: Gauge,
       color: 'bg-blue-500'
+    },
+    {
+      title: 'Time Series Analysis',
+      description: 'Advanced temporal analysis with multiple time resolutions',
+      icon: TrendingUp,
+      color: 'bg-green-500'
     },
     {
       title: 'Spatial Distribution',
       description: 'Interactive map showing snow depth across monitoring stations',
       icon: Map,
-      color: 'bg-green-500'
+      color: 'bg-purple-500'
     },
     {
       title: 'Data Quality Metrics',
       description: 'Quality assessment and improvement statistics',
       icon: BarChart3,
-      color: 'bg-purple-500'
+      color: 'bg-orange-500'
     },
     {
       title: 'Export & Download',
       description: 'Export processed data and visualizations',
       icon: Download,
-      color: 'bg-orange-500'
+      color: 'bg-cyan-500'
     }
   ];
 
@@ -65,7 +78,7 @@ const SnowAnalytics = () => {
             </div>
 
             {/* Feature Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 md:gap-6">
               {analyticsFeatures.map((feature) => {
                 const Icon = feature.icon;
                 return (
@@ -103,8 +116,13 @@ const SnowAnalytics = () => {
               </p>
             </div>
 
-            <Tabs defaultValue="timeseries" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-5 h-auto gap-1 p-1">
+            <Tabs defaultValue="overview" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6 h-auto gap-1 p-1">
+                <TabsTrigger value="overview" className="flex items-center gap-2 px-2 md:px-3 py-2 text-xs md:text-sm">
+                  <Activity className="h-3 w-3 md:h-4 md:w-4" />
+                  <span className="hidden sm:inline">Overview</span>
+                  <span className="sm:hidden">Live</span>
+                </TabsTrigger>
                 <TabsTrigger value="timeseries" className="flex items-center gap-2 px-2 md:px-3 py-2 text-xs md:text-sm">
                   <TrendingUp className="h-3 w-3 md:h-4 md:w-4" />
                   <span className="hidden sm:inline">Time Series</span>
@@ -131,27 +149,37 @@ const SnowAnalytics = () => {
                 </TabsTrigger>
               </TabsList>
 
+              <TabsContent value="overview" className="mt-6">
+                <Overview />
+              </TabsContent>
+
               <TabsContent value="timeseries" className="mt-6">
-                <SnowDepthChart className="w-full" />
+                <TimeSeries />
               </TabsContent>
 
               <TabsContent value="map" className="mt-6">
-                <SnowDepthMap 
-                  className="w-full" 
-                  onLocationSelect={setSelectedLocation}
-                />
-                {selectedLocation && (
-                  <div className="mt-6">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Station Details: {selectedLocation}</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <SnowDepthChart className="w-full" />
-                      </CardContent>
-                    </Card>
-                  </div>
-                )}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Map className="h-5 w-5" />
+                      Spatial Snow Depth Distribution
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <SnowDepthMap 
+                      className="w-full" 
+                      onLocationSelect={setSelectedLocation}
+                    />
+                    {selectedLocation && (
+                      <div className="mt-6 p-4 border rounded-lg bg-muted/50">
+                        <h4 className="font-semibold mb-2">Selected Station: {selectedLocation}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Click on map markers to view detailed station information and historical data.
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </TabsContent>
 
               <TabsContent value="seasonal" className="mt-6">
