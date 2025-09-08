@@ -1,159 +1,165 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Thermometer, Wind, Droplets, Gauge, CloudSnow } from 'lucide-react';
+import { Thermometer, Wind, Droplets, Mountain, Activity } from 'lucide-react';
 import { useOptimizedAnalytics } from '@/hooks/useOptimizedAnalytics';
 
-interface CurrentConditions {
-  location: string;
-  timestamp: string;
-  temperature: number;
-  snowDepth: number;
-  windSpeed: number;
-  windDirection: number;
-  humidity: number;
-  pressure: number;
-  conditions: string;
-}
-
 const RealTimeConditions = () => {
-  const { analyticsData, selectedLocation, locations } = useOptimizedAnalytics();
-  const [currentConditions, setCurrentConditions] = useState<CurrentConditions | null>(null);
-
-  useEffect(() => {
-    if (analyticsData.length > 0) {
-      const latest = analyticsData[analyticsData.length - 1];
-      const location = locations.find(l => l.id === latest.location_id);
-      
-      setCurrentConditions({
-        location: location?.name || 'Unknown Location',
-        timestamp: new Date().toLocaleString(),
-        temperature: latest.temperature,
-        snowDepth: latest.snow_depth_clean,
-        windSpeed: latest.wind_speed,
-        windDirection: Math.floor(Math.random() * 360), // Mock wind direction
-        humidity: latest.humidity,
-        pressure: 29.5 + Math.random() * 2, // Mock pressure in inHg
-        conditions: latest.snow_depth_clean > 0 ? 'Snow Cover' : 'Clear'
-      });
+  const { analyticsData, computedMetrics, selectedLocation, locations } = useOptimizedAnalytics();
+  
+  // Get the latest data point for current conditions
+  const latestData = analyticsData[analyticsData.length - 1];
+  const selectedLocationName = locations.find(l => l.id === selectedLocation)?.name || 'All Locations';
+  
+  const getConditionBadge = (value: number, type: 'temperature' | 'wind' | 'humidity' | 'precipitation') => {
+    switch (type) {
+      case 'temperature':
+        if (value < -5) return { variant: 'destructive' as const, label: 'Very Cold' };
+        if (value < 15) return { variant: 'outline' as const, label: 'Cold' };
+        if (value < 32) return { variant: 'secondary' as const, label: 'Cool' };
+        return { variant: 'default' as const, label: 'Mild' };
+      case 'wind':
+        if (value > 30) return { variant: 'destructive' as const, label: 'High' };
+        if (value > 15) return { variant: 'outline' as const, label: 'Moderate' };
+        return { variant: 'secondary' as const, label: 'Light' };
+      case 'humidity':
+        if (value > 80) return { variant: 'secondary' as const, label: 'High' };
+        if (value > 60) return { variant: 'outline' as const, label: 'Moderate' };
+        return { variant: 'default' as const, label: 'Low' };
+      case 'precipitation':
+        if (value > 1) return { variant: 'default' as const, label: 'Heavy' };
+        if (value > 0.1) return { variant: 'secondary' as const, label: 'Light' };
+        return { variant: 'outline' as const, label: 'Trace' };
     }
-  }, [analyticsData, locations]);
-
-  if (!currentConditions) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Gauge className="h-5 w-5" />
-            Current Conditions
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center text-muted-foreground">
-            Loading current conditions...
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  const getWindDirection = (degrees: number) => {
-    const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
-    return directions[Math.round(degrees / 22.5) % 16];
-  };
-
-  const getTemperatureColor = (temp: number) => {
-    if (temp <= 0) return 'text-blue-500';
-    if (temp <= 32) return 'text-cyan-500';
-    if (temp <= 60) return 'text-green-500';
-    if (temp <= 80) return 'text-yellow-500';
-    return 'text-red-500';
   };
 
   return (
-    <Card className="col-span-full">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Gauge className="h-5 w-5" />
-            Current Conditions - {currentConditions.location}
-          </CardTitle>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold">Current Conditions - {selectedLocationName}</h3>
+        {latestData && (
           <Badge variant="outline" className="text-xs">
-            Last Updated: {currentConditions.timestamp}
+            Last updated: {new Date(latestData.timestamp).toLocaleDateString()}
           </Badge>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {/* Temperature */}
-          <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/20 dark:to-blue-900/20 rounded-lg">
-            <Thermometer className={`h-6 w-6 mx-auto mb-2 ${getTemperatureColor(currentConditions.temperature)}`} />
-            <div className={`text-2xl font-bold ${getTemperatureColor(currentConditions.temperature)}`}>
-              {currentConditions.temperature.toFixed(1)}°F
+        )}
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Mountain className="h-4 w-4" />
+              Snow Depth
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {latestData ? `${latestData.snow_depth_clean.toFixed(1)}"` : `${computedMetrics.avgSnowDepth.toFixed(1)}"`}
             </div>
-            <p className="text-xs text-muted-foreground">Temperature</p>
-          </div>
+            <Badge variant="secondary" className="text-xs">
+              {latestData ? 'Current' : 'Average'}
+            </Badge>
+            {latestData && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Raw: {latestData.snow_depth_raw.toFixed(1)}"
+              </p>
+            )}
+          </CardContent>
+        </Card>
 
-          {/* Snow Depth */}
-          <div className="text-center p-4 bg-gradient-to-br from-white to-gray-100 dark:from-gray-900/20 dark:to-gray-800/20 rounded-lg">
-            <CloudSnow className="h-6 w-6 mx-auto mb-2 text-white" />
-            <div className="text-2xl font-bold text-white">
-              {currentConditions.snowDepth.toFixed(1)}"
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Thermometer className="h-4 w-4" />
+              Temperature
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {latestData ? `${latestData.temperature.toFixed(1)}°F` : `${computedMetrics.avgTemperature.toFixed(1)}°F`}
             </div>
-            <p className="text-xs text-muted-foreground">Snow Depth</p>
-          </div>
+            <Badge 
+              variant={getConditionBadge(latestData?.temperature || computedMetrics.avgTemperature, 'temperature').variant} 
+              className="text-xs"
+            >
+              {getConditionBadge(latestData?.temperature || computedMetrics.avgTemperature, 'temperature').label}
+            </Badge>
+            <p className="text-xs text-muted-foreground mt-1">
+              {latestData ? 'Current' : 'Season avg'}
+            </p>
+          </CardContent>
+        </Card>
 
-          {/* Wind Speed */}
-          <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/20 dark:to-green-900/20 rounded-lg">
-            <Wind className="h-6 w-6 mx-auto mb-2 text-green-600" />
-            <div className="text-2xl font-bold text-green-600">
-              {currentConditions.windSpeed.toFixed(0)} mph
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Droplets className="h-4 w-4" />
+              Precipitation
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {latestData ? `${latestData.precipitation.toFixed(1)}"` : `${computedMetrics.avgPrecipitation.toFixed(1)}"`}
             </div>
-            <p className="text-xs text-muted-foreground">Wind Speed</p>
-          </div>
+            <Badge 
+              variant={getConditionBadge(latestData?.precipitation || computedMetrics.avgPrecipitation, 'precipitation').variant} 
+              className="text-xs"
+            >
+              {getConditionBadge(latestData?.precipitation || computedMetrics.avgPrecipitation, 'precipitation').label}
+            </Badge>
+            <p className="text-xs text-muted-foreground mt-1">
+              {latestData ? 'Daily total' : 'Daily avg'}
+            </p>
+          </CardContent>
+        </Card>
 
-          {/* Wind Direction */}
-          <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/20 dark:to-purple-900/20 rounded-lg">
-            <div className="w-6 h-6 mx-auto mb-2 relative">
-              <div 
-                className="w-1 h-3 bg-purple-600 absolute top-0 left-1/2 transform -translate-x-1/2 origin-bottom"
-                style={{ transform: `translate(-50%, 0) rotate(${currentConditions.windDirection}deg)` }}
-              />
-              <div className="w-6 h-6 border-2 border-purple-600 rounded-full" />
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Wind className="h-4 w-4" />
+              Wind Speed
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {latestData ? `${latestData.wind_speed.toFixed(1)} mph` : `${computedMetrics.avgWindSpeed.toFixed(1)} mph`}
             </div>
-            <div className="text-2xl font-bold text-purple-600">
-              {getWindDirection(currentConditions.windDirection)}
-            </div>
-            <p className="text-xs text-muted-foreground">{currentConditions.windDirection}°</p>
-          </div>
+            <Badge 
+              variant={getConditionBadge(latestData?.wind_speed || computedMetrics.avgWindSpeed, 'wind').variant} 
+              className="text-xs"
+            >
+              {getConditionBadge(latestData?.wind_speed || computedMetrics.avgWindSpeed, 'wind').label}
+            </Badge>
+            <p className="text-xs text-muted-foreground mt-1">
+              {latestData ? 'Current' : 'Average'}
+            </p>
+          </CardContent>
+        </Card>
 
-          {/* Humidity */}
-          <div className="text-center p-4 bg-gradient-to-br from-cyan-50 to-cyan-100 dark:from-cyan-950/20 dark:to-cyan-900/20 rounded-lg">
-            <Droplets className="h-6 w-6 mx-auto mb-2 text-cyan-600" />
-            <div className="text-2xl font-bold text-cyan-600">
-              {currentConditions.humidity.toFixed(0)}%
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Activity className="h-4 w-4" />
+              Humidity
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {latestData ? `${latestData.humidity.toFixed(0)}%` : `${computedMetrics.avgHumidity?.toFixed(0) || 'N/A'}%`}
             </div>
-            <p className="text-xs text-muted-foreground">Humidity</p>
-          </div>
-
-          {/* Pressure */}
-          <div className="text-center p-4 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/20 dark:to-orange-900/20 rounded-lg">
-            <Gauge className="h-6 w-6 mx-auto mb-2 text-orange-600" />
-            <div className="text-2xl font-bold text-orange-600">
-              {currentConditions.pressure.toFixed(2)}
-            </div>
-            <p className="text-xs text-muted-foreground">inHg</p>
-          </div>
-        </div>
-
-        {/* Current Weather Condition */}
-        <div className="mt-4 text-center">
-          <Badge variant="secondary" className="text-lg px-4 py-2">
-            {currentConditions.conditions}
-          </Badge>
-        </div>
-      </CardContent>
-    </Card>
+            <Badge 
+              variant={getConditionBadge(latestData?.humidity || computedMetrics.avgHumidity || 0, 'humidity').variant} 
+              className="text-xs"
+            >
+              {getConditionBadge(latestData?.humidity || computedMetrics.avgHumidity || 0, 'humidity').label}
+            </Badge>
+            <p className="text-xs text-muted-foreground mt-1">
+              Relative humidity
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 };
 

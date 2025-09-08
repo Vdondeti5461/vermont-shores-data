@@ -1,24 +1,22 @@
 import React, { useState } from 'react';
-import SnowDepthChart from '@/components/SnowDepthChart';
+import AnalyticsSnowDepthChart from '@/components/AnalyticsSnowDepthChart';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DatePickerWithRange } from '@/components/ui/date-picker';
-import { TrendingUp, Calendar, Download, Filter } from 'lucide-react';
+import { TrendingUp, Calendar, Download, Filter, BarChart3 } from 'lucide-react';
 import { DateRange } from 'react-day-picker';
+import { useOptimizedAnalytics } from '@/hooks/useOptimizedAnalytics';
 
 const TimeSeries = () => {
+  const { computedMetrics, analyticsData, selectedLocation, locations } = useOptimizedAnalytics();
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
-  const [timeResolution, setTimeResolution] = useState('daily');
+  const [chartType, setChartType] = useState<'line' | 'area'>('line');
+  const [showRawData, setShowRawData] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
 
-  const timeResolutions = [
-    { value: 'hourly', label: 'Hourly' },
-    { value: 'daily', label: 'Daily' },
-    { value: 'weekly', label: 'Weekly' },
-    { value: 'monthly', label: 'Monthly' }
-  ];
+  const selectedLocationName = locations.find(l => l.id === selectedLocation)?.name || 'All Locations';
 
   return (
     <div className="space-y-6">
@@ -66,27 +64,28 @@ const TimeSeries = () => {
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium">Time Resolution</label>
-                <Select value={timeResolution} onValueChange={setTimeResolution}>
+                <label className="text-sm font-medium">Chart Type</label>
+                <Select value={chartType} onValueChange={(value) => setChartType(value as 'line' | 'area')}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select resolution" />
+                    <SelectValue placeholder="Select chart type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {timeResolutions.map((resolution) => (
-                      <SelectItem key={resolution.value} value={resolution.value}>
-                        {resolution.label}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="line">Line Chart</SelectItem>
+                    <SelectItem value="area">Area Chart</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium">Data Type</label>
+                <label className="text-sm font-medium">Data Display</label>
                 <div className="flex gap-2">
-                  <Badge variant="secondary">Raw</Badge>
-                  <Badge variant="secondary">Cleaned</Badge>
-                  <Badge variant="outline">Both</Badge>
+                  <Badge 
+                    variant={showRawData ? "secondary" : "outline"}
+                    className="cursor-pointer"
+                    onClick={() => setShowRawData(!showRawData)}
+                  >
+                    {showRawData ? 'Hide' : 'Show'} Raw Data
+                  </Badge>
                 </div>
               </div>
             </div>
@@ -99,16 +98,20 @@ const TimeSeries = () => {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Snow Depth Time Series - {timeResolution.charAt(0).toUpperCase() + timeResolution.slice(1)} Resolution
+              <BarChart3 className="h-5 w-5" />
+              Snow Depth Time Series - {selectedLocationName}
             </CardTitle>
             <Badge variant="outline">
-              {dateRange?.from ? `${dateRange.from.toLocaleDateString()} - ${dateRange.to?.toLocaleDateString() || 'Present'}` : 'All Time'}
+              {dateRange?.from ? `${dateRange.from.toLocaleDateString()} - ${dateRange.to?.toLocaleDateString() || 'Present'}` : 'Full Season'}
             </Badge>
           </div>
         </CardHeader>
         <CardContent>
-          <SnowDepthChart className="w-full" />
+          <AnalyticsSnowDepthChart 
+            className="w-full" 
+            chartType={chartType}
+            showRawData={showRawData}
+          />
         </CardContent>
       </Card>
 
@@ -119,7 +122,7 @@ const TimeSeries = () => {
             <CardTitle className="text-lg">Average Depth</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">24.7"</div>
+            <div className="text-2xl font-bold text-blue-600">{computedMetrics.avgSnowDepth.toFixed(1)}"</div>
             <p className="text-sm text-muted-foreground">Seasonal average</p>
           </CardContent>
         </Card>
@@ -129,7 +132,7 @@ const TimeSeries = () => {
             <CardTitle className="text-lg">Peak Depth</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">78.3"</div>
+            <div className="text-2xl font-bold text-green-600">{computedMetrics.maxSnowDepth.toFixed(1)}"</div>
             <p className="text-sm text-muted-foreground">Maximum recorded</p>
           </CardContent>
         </Card>
@@ -139,18 +142,18 @@ const TimeSeries = () => {
             <CardTitle className="text-lg">Data Points</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">15,432</div>
+            <div className="text-2xl font-bold text-purple-600">{computedMetrics.dataPoints.toLocaleString()}</div>
             <p className="text-sm text-muted-foreground">Valid measurements</p>
           </CardContent>
         </Card>
         
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Coverage</CardTitle>
+            <CardTitle className="text-lg">Temperature Range</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">98.7%</div>
-            <p className="text-sm text-muted-foreground">Data completeness</p>
+            <div className="text-2xl font-bold text-orange-600">{computedMetrics.minTemperature.toFixed(1)}° - {computedMetrics.maxTemperature.toFixed(1)}°F</div>
+            <p className="text-sm text-muted-foreground">Min - Max temp</p>
           </CardContent>
         </Card>
       </div>

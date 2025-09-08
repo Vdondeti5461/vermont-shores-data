@@ -50,7 +50,11 @@ export const useOptimizedAnalytics = () => {
         avgSnowDepth: 0,
         avgPrecipitation: 0,
         avgWindSpeed: 0,
-        dataPoints: 0
+        avgHumidity: 0,
+        dataPoints: 0,
+        maxSnowDepth: 0,
+        minTemperature: 0,
+        maxTemperature: 0
       };
     }
 
@@ -59,12 +63,21 @@ export const useOptimizedAnalytics = () => {
     const avgSnowDepth = analyticsData.reduce((sum, d) => sum + d.snow_depth_clean, 0) / totalPoints;
     const avgPrecipitation = analyticsData.reduce((sum, d) => sum + d.precipitation, 0) / totalPoints;
     const avgWindSpeed = analyticsData.reduce((sum, d) => sum + d.wind_speed, 0) / totalPoints;
+    const avgHumidity = analyticsData.reduce((sum, d) => sum + d.humidity, 0) / totalPoints;
+    
+    const maxSnowDepth = Math.max(...analyticsData.map(d => d.snow_depth_clean));
+    const minTemperature = Math.min(...analyticsData.map(d => d.temperature));
+    const maxTemperature = Math.max(...analyticsData.map(d => d.temperature));
 
     return {
       avgTemperature: Math.round(avgTemperature * 10) / 10,
       avgSnowDepth: Math.round(avgSnowDepth * 10) / 10,
       avgPrecipitation: Math.round(avgPrecipitation * 10) / 10,
       avgWindSpeed: Math.round(avgWindSpeed * 10) / 10,
+      avgHumidity: Math.round(avgHumidity * 10) / 10,
+      maxSnowDepth: Math.round(maxSnowDepth * 10) / 10,
+      minTemperature: Math.round(minTemperature * 10) / 10,
+      maxTemperature: Math.round(maxTemperature * 10) / 10,
       dataPoints: totalPoints
     };
   }, [analyticsData]);
