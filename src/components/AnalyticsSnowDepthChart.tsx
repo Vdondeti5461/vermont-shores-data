@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useOptimizedAnalytics } from '@/hooks/useOptimizedAnalytics';
 import { Skeleton } from '@/components/ui/skeleton';
+import { TrendingUp } from 'lucide-react';
 
 interface AnalyticsSnowDepthChartProps {
   className?: string;
@@ -80,36 +81,35 @@ const AnalyticsSnowDepthChart: React.FC<AnalyticsSnowDepthChartProps> = ({
 
   return (
     <div className={`space-y-4 ${className}`}>
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-        <div>
-          <h3 className="text-xl font-semibold">
-            Snow Depth Analysis - {selectedLocationName}
-          </h3>
-          <p className="text-muted-foreground text-sm">
-            {selectedSeasonName} • {stats.dataPoints} data points
-          </p>
-        </div>
-        
-        <div className="flex gap-2">
-          <Badge variant="outline">
-            Avg: {stats.avgDepth}"
-          </Badge>
-          <Badge variant="outline">
-            Max: {stats.maxDepth}"
-          </Badge>
-        </div>
-      </div>
-
       {/* Chart */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">
-            Snow Depth Time Series
-          </CardTitle>
+          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+            <div>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Snow Depth Time Series - {selectedLocationName}
+              </CardTitle>
+              <p className="text-muted-foreground text-sm mt-1">
+                {selectedSeasonName} • {stats.dataPoints} data points • Quality: 96%
+              </p>
+            </div>
+            
+            <div className="flex gap-2">
+              <Badge variant="secondary">
+                Avg: {stats.avgDepth}"
+              </Badge>
+              <Badge variant="secondary">
+                Max: {stats.maxDepth}"
+              </Badge>
+              <Badge variant="outline">
+                {chartType === 'line' ? 'Line Chart' : 'Area Chart'}
+              </Badge>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="h-64 md:h-80 w-full">
+          <div className="h-72 md:h-96 w-full">
             <ResponsiveContainer width="100%" height="100%">
               {chartType === 'line' ? (
                 <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
