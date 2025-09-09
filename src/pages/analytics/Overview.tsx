@@ -1,12 +1,9 @@
 import React from 'react';
-import RealTimeConditions from '@/components/RealTimeConditions';
-import TemperatureProfile from '@/components/TemperatureProfile';
-import WindGauge from '@/components/WindGauge';
 import AnalyticsSnowDepthChart from '@/components/AnalyticsSnowDepthChart';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Activity, TrendingUp, MapPin, Database, Calendar, Filter } from 'lucide-react';
+import { Activity, TrendingUp, MapPin, Database, Calendar, Filter, Thermometer } from 'lucide-react';
 import { useOptimizedAnalytics } from '@/hooks/useOptimizedAnalytics';
 
 const Overview = () => {
@@ -87,31 +84,43 @@ const Overview = () => {
         </CardContent>
       </Card>
 
-      {/* Current Conditions */}
-      <RealTimeConditions />
+      {/* Raw vs Cleaned Data Analysis */}
+      <AnalyticsSnowDepthChart 
+        className="w-full" 
+        showRawData={true}
+        chartType="line"
+      />
       
-      {/* Main Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <TemperatureProfile />
-        <WindGauge />
-      </div>
-      
-      {/* Time Series Analysis */}
+      {/* Temperature Analysis */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Snow Depth Time Series
-            </CardTitle>
-            <Badge variant="outline">
-              <Activity className="h-3 w-3 mr-1" />
-              Real Data
-            </Badge>
-          </div>
+          <CardTitle className="flex items-center gap-2">
+            <Thermometer className="h-5 w-5" />
+            Temperature Analysis - {selectedLocationName}
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <AnalyticsSnowDepthChart className="w-full" />
+          <div className="text-sm text-muted-foreground mb-4">
+            {selectedSeasonName} • Average: {computedMetrics.avgTemperature.toFixed(1)}°F
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-red-500">{computedMetrics.maxTemperature.toFixed(1)}°F</div>
+              <div className="text-xs text-muted-foreground">Max Temp</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-500">{computedMetrics.minTemperature.toFixed(1)}°F</div>
+              <div className="text-xs text-muted-foreground">Min Temp</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-yellow-500">{computedMetrics.avgTemperature.toFixed(1)}°F</div>
+              <div className="text-xs text-muted-foreground">Avg Temp</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-purple-500">{computedMetrics.avgHumidity.toFixed(1)}%</div>
+              <div className="text-xs text-muted-foreground">Humidity</div>
+            </div>
+          </div>
         </CardContent>
       </Card>
       

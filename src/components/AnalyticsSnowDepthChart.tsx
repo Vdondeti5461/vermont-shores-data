@@ -91,7 +91,7 @@ const AnalyticsSnowDepthChart: React.FC<AnalyticsSnowDepthChartProps> = ({
                 Snow Depth Time Series - {selectedLocationName}
               </CardTitle>
               <p className="text-muted-foreground text-sm mt-1">
-                {selectedSeasonName} • {stats.dataPoints} data points • Quality: 96%
+                {selectedSeasonName} • {stats.dataPoints} data points • Raw vs Clean Comparison
               </p>
             </div>
             
