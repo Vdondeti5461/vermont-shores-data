@@ -296,40 +296,40 @@ const MultiDatabaseDownload = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="text-center">
-        <h2 className="text-3xl font-bold mb-2">Environmental Data Export</h2>
-        <p className="text-muted-foreground">
+      <div className="text-center mb-6 xs:mb-8">
+        <h2 className="text-xl xs:text-2xl md:text-3xl font-bold mb-2">Environmental Data Export</h2>
+        <p className="text-sm xs:text-base text-muted-foreground">
           Select database, table, and filters to download environmental monitoring data
         </p>
       </div>
 
       {/* Step 1: Database Selection */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Database className="h-5 w-5" />
+      <Card className="mb-4 xs:mb-6">
+        <CardHeader className="pb-3 xs:pb-4">
+          <CardTitle className="flex items-center gap-2 text-base xs:text-lg">
+            <Database className="h-4 w-4 xs:h-5 xs:w-5" />
             Step 1: Select Database
           </CardTitle>
         </CardHeader>
         <CardContent>
           <Select value={selectedDatabase} onValueChange={handleDatabaseChange} disabled={isLoadingDatabases}>
-            <SelectTrigger>
+            <SelectTrigger className="min-h-[44px]">
               <SelectValue placeholder={isLoadingDatabases ? "Loading databases..." : "Choose a database"} />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="z-50">
               {databases.map((db) => (
-                <SelectItem key={db.key} value={db.key}>
+                <SelectItem key={db.key} value={db.key} className="min-h-[44px]">
                   <div>
-                    <div className="font-medium">{db.displayName}</div>
-                    <div className="text-sm text-muted-foreground">{db.description}</div>
+                    <div className="font-medium text-sm xs:text-base">{db.displayName}</div>
+                    <div className="text-xs xs:text-sm text-muted-foreground">{db.description}</div>
                   </div>
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           {isLoadingDatabases && (
-            <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
+            <div className="flex items-center gap-2 mt-2 text-xs xs:text-sm text-muted-foreground">
+              <Loader2 className="h-3 w-3 xs:h-4 xs:w-4 animate-spin" />
               Loading databases...
             </div>
           )}
@@ -338,24 +338,24 @@ const MultiDatabaseDownload = () => {
 
       {/* Step 2: Table Selection */}
       {selectedDatabase && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Table className="h-5 w-5" />
+        <Card className="mb-4 xs:mb-6">
+          <CardHeader className="pb-3 xs:pb-4">
+            <CardTitle className="flex items-center gap-2 text-base xs:text-lg">
+              <Table className="h-4 w-4 xs:h-5 xs:w-5" />
               Step 2: Select Table
             </CardTitle>
           </CardHeader>
           <CardContent>
             <Select value={selectedTable} onValueChange={handleTableChange} disabled={isLoadingTables}>
-              <SelectTrigger>
+              <SelectTrigger className="min-h-[44px]">
                 <SelectValue placeholder={isLoadingTables ? "Loading tables..." : "Choose a table"} />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-50">
                 {tables.map((table) => (
-                  <SelectItem key={table.name} value={table.name}>
+                  <SelectItem key={table.name} value={table.name} className="min-h-[44px]">
                     <div>
-                      <div className="font-medium">{table.displayName}</div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="font-medium text-sm xs:text-base">{table.displayName}</div>
+                      <div className="text-xs xs:text-sm text-muted-foreground">
                         {table.description} ({table.rowCount.toLocaleString()} records)
                       </div>
                     </div>
@@ -364,8 +364,8 @@ const MultiDatabaseDownload = () => {
               </SelectContent>
             </Select>
             {isLoadingTables && (
-              <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
+              <div className="flex items-center gap-2 mt-2 text-xs xs:text-sm text-muted-foreground">
+                <Loader2 className="h-3 w-3 xs:h-4 xs:w-4 animate-spin" />
                 Loading tables...
               </div>
             )}
@@ -375,52 +375,58 @@ const MultiDatabaseDownload = () => {
 
       {/* Step 3: Time & Location Filters */}
       {selectedDatabase && selectedTable && attributes.length > 0 && (
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-4 xs:gap-6 lg:grid-cols-2 mb-4 xs:mb-6">
           {/* Date Range Filter */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
+            <CardHeader className="pb-3 xs:pb-4">
+              <CardTitle className="flex items-center gap-2 text-base xs:text-lg">
+                <Clock className="h-4 w-4 xs:h-5 xs:w-5" />
                 Step 3a: Time Filter
-                <Badge variant="outline" className="text-xs">Required</Badge>
+                <Badge variant="outline" className="text-2xs xs:text-xs">Required</Badge>
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <CardContent className="space-y-3 xs:space-y-4">
+              <div className="grid grid-cols-1 gap-3 xs:gap-4">
                 <div>
-                  <Label>Start Date</Label>
+                  <Label className="text-xs xs:text-sm">Start Date</Label>
                   <Popover>
                     <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full justify-start text-left font-normal">
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {startDate ? format(startDate, "PPP") : "Select start date"}
+                      <Button variant="outline" className="w-full justify-start text-left font-normal min-h-[44px]">
+                        <CalendarIcon className="mr-2 h-3 w-3 xs:h-4 xs:w-4" />
+                        <span className="text-xs xs:text-sm">
+                          {startDate ? format(startDate, "PPP") : "Select start date"}
+                        </span>
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
+                    <PopoverContent className="w-auto p-0 z-50" align="start">
                       <Calendar
                         mode="single"
                         selected={startDate}
                         onSelect={setStartDate}
                         initialFocus
+                        className="p-3 pointer-events-auto"
                       />
                     </PopoverContent>
                   </Popover>
                 </div>
                 <div>
-                  <Label>End Date</Label>
+                  <Label className="text-xs xs:text-sm">End Date</Label>
                   <Popover>
                     <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full justify-start text-left font-normal">
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {endDate ? format(endDate, "PPP") : "Select end date"}
+                      <Button variant="outline" className="w-full justify-start text-left font-normal min-h-[44px]">
+                        <CalendarIcon className="mr-2 h-3 w-3 xs:h-4 xs:w-4" />
+                        <span className="text-xs xs:text-sm">
+                          {endDate ? format(endDate, "PPP") : "Select end date"}
+                        </span>
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
+                    <PopoverContent className="w-auto p-0 z-50" align="start">
                       <Calendar
                         mode="single"
                         selected={endDate}
                         onSelect={setEndDate}
                         initialFocus
+                        className="p-3 pointer-events-auto"
                       />
                     </PopoverContent>
                   </Popover>
@@ -431,32 +437,33 @@ const MultiDatabaseDownload = () => {
 
           {/* Location Filter */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="h-5 w-5" />
+            <CardHeader className="pb-3 xs:pb-4">
+              <CardTitle className="flex items-center gap-2 text-base xs:text-lg">
+                <MapPin className="h-4 w-4 xs:h-5 xs:w-5" />
                 Step 3b: Location Filter
-                <Badge variant="outline" className="text-xs">Required</Badge>
+                <Badge variant="outline" className="text-2xs xs:text-xs">Required</Badge>
               </CardTitle>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs xs:text-sm text-muted-foreground">
                 {locationValues.length} monitoring locations available
               </p>
             </CardHeader>
             <CardContent>
               {isLoadingLocations ? (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                <div className="flex items-center gap-2 text-xs xs:text-sm text-muted-foreground">
+                  <Loader2 className="h-3 w-3 xs:h-4 xs:w-4 animate-spin" />
                   Loading location values...
                 </div>
               ) : (
                 <div className="space-y-2 max-h-48 overflow-y-auto">
                   {locationValues.map((location) => (
-                    <div key={location} className="flex items-center space-x-2">
+                    <div key={location} className="flex items-center space-x-2 p-2 hover:bg-muted/50 rounded min-h-[44px]">
                       <Checkbox
                         id={location}
                         checked={selectedLocations.includes(location)}
                         onCheckedChange={() => toggleLocation(location)}
+                        className="min-h-[20px] min-w-[20px]"
                       />
-                      <Label htmlFor={location} className="text-sm font-medium">
+                      <Label htmlFor={location} className="text-xs xs:text-sm font-medium flex-1 cursor-pointer">
                         {location}
                       </Label>
                     </div>
@@ -465,7 +472,7 @@ const MultiDatabaseDownload = () => {
               )}
               {selectedLocations.length > 0 && (
                 <div className="mt-3 pt-3 border-t">
-                  <p className="text-sm text-primary font-medium">
+                  <p className="text-xs xs:text-sm text-primary font-medium">
                     {selectedLocations.length} location{selectedLocations.length > 1 ? 's' : ''} selected
                   </p>
                 </div>
@@ -477,89 +484,87 @@ const MultiDatabaseDownload = () => {
 
       {/* Step 4: Optional Attribute Selection */}
       {selectedDatabase && selectedTable && attributes.length > 0 && (startDate || endDate) && selectedLocations.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
+        <Card className="mb-6 xs:mb-8">
+          <CardHeader className="pb-3 xs:pb-4">
+            <CardTitle className="flex items-center gap-2 text-base xs:text-lg">
+              <FileText className="h-4 w-4 xs:h-5 xs:w-5" />
               Step 4: Select Attributes (Optional)
             </CardTitle>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs xs:text-sm text-muted-foreground">
               Leave unselected to download all available attributes
             </p>
           </CardHeader>
           <CardContent>
             {isLoadingAttributes ? (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
+              <div className="flex items-center gap-2 text-xs xs:text-sm text-muted-foreground">
+                <Loader2 className="h-3 w-3 xs:h-4 xs:w-4 animate-spin" />
                 Loading attributes...
               </div>
             ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="space-y-4">
                 {Object.entries(groupedAttributes).map(([category, attrs]) => (
-                  <div key={category} className="space-y-3">
-                    <h4 className="font-semibold text-primary">{category}</h4>
-                    <div className="space-y-2">
+                  <div key={category}>
+                    <h4 className="font-medium text-xs xs:text-sm text-foreground mb-2 px-2 py-1 bg-muted/50 rounded">
+                      {category} ({attrs.length})
+                    </h4>
+                    <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-2">
                       {attrs.map((attr) => (
-                        <div key={attr.name} className="flex items-center space-x-2">
+                        <div key={attr.name} className="flex items-center space-x-2 p-2 hover:bg-muted/30 rounded min-h-[44px]">
                           <Checkbox
                             id={attr.name}
                             checked={selectedAttributes.includes(attr.name)}
                             onCheckedChange={() => toggleAttribute(attr.name)}
+                            className="min-h-[20px] min-w-[20px]"
                           />
-                          <Label htmlFor={attr.name} className="text-sm">
+                          <Label htmlFor={attr.name} className="text-xs xs:text-sm font-medium flex-1 cursor-pointer">
                             {attr.name}
-                            {attr.isPrimary && (
-                              <Badge variant="secondary" className="ml-2 text-xs">Primary</Badge>
-                            )}
+                            {attr.isPrimary && <Badge variant="secondary" className="ml-1 text-2xs">Primary</Badge>}
                           </Label>
                         </div>
                       ))}
                     </div>
                   </div>
                 ))}
+                {selectedAttributes.length > 0 && (
+                  <div className="mt-4 pt-4 border-t">
+                    <p className="text-xs xs:text-sm text-primary font-medium">
+                      {selectedAttributes.length} attribute{selectedAttributes.length > 1 ? 's' : ''} selected
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
         </Card>
       )}
 
-      {/* Download Summary & Action */}
-      {selectedDatabase && selectedTable && (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <h3 className="font-semibold">Download Summary</h3>
-                <div className="text-sm text-muted-foreground space-y-1">
-                  <p><strong>Database:</strong> {databases.find(db => db.key === selectedDatabase)?.displayName || 'None'}</p>
-                  <p><strong>Table:</strong> {tables.find(t => t.name === selectedTable)?.displayName || 'None'}</p>
-                  <p><strong>Attributes:</strong> {selectedAttributes.length > 0 ? `${selectedAttributes.length} selected` : 'All attributes'}</p>
-                  <p><strong>Locations:</strong> {selectedLocations.length > 0 ? `${selectedLocations.length} selected` : 'None selected'}</p>
-                  <p><strong>Date Range:</strong> {
-                    startDate && endDate 
-                      ? `${format(startDate, 'PP')} - ${format(endDate, 'PP')}` 
-                      : startDate 
-                        ? `From ${format(startDate, 'PP')}` 
-                        : endDate 
-                          ? `Until ${format(endDate, 'PP')}` 
-                          : 'No date filter'
-                  }</p>
-                </div>
+      {/* Download Action */}
+      {selectedDatabase && selectedTable && (startDate || endDate) && selectedLocations.length > 0 && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="p-4 xs:p-6">
+            <div className="flex flex-col xs:flex-row items-center justify-between gap-4">
+              <div className="text-center xs:text-left">
+                <h3 className="font-semibold text-sm xs:text-base mb-1">Ready to Download</h3>
+                <p className="text-xs xs:text-sm text-muted-foreground">
+                  {selectedDatabase} → {selectedTable} → {selectedLocations.length} location(s)
+                  {selectedAttributes.length > 0 && ` → ${selectedAttributes.length} attribute(s)`}
+                </p>
               </div>
               <Button 
                 onClick={handleDownload} 
-                disabled={!selectedDatabase || !selectedTable || (!startDate && !endDate) || selectedLocations.length === 0 || isDownloading}
-                className="min-w-[140px]"
+                disabled={isDownloading}
+                size="lg"
+                className="w-full xs:w-auto min-h-[48px] px-6"
               >
                 {isDownloading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Preparing...
+                    <span className="text-sm xs:text-base">Downloading...</span>
                   </>
                 ) : (
                   <>
                     <Download className="h-4 w-4 mr-2" />
-                    Download CSV
+                    <span className="text-sm xs:text-base">Download CSV</span>
                   </>
                 )}
               </Button>

@@ -14,12 +14,41 @@ export default {
 			center: true,
 			padding: {
 				DEFAULT: '1rem',
-				sm: '1.5rem',
+				xs: '0.75rem',
+				sm: '1rem',
+				md: '1.5rem',
 				lg: '2rem',
+				xl: '2.5rem',
+				'2xl': '3rem'
 			},
 			screens: {
+				xs: '100%',
+				sm: '640px',
+				md: '768px',
+				lg: '1024px',
+				xl: '1280px',
 				'2xl': '1400px'
 			}
+		},
+		screens: {
+			'xs': '320px',
+			'sm': '640px',
+			'md': '768px',
+			'lg': '1024px',
+			'xl': '1280px',
+			'2xl': '1536px',
+			'3xl': '1920px',
+			// Device-specific breakpoints
+			'mobile': {'max': '767px'},
+			'tablet': {'min': '768px', 'max': '1023px'},
+			'desktop': {'min': '1024px'},
+			'touch': {'raw': '(hover: none)'},
+			'mouse': {'raw': '(hover: hover)'},
+			// Orientation breakpoints
+			'landscape': {'raw': '(orientation: landscape)'},
+			'portrait': {'raw': '(orientation: portrait)'},
+			// High DPI displays
+			'retina': {'raw': '(-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi)'}
 		},
 		extend: {
 			colors: {
@@ -102,12 +131,37 @@ export default {
 				'fade-in': {
 					'0%': { opacity: '0', transform: 'translateY(10px)' },
 					'100%': { opacity: '1', transform: 'translateY(0)' }
+				},
+				'slide-up': {
+					'0%': { opacity: '0', transform: 'translateY(20px)' },
+					'100%': { opacity: '1', transform: 'translateY(0)' }
+				},
+				'scale-in': {
+					'0%': { opacity: '0', transform: 'scale(0.95)' },
+					'100%': { opacity: '1', transform: 'scale(1)' }
+				},
+				'bounce-subtle': {
+					'0%, 100%': { transform: 'translateY(0)' },
+					'50%': { transform: 'translateY(-2px)' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
-				'fade-in': 'fade-in 0.3s ease-out'
+				'fade-in': 'fade-in 0.3s ease-out',
+				'slide-up': 'slide-up 0.4s ease-out',
+				'scale-in': 'scale-in 0.2s ease-out',
+				'bounce-subtle': 'bounce-subtle 2s ease-in-out infinite'
+			},
+			spacing: {
+				'safe-top': 'env(safe-area-inset-top)',
+				'safe-bottom': 'env(safe-area-inset-bottom)',
+				'safe-left': 'env(safe-area-inset-left)',
+				'safe-right': 'env(safe-area-inset-right)',
+			},
+			fontSize: {
+				'2xs': ['0.6875rem', { lineHeight: '1rem' }],
+				'3xs': ['0.5625rem', { lineHeight: '0.75rem' }],
 			}
 		}
 	},

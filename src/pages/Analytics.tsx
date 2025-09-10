@@ -11,6 +11,12 @@ import { Link } from 'react-router-dom';
 const AnalyticsPage = () => {
   const analyticsFeatures = [
     {
+      title: 'Snow Depth Analysis',
+      description: 'Time series comparison of raw vs cleaned DBTCDT measurements',
+      icon: BarChart3,
+      href: '/analytics/snow-depth'
+    },
+    {
       title: 'Real-time Dashboard',
       description: 'Live environmental data visualization',
       icon: Clock,

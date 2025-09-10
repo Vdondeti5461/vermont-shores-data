@@ -523,11 +523,23 @@ const DynamicDataBrowser = () => {
     <div className="space-y-6">
 
       <Tabs defaultValue="select" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="select">Data Selection</TabsTrigger>
-          <TabsTrigger value="filters">Filters & Attributes</TabsTrigger>
-          <TabsTrigger value="metadata">Metadata</TabsTrigger>
-          <TabsTrigger value="download">Download</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-1 h-auto p-1">
+          <TabsTrigger value="select" className="text-xs xs:text-sm p-2 xs:p-3">
+            <Database className="h-3 w-3 xs:h-4 xs:w-4 mr-1 xs:mr-2" />
+            <span className="xs:inline">Data Selection</span>
+          </TabsTrigger>
+          <TabsTrigger value="filters" className="text-xs xs:text-sm p-2 xs:p-3">
+            <MapPin className="h-3 w-3 xs:h-4 xs:w-4 mr-1 xs:mr-2" />
+            <span className="xs:inline">Filters</span>
+          </TabsTrigger>
+          <TabsTrigger value="metadata" className="text-xs xs:text-sm p-2 xs:p-3">
+            <Info className="h-3 w-3 xs:h-4 xs:w-4 mr-1 xs:mr-2" />
+            <span className="xs:inline">Metadata</span>
+          </TabsTrigger>
+          <TabsTrigger value="download" className="text-xs xs:text-sm p-2 xs:p-3">
+            <Download className="h-3 w-3 xs:h-4 xs:w-4 mr-1 xs:mr-2" />
+            <span className="xs:inline">Download</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="select" className="space-y-6">
@@ -773,12 +785,13 @@ const DynamicDataBrowser = () => {
                         {startDate ? format(startDate, "PPP") : "Select start date"}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
+                    <PopoverContent className="w-auto p-0 z-50" align="start">
                       <Calendar
                         mode="single"
                         selected={startDate}
                         onSelect={setStartDate}
                         initialFocus
+                        className="p-3 pointer-events-auto"
                       />
                     </PopoverContent>
                   </Popover>
@@ -792,12 +805,13 @@ const DynamicDataBrowser = () => {
                         {endDate ? format(endDate, "PPP") : "Select end date"}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
+                    <PopoverContent className="w-auto p-0 z-50" align="start">
                       <Calendar
                         mode="single"
                         selected={endDate}
                         onSelect={setEndDate}
                         initialFocus
+                        className="p-3 pointer-events-auto"
                       />
                     </PopoverContent>
                   </Popover>
