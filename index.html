@@ -1,111 +1,29 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    
-    <!-- Enhanced viewport configuration for mobile devices -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, minimum-scale=1.0, user-scalable=yes, viewport-fit=cover" />
-    
-    <!-- iOS Safari optimizations -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+    <meta name="theme-color" content="#1f4a3c" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-touch-fullscreen" content="yes" />
-    
-    <!-- Android Chrome optimizations -->
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="theme-color" content="#15803d" />
-    
-    <!-- Cross-browser compatibility -->
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="format-detection" content="telephone=no" />
-    <meta name="msapplication-tap-highlight" content="no" />
-    
-    <!-- Preconnect to improve performance -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    
     <link rel="icon" href="/lovable-uploads/d19c9c85-6a6b-4115-bc8e-2ed5fd432891.png" type="image/png">
-    
-    <!-- SEO Meta Tags -->
-    <title>Summit-to-Shore Snow Observatory Network | University of Vermont Research</title>
-    <meta name="description" content="Monitoring snowpack characteristics and meteorological variables across Vermont's elevational gradients. 22 stations from valley floors to mountain peaks supporting climate research." />
-    <meta name="keywords" content="snow observatory, climate research, Vermont, University of Vermont, environmental monitoring, snowpack, meteorology" />
+    <title>Summit 2 Shore - University of Vermont Environmental Research Portal</title>
+    <meta name="description" content="Comprehensive environmental and climate data from Vermont's Summit 2 Shore monitoring network. Access real-time data, analytics, and research insights from 22 strategic locations across Vermont." />
     <meta name="author" content="University of Vermont" />
-    
-    <!-- Open Graph -->
-    <meta property="og:title" content="Summit-to-Shore Snow Observatory Network" />
-    <meta property="og:description" content="University of Vermont's comprehensive snow and climate monitoring network across Vermont's mountains." />
+    <meta name="keywords" content="Vermont climate data, environmental monitoring, Summit 2 Shore, University of Vermont, research portal, environmental data" />
+
+    <meta property="og:title" content="Summit 2 Shore - Vermont Environmental Research Portal" />
+    <meta property="og:description" content="Access comprehensive environmental and climate data from Vermont's monitoring network. Real-time analytics and downloadable datasets for researchers." />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://vdondeti.w3.uvm.edu" />
-    <meta property="og:image" content="https://vdondeti.w3.uvm.edu/lovable-uploads/9d5d35d8-43d8-4c2d-a89e-7522213fc836.png" />
-    
-    <!-- Twitter Card -->
+    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Summit-to-Shore Snow Observatory Network" />
-    <meta name="twitter:description" content="Environmental monitoring across Vermont's elevational gradients" />
-    <meta name="twitter:image" content="https://vdondeti.w3.uvm.edu/lovable-uploads/9d5d35d8-43d8-4c2d-a89e-7522213fc836.png" />
-    
-    <!-- Canonical URL -->
-    <link rel="canonical" href="https://vdondeti.w3.uvm.edu" />
-    
-    <style>
-      /* Critical CSS for loading states */
-      body { 
-        margin: 0; 
-        font-family: system-ui, -apple-system, sans-serif;
-        background: #ffffff;
-      }
-      
-      /* Loading spinner */
-      .loading-spinner {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 40px;
-        height: 40px;
-        border: 3px solid #f3f4f6;
-        border-top: 3px solid #15803d;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-        z-index: 9999;
-      }
-      
-      @keyframes spin {
-        0% { transform: translate(-50%, -50%) rotate(0deg); }
-        100% { transform: translate(-50%, -50%) rotate(360deg); }
-      }
-      
-      /* Hide loading spinner when app loads */
-      .loaded .loading-spinner {
-        display: none;
-      }
-    </style>
+    <meta name="twitter:site" content="@lovable_dev" />
+    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
   </head>
+
   <body>
-    <div id="root">
-      <div class="loading-spinner"></div>
-    </div>
-    
-    <script>
-      // Remove loading spinner when page loads
-      window.addEventListener('load', function() {
-        document.body.classList.add('loaded');
-      });
-      
-      // iOS viewport fix
-      function setViewportHeight() {
-        const vh = window.innerHeight * 0.01;
-        document.documentElement.style.setProperty('--vh', vh + 'px');
-      }
-      
-      setViewportHeight();
-      window.addEventListener('resize', setViewportHeight);
-      window.addEventListener('orientationchange', function() {
-        setTimeout(setViewportHeight, 100);
-      });
-    </script>
-    
+    <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
