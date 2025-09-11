@@ -2,9 +2,10 @@ RewriteEngine On
 RewriteBase /
 
 # Serve UVM favicon for all routes (including API URLs opened in browser)
-RewriteRule ^favicon\.ico$ /lovable-uploads/6cc4d90f-0179-494a-a8be-7a9a1c70a0e9.png [L]
-RewriteRule ^api/favicon\.ico$ /lovable-uploads/6cc4d90f-0179-494a-a8be-7a9a1c70a0e9.png [L]
-RewriteRule ^health/favicon\.ico$ /lovable-uploads/6cc4d90f-0179-494a-a8be-7a9a1c70a0e9.png [L]
+# Force redirect to break caches and bypass any existing /public/favicon.ico
+RedirectMatch 302 ^/favicon\.ico$ /lovable-uploads/6cc4d90f-0179-494a-a8be-7a9a1c70a0e9.png
+RedirectMatch 302 ^/api/favicon\.ico$ /lovable-uploads/6cc4d90f-0179-494a-a8be-7a9a1c70a0e9.png
+RedirectMatch 302 ^/health/favicon\.ico$ /lovable-uploads/6cc4d90f-0179-494a-a8be-7a9a1c70a0e9.png
 
 # Proxy API requests to Node.js backend (health + api)
 RewriteCond %{REQUEST_URI} ^/(health|api)
