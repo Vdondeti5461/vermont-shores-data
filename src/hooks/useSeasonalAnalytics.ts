@@ -1,0 +1,113 @@
+import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { 
+  SeasonalAnalyticsService, 
+  Location, 
+  Season, 
+  EnvironmentalData, 
+  SeasonalMetrics, 
+  TimeSeriesFilter 
+} from '@/services/seasonalAnalyticsService';
+
+export const useSeasonalLocations = () => {
+  return useQuery({
+    queryKey: ['seasonal-locations'],
+    queryFn: SeasonalAnalyticsService.getLocations,
+    staleTime: 1000 * 60 * 30, // 30 minutes
+  });
+};
+
+export const useSeasonalSeasons = () => {
+  return useQuery({
+    queryKey: ['seasonal-seasons'],
+    queryFn: SeasonalAnalyticsService.getSeasons,
+    staleTime: 1000 * 60 * 60, // 1 hour
+  });
+};
+
+export const useEnvironmentalData = (filters: TimeSeriesFilter = {}) => {
+  return useQuery({
+    queryKey: ['environmental-data', filters],
+    queryFn: () => SeasonalAnalyticsService.getEnvironmentalData(filters),
+    enabled: Boolean(filters.seasonId), // Only run when season is selected
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+};
+
+export const useSeasonalMetrics = (filters: TimeSeriesFilter = {}) => {
+  return useQuery({
+    queryKey: ['seasonal-metrics', filters],
+    queryFn: () => SeasonalAnalyticsService.getSeasonalMetrics(filters),
+    enabled: Boolean(filters.seasonId),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+};
+
+export const useMonthlyTrends = (filters: TimeSeriesFilter = {}) => {
+  return useQuery({
+    queryKey: ['monthly-trends', filters],
+    queryFn: () => SeasonalAnalyticsService.getMonthlyTrends(filters),
+    enabled: Boolean(filters.seasonId),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+};
+
+export const useSeasonalTrends = (filters: TimeSeriesFilter = {}) => {
+  return useQuery({
+    queryKey: ['seasonal-trends', filters],
+    queryFn: () => SeasonalAnalyticsService.getSeasonalTrends(filters),
+    enabled: Boolean(filters.seasonId),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+};
+
+export const useSeasonalAnalyticsState = () => {
+  const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
+  const [selectedSeason, setSelectedSeason] = useState<string>('');
+  const [selectedMonth, setSelectedMonth] = useState<string>('');
+  const [selectedPeriod, setSelectedPeriod] = useState<'fall' | 'winter' | 'spring' | 'summer' | ''>('');
+
+  const { data: locations, isLoading: locationsLoading } = useSeasonalLocations();
+  const { data: seasons, isLoading: seasonsLoading } = useSeasonalSeasons();
+
+  const filters: TimeSeriesFilter = {
+    locationIds: selectedLocations.length > 0 ? selectedLocations : undefined,
+    seasonId: selectedSeason || undefined,
+    monthFilter: selectedMonth || undefined,
+    seasonPeriod: selectedPeriod || undefined,
+  };
+
+  const { data: environmentalData, isLoading: dataLoading } = useEnvironmentalData(filters);
+  const { data: seasonalMetrics, isLoading: metricsLoading } = useSeasonalMetrics(filters);
+  const { data: monthlyTrends, isLoading: monthlyLoading } = useMonthlyTrends(filters);
+  const { data: seasonalTrends, isLoading: seasonalLoading } = useSeasonalTrends(filters);
+
+  return {
+    // Data
+    locations: locations || [],
+    seasons: seasons || [],
+    environmentalData: environmentalData || [],
+    seasonalMetrics: seasonalMetrics || [],
+    monthlyTrends: monthlyTrends || {},
+    seasonalTrends: seasonalTrends || {},
+    
+    // State
+    selectedLocations,
+    selectedSeason,
+    selectedMonth,
+    selectedPeriod,
+    
+    // Setters
+    setSelectedLocations,
+    setSelectedSeason,
+    setSelectedMonth,
+    setSelectedPeriod,
+    
+    // Loading states
+    isLoading: locationsLoading || seasonsLoading || dataLoading || metricsLoading || monthlyLoading || seasonalLoading,
+    hasError: false, // You can add error handling as needed
+    
+    // Filters object for convenience
+    filters
+  };
+};
