@@ -1,6 +1,11 @@
 RewriteEngine On
 RewriteBase /
 
+# Serve UVM favicon for all routes (including API URLs opened in browser)
+RewriteRule ^favicon\.ico$ /lovable-uploads/6cc4d90f-0179-494a-a8be-7a9a1c70a0e9.png [L]
+RewriteRule ^api/favicon\.ico$ /lovable-uploads/6cc4d90f-0179-494a-a8be-7a9a1c70a0e9.png [L]
+RewriteRule ^health/favicon\.ico$ /lovable-uploads/6cc4d90f-0179-494a-a8be-7a9a1c70a0e9.png [L]
+
 # Proxy API requests to Node.js backend (health + api)
 RewriteCond %{REQUEST_URI} ^/(health|api)
 RewriteRule ^(.*)$ http://127.0.0.1:3001/$1 [P,L]
