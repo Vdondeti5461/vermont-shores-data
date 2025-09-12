@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { TrendingUp, TrendingDown, Activity, BarChart3, LineChart, Calendar, Thermometer, CloudRain, Wind, Snowflake } from 'lucide-react';
+import { TrendingUp, TrendingDown, Activity, BarChart3, LineChart, Calendar, Thermometer, CloudRain, Wind, Snowflake, MapPin } from 'lucide-react';
 import { 
   LineChart as RechartsLineChart, 
   Line, 
@@ -19,11 +19,11 @@ import {
   Bar, 
   ComposedChart 
 } from 'recharts';
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSeasonalAnalyticsState } from '@/hooks/useSeasonalAnalytics';
-import LocationSelector from '@/components/LocationSelector';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const Analytics = () => {
   const navigate = useNavigate();
@@ -49,36 +49,51 @@ const Analytics = () => {
     hasError
   } = useSeasonalAnalyticsState();
 
-  // Calculate computed metrics from environmental data
-  const computedMetrics = {
-    avgTemperature: environmentalData.length > 0 ? 
-      environmentalData.reduce((sum, d) => sum + (d.temperature || 0), 0) / environmentalData.filter(d => d.temperature != null).length : 0,
-    avgPrecipitation: environmentalData.length > 0 ? 
-      environmentalData.reduce((sum, d) => sum + (d.precipitation || 0), 0) / environmentalData.filter(d => d.precipitation != null).length : 0,
-    avgWindSpeed: environmentalData.length > 0 ? 
-      environmentalData.reduce((sum, d) => sum + (d.wind_speed || 0), 0) / environmentalData.filter(d => d.wind_speed != null).length : 0,
-    avgSnowDepth: environmentalData.length > 0 ? 
-      environmentalData.reduce((sum, d) => sum + (d.snow_depth || 0), 0) / environmentalData.filter(d => d.snow_depth != null).length : 0,
-    dataPoints: environmentalData.length
-  };
+  // Memoized computed metrics from environmental data for performance
+  const computedMetrics = useMemo(() => {
+    if (environmentalData.length === 0) {
+      return {
+        avgTemperature: 0,
+        avgPrecipitation: 0,
+        avgWindSpeed: 0,
+        avgSnowDepth: 0,
+        dataPoints: 0
+      };
+    }
 
-  const handleLocationToggle = (locationName: string) => {
-    const locationId = locations.find(loc => loc.name === locationName)?.id;
-    if (!locationId) return;
-    
+    const validTemps = environmentalData.filter(d => d.temperature != null);
+    const validPrecip = environmentalData.filter(d => d.precipitation != null);
+    const validWind = environmentalData.filter(d => d.wind_speed != null);
+    const validSnow = environmentalData.filter(d => d.snow_depth != null);
+
+    return {
+      avgTemperature: validTemps.length > 0 ? 
+        validTemps.reduce((sum, d) => sum + d.temperature!, 0) / validTemps.length : 0,
+      avgPrecipitation: validPrecip.length > 0 ? 
+        validPrecip.reduce((sum, d) => sum + d.precipitation!, 0) / validPrecip.length : 0,
+      avgWindSpeed: validWind.length > 0 ? 
+        validWind.reduce((sum, d) => sum + d.wind_speed!, 0) / validWind.length : 0,
+      avgSnowDepth: validSnow.length > 0 ? 
+        validSnow.reduce((sum, d) => sum + d.snow_depth!, 0) / validSnow.length : 0,
+      dataPoints: environmentalData.length
+    };
+  }, [environmentalData]);
+
+  // Optimized location handlers with useCallback
+  const handleLocationToggle = useCallback((locationId: string) => {
     setSelectedLocations(prev => 
       prev.includes(locationId) 
         ? prev.filter(id => id !== locationId)
         : [...prev, locationId]
     );
-  };
+  }, [setSelectedLocations]);
 
-  const handleSelectAllLocations = () => {
+  const handleSelectAllLocations = useCallback(() => {
     const allLocationIds = locations.map(loc => loc.id);
     setSelectedLocations(
       selectedLocations.length === allLocationIds.length ? [] : allLocationIds
     );
-  };
+  }, [locations, selectedLocations.length, setSelectedLocations]);
 
   // Show loading skeleton while fetching data
   if (isLoading) {
@@ -129,70 +144,62 @@ const Analytics = () => {
     );
   }
 
-  // Generate seasonal data from environmental data for charts
-  const generateSeasonalData = () => {
+  // Memoized seasonal data generation for performance
+  const seasonalData = useMemo(() => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
     if (!monthlyTrends || Object.keys(monthlyTrends).length === 0) {
       // Fallback to current environmental data grouped by month
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      const currentYear = new Date().getFullYear();
-      
       return months.map((month, index) => {
         const monthData = environmentalData.filter(d => {
           const date = new Date(d.datetime);
           return date.getMonth() === index;
         });
         
-        const avgTemp = monthData.length > 0 ? 
-          monthData.reduce((sum, d) => sum + (d.temperature || 0), 0) / monthData.filter(d => d.temperature != null).length : 0;
-        const avgPrecip = monthData.length > 0 ? 
-          monthData.reduce((sum, d) => sum + (d.precipitation || 0), 0) / monthData.filter(d => d.precipitation != null).length : 0;
-        const avgWind = monthData.length > 0 ? 
-          monthData.reduce((sum, d) => sum + (d.wind_speed || 0), 0) / monthData.filter(d => d.wind_speed != null).length : 0;
-        const avgSnow = monthData.length > 0 ? 
-          monthData.reduce((sum, d) => sum + (d.snow_depth || 0), 0) / monthData.filter(d => d.snow_depth != null).length : 0;
+        const validTemps = monthData.filter(d => d.temperature != null);
+        const validPrecip = monthData.filter(d => d.precipitation != null);
+        const validWind = monthData.filter(d => d.wind_speed != null);
+        const validSnow = monthData.filter(d => d.snow_depth != null);
 
         return {
           month,
-          Temperature: Number(avgTemp.toFixed(1)),
-          Precipitation: Number(avgPrecip.toFixed(1)),
-          'Wind Speed': Number(avgWind.toFixed(1)),
-          'Snow Pack': Number(avgSnow.toFixed(1))
+          Temperature: validTemps.length > 0 ? 
+            Number((validTemps.reduce((sum, d) => sum + d.temperature!, 0) / validTemps.length).toFixed(1)) : 0,
+          Precipitation: validPrecip.length > 0 ? 
+            Number((validPrecip.reduce((sum, d) => sum + d.precipitation!, 0) / validPrecip.length).toFixed(1)) : 0,
+          'Wind Speed': validWind.length > 0 ? 
+            Number((validWind.reduce((sum, d) => sum + d.wind_speed!, 0) / validWind.length).toFixed(1)) : 0,
+          'Snow Pack': validSnow.length > 0 ? 
+            Number((validSnow.reduce((sum, d) => sum + d.snow_depth!, 0) / validSnow.length).toFixed(1)) : 0
         };
       });
     }
 
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    
     return months.map((month, index) => {
       const monthKey = `${new Date().getFullYear()}-${String(index + 1).padStart(2, '0')}`;
       const monthData = monthlyTrends[monthKey] || [];
       
-      const avgTemp = monthData.length > 0 ? 
-        monthData.reduce((sum, d) => sum + (d.temperature || 0), 0) / monthData.filter(d => d.temperature != null).length : 0;
-      const avgPrecip = monthData.length > 0 ? 
-        monthData.reduce((sum, d) => sum + (d.precipitation || 0), 0) / monthData.filter(d => d.precipitation != null).length : 0;
-      const avgWind = monthData.length > 0 ? 
-        monthData.reduce((sum, d) => sum + (d.wind_speed || 0), 0) / monthData.filter(d => d.wind_speed != null).length : 0;
-      const avgSnow = monthData.length > 0 ? 
-        monthData.reduce((sum, d) => sum + (d.snow_depth || 0), 0) / monthData.filter(d => d.snow_depth != null).length : 0;
+      const validTemps = monthData.filter(d => d.temperature != null);
+      const validPrecip = monthData.filter(d => d.precipitation != null);
+      const validWind = monthData.filter(d => d.wind_speed != null);
+      const validSnow = monthData.filter(d => d.snow_depth != null);
 
       return {
         month,
-        Temperature: Number(avgTemp.toFixed(1)),
-        Precipitation: Number(avgPrecip.toFixed(1)),
-        'Wind Speed': Number(avgWind.toFixed(1)),
-        'Snow Pack': Number(avgSnow.toFixed(1))
+        Temperature: validTemps.length > 0 ? 
+          Number((validTemps.reduce((sum, d) => sum + d.temperature!, 0) / validTemps.length).toFixed(1)) : 0,
+        Precipitation: validPrecip.length > 0 ? 
+          Number((validPrecip.reduce((sum, d) => sum + d.precipitation!, 0) / validPrecip.length).toFixed(1)) : 0,
+        'Wind Speed': validWind.length > 0 ? 
+          Number((validWind.reduce((sum, d) => sum + d.wind_speed!, 0) / validWind.length).toFixed(1)) : 0,
+        'Snow Pack': validSnow.length > 0 ? 
+          Number((validSnow.reduce((sum, d) => sum + d.snow_depth!, 0) / validSnow.length).toFixed(1)) : 0
       };
     });
-  };
+  }, [environmentalData, monthlyTrends]);
 
-  const seasonalData = generateSeasonalData();
-
-  // Transform data for comparison charts using seasonal trends
-  const comparisonData = seasonalData;
-
-  // Optimized metrics using computed values
-  const currentMetrics = [
+  // Memoized metrics for performance
+  const currentMetrics = useMemo(() => [
     { 
       label: 'Average Temperature', 
       value: computedMetrics.avgTemperature ? `${computedMetrics.avgTemperature.toFixed(1)}°C` : 'N/A', 
@@ -245,7 +252,7 @@ const Analytics = () => {
         fall: '0cm'
       }
     }
-  ];
+  ], [computedMetrics]);
 
   // Recent anomalies and events
   const anomalies = [
@@ -345,15 +352,55 @@ const Analytics = () => {
           </div>
         </div>
 
-        {/* Location Selector */}
+        {/* Enhanced Location Selector */}
         <div className="mb-8">
-          <LocationSelector
-            locations={locations.map(loc => ({ ...loc, id: Number(loc.id) }))}
-            selectedLocations={selectedLocations.map(id => locations.find(loc => loc.id === id)?.name || '')}
-            onLocationToggle={handleLocationToggle}
-            onSelectAll={handleSelectAllLocations}
-            isLoading={isLoading}
-          />
+          <Card className="data-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <MapPin className="h-5 w-5 text-primary" />
+                Location Selection
+                <Badge variant="outline" className="ml-auto">
+                  {selectedLocations.length} of {locations.length} selected
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="select-all"
+                    checked={selectedLocations.length === locations.length}
+                    onCheckedChange={handleSelectAllLocations}
+                  />
+                  <label htmlFor="select-all" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                    Select All Locations
+                  </label>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 max-h-48 overflow-y-auto">
+                  {locations.map((location) => (
+                    <div key={location.id} className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted/50">
+                      <Checkbox
+                        id={`location-${location.id}`}
+                        checked={selectedLocations.includes(location.id)}
+                        onCheckedChange={() => handleLocationToggle(location.id)}
+                      />
+                      <label 
+                        htmlFor={`location-${location.id}`} 
+                        className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                      >
+                        {location.name}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+                {locations.length === 0 && !isLoading && (
+                  <div className="text-center text-muted-foreground py-4">
+                    No locations available in seasonal_clean database
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Current Metrics with Seasonal Context */}
@@ -424,8 +471,8 @@ const Analytics = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <RechartsLineChart data={comparisonData}>
+                   <ResponsiveContainer width="100%" height={300}>
+                     <RechartsLineChart data={seasonalData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="month" />
                       <YAxis />
@@ -443,8 +490,8 @@ const Analytics = () => {
                   <CardTitle>All Metrics Distribution</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <AreaChart data={comparisonData}>
+                   <ResponsiveContainer width="100%" height={300}>
+                     <AreaChart data={seasonalData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="month" />
                       <YAxis />
@@ -467,8 +514,8 @@ const Analytics = () => {
                 <CardTitle>Multi-Metric Seasonal Trends</CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={400}>
-                  <ComposedChart data={comparisonData}>
+                 <ResponsiveContainer width="100%" height={400}>
+                   <ComposedChart data={seasonalData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
                     <YAxis />
@@ -489,8 +536,8 @@ const Analytics = () => {
                 <CardTitle>Monthly Environmental Comparison</CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={400}>
-                  <BarChart data={comparisonData}>
+                 <ResponsiveContainer width="100%" height={400}>
+                   <BarChart data={seasonalData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
                     <YAxis />
