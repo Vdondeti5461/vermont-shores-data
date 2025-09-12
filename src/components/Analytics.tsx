@@ -254,62 +254,6 @@ const Analytics = () => {
     );
   }
 
-  // Memoized seasonal data generation for performance
-  const seasonalData = useMemo(() => {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    
-    if (!monthlyTrends || Object.keys(monthlyTrends).length === 0) {
-      // Fallback to current environmental data grouped by month
-      return months.map((month, index) => {
-        const monthData = environmentalData.filter(d => {
-          const date = new Date(d.datetime);
-          return date.getMonth() === index;
-        });
-        
-        const validTemps = monthData.filter(d => d.temperature != null);
-        const validPrecip = monthData.filter(d => d.precipitation != null);
-        const validWind = monthData.filter(d => d.wind_speed != null);
-        const validSnow = monthData.filter(d => d.snow_depth != null);
-
-        return {
-          month,
-          Temperature: validTemps.length > 0 ? 
-            Number((validTemps.reduce((sum, d) => sum + d.temperature!, 0) / validTemps.length).toFixed(1)) : 0,
-          Precipitation: validPrecip.length > 0 ? 
-            Number((validPrecip.reduce((sum, d) => sum + d.precipitation!, 0) / validPrecip.length).toFixed(1)) : 0,
-          'Wind Speed': validWind.length > 0 ? 
-            Number((validWind.reduce((sum, d) => sum + d.wind_speed!, 0) / validWind.length).toFixed(1)) : 0,
-          'Snow Pack': validSnow.length > 0 ? 
-            Number((validSnow.reduce((sum, d) => sum + d.snow_depth!, 0) / validSnow.length).toFixed(1)) : 0
-        };
-      });
-    }
-
-    return months.map((month, index) => {
-      const monthKey = `${new Date().getFullYear()}-${String(index + 1).padStart(2, '0')}`;
-      const monthData = monthlyTrends[monthKey] || [];
-      
-      const validTemps = monthData.filter(d => d.temperature != null);
-      const validPrecip = monthData.filter(d => d.precipitation != null);
-      const validWind = monthData.filter(d => d.wind_speed != null);
-      const validSnow = monthData.filter(d => d.snow_depth != null);
-
-      return {
-        month,
-        Temperature: validTemps.length > 0 ? 
-          Number((validTemps.reduce((sum, d) => sum + d.temperature!, 0) / validTemps.length).toFixed(1)) : 0,
-        Precipitation: validPrecip.length > 0 ? 
-          Number((validPrecip.reduce((sum, d) => sum + d.precipitation!, 0) / validPrecip.length).toFixed(1)) : 0,
-        'Wind Speed': validWind.length > 0 ? 
-          Number((validWind.reduce((sum, d) => sum + d.wind_speed!, 0) / validWind.length).toFixed(1)) : 0,
-        'Snow Pack': validSnow.length > 0 ? 
-          Number((validSnow.reduce((sum, d) => sum + d.snow_depth!, 0) / validSnow.length).toFixed(1)) : 0
-      };
-    });
-  }, [environmentalData, monthlyTrends]);
-
-  // currentMetrics useMemo moved above to keep Hooks order consistent
-
   // Recent anomalies and events
   const anomalies = [
     { date: '2024-01-15', type: 'Temperature Spike', value: '+8°C above normal', severity: 'high' },
