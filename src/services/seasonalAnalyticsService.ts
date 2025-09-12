@@ -52,15 +52,58 @@ export class SeasonalAnalyticsService {
 
   static async getLocations(): Promise<Location[]> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/locations?database=${this.DATABASE}`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      // First get available seasons/tables
+      const seasons = await this.getSeasons();
+      const uniqueLocations = new Set<string>();
+      
+      // Fetch data from all available tables to get unique locations
+      for (const season of seasons) {
+        try {
+          const params = new URLSearchParams({
+            database: this.DATABASE,
+            table: season.id,
+            limit: '1000' // Get enough data to find all locations
+          });
+
+          const response = await fetch(`${API_BASE_URL}/api/data?${params}`);
+          if (response.ok) {
+            const data = await response.json();
+            
+            // Extract unique locations from the Location column
+            if (data.data && Array.isArray(data.data)) {
+              data.data.forEach((row: any) => {
+                if (row.Location || row.location) {
+                  const locationValue = row.Location || row.location;
+                  if (locationValue && typeof locationValue === 'string') {
+                    uniqueLocations.add(locationValue.trim());
+                  }
+                }
+              });
+            }
+          }
+        } catch (seasonError) {
+          console.warn(`Error fetching data from season ${season.id}:`, seasonError);
+        }
       }
-      const data = await response.json();
-      return data.locations || [];
+
+      // Convert unique locations to Location objects
+      const locations: Location[] = Array.from(uniqueLocations)
+        .filter(loc => loc && loc.length > 0)
+        .map(locationName => ({
+          id: locationName,
+          name: locationName
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      return locations;
     } catch (error) {
       console.error('Error fetching locations:', error);
-      return [];
+      // Return fallback locations if API fails
+      return [
+        { id: 'BGL', name: 'BGL' },
+        { id: 'Location1', name: 'Location1' },
+        { id: 'Location2', name: 'Location2' }
+      ];
     }
   }
 
@@ -148,10 +191,18 @@ export class SeasonalAnalyticsService {
       
       let environmentalData = data.data || [];
 
+      // Apply location filter - check both 'Location' and 'location' columns
+      if (filters.locationIds?.length) {
+        environmentalData = environmentalData.filter((item: any) => {
+          const locationValue = item.Location || item.location || item.location_name;
+          return locationValue && filters.locationIds!.includes(locationValue);
+        });
+      }
+
       // Apply month filter if specified
       if (filters.monthFilter) {
         environmentalData = environmentalData.filter((item: any) => {
-          const date = new Date(item.datetime);
+          const date = new Date(item.TIMESTAMP || item.datetime);
           const month = String(date.getMonth() + 1).padStart(2, '0');
           return month === filters.monthFilter;
         });
@@ -160,7 +211,7 @@ export class SeasonalAnalyticsService {
       // Apply seasonal period filter
       if (filters.seasonPeriod) {
         environmentalData = environmentalData.filter((item: any) => {
-          const date = new Date(item.datetime);
+          const date = new Date(item.TIMESTAMP || item.datetime);
           const month = date.getMonth() + 1; // 1-12
           
           switch (filters.seasonPeriod) {
@@ -173,7 +224,17 @@ export class SeasonalAnalyticsService {
         });
       }
 
-      return environmentalData;
+      // Map the data to the expected format
+      return environmentalData.map((item: any) => ({
+        datetime: item.TIMESTAMP || item.datetime,
+        location_name: item.Location || item.location || item.location_name,
+        temperature: item.Bal_Soil_Min || item.temperature,
+        precipitation: item.Precip || item.precipitation,  
+        wind_speed: item.WVU_ul || item.wind_speed,
+        snow_depth: item.SW_ul || item.snow_depth,
+        humidity: item.RH || item.humidity,
+        pressure: item.Pressure || item.pressure
+      }));
     } catch (error) {
       console.error('Error fetching environmental data:', error);
       return [];
