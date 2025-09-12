@@ -98,12 +98,8 @@ export class SeasonalAnalyticsService {
       return locations;
     } catch (error) {
       console.error('Error fetching locations:', error);
-      // Return fallback locations if API fails
-      return [
-        { id: 'BGL', name: 'BGL' },
-        { id: 'Location1', name: 'Location1' },
-        { id: 'Location2', name: 'Location2' }
-      ];
+      // Return empty array if API fails so locations can be fetched when seasons are available
+      return [];
     }
   }
 
@@ -122,8 +118,8 @@ export class SeasonalAnalyticsService {
         const seasonalData = data.databases.find((db: any) => db.name === this.DATABASE);
         if (seasonalData?.tables) {
           seasonalData.tables.forEach((table: string) => {
-            // Extract season info from table names like "2022_2023" or "2023_2024"
-            const seasonMatch = table.match(/(\d{4})_(\d{4})/);
+            // Extract season info from table names like "cleaned_data_season_2022_2023"
+            const seasonMatch = table.match(/cleaned_data_season_(\d{4})_(\d{4})/);
             if (seasonMatch) {
               const startYear = seasonMatch[1];
               const endYear = seasonMatch[2];
@@ -140,13 +136,13 @@ export class SeasonalAnalyticsService {
       
       return seasons.length > 0 ? seasons : [
         {
-          id: '2022_2023',
+          id: 'cleaned_data_season_2022_2023',
           name: '2022-2023',
           start_date: '2022-09-01',
           end_date: '2023-08-31'
         },
         {
-          id: '2023_2024',
+          id: 'cleaned_data_season_2023_2024',
           name: '2023-2024',
           start_date: '2023-09-01',
           end_date: '2024-08-31'
@@ -157,13 +153,13 @@ export class SeasonalAnalyticsService {
       // Return default seasons if API fails
       return [
         {
-          id: '2022_2023',
+          id: 'cleaned_data_season_2022_2023',
           name: '2022-2023',
           start_date: '2022-09-01',
           end_date: '2023-08-31'
         },
         {
-          id: '2023_2024',
+          id: 'cleaned_data_season_2023_2024',
           name: '2023-2024',
           start_date: '2023-09-01',
           end_date: '2024-08-31'
@@ -224,14 +220,14 @@ export class SeasonalAnalyticsService {
         });
       }
 
-      // Map the data to the expected format
+      // Map the data to the expected format based on actual schema
       return environmentalData.map((item: any) => ({
         datetime: item.TIMESTAMP || item.datetime,
         location_name: item.Location || item.location || item.location_name,
-        temperature: item.Bal_Soil_Min || item.temperature,
+        temperature: item.Bal_soil_Min || item.Bal_Temperature_C || item.temperature,
         precipitation: item.Precip || item.precipitation,  
-        wind_speed: item.WVU_ul || item.wind_speed,
-        snow_depth: item.SW_ul || item.snow_depth,
+        wind_speed: item.AIRTC_Avg || item.wind_speed,
+        snow_depth: item.SW_ul || item.Snow_Depth_SRDD || item.snow_depth,
         humidity: item.RH || item.humidity,
         pressure: item.Pressure || item.pressure
       }));
