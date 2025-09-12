@@ -64,8 +64,8 @@ export const useSeasonalTrends = (filters: TimeSeriesFilter = {}) => {
 export const useSeasonalAnalyticsState = () => {
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   const [selectedSeason, setSelectedSeason] = useState<string>('');
-  const [selectedMonth, setSelectedMonth] = useState<string>('');
-  const [selectedPeriod, setSelectedPeriod] = useState<'fall' | 'winter' | 'spring' | 'summer' | ''>('');
+  const [selectedMonth, setSelectedMonth] = useState<string>('all');
+  const [selectedPeriod, setSelectedPeriod] = useState<'fall' | 'winter' | 'spring' | 'summer' | 'all'>('all');
 
   const { data: locations, isLoading: locationsLoading } = useSeasonalLocations();
   const { data: seasons, isLoading: seasonsLoading } = useSeasonalSeasons();
@@ -73,8 +73,8 @@ export const useSeasonalAnalyticsState = () => {
   const filters: TimeSeriesFilter = {
     locationIds: selectedLocations.length > 0 ? selectedLocations : undefined,
     seasonId: selectedSeason || undefined,
-    monthFilter: selectedMonth || undefined,
-    seasonPeriod: selectedPeriod || undefined,
+    monthFilter: (selectedMonth && selectedMonth !== 'all') ? selectedMonth : undefined,
+    seasonPeriod: (selectedPeriod && selectedPeriod !== 'all') ? selectedPeriod : undefined,
   };
 
   const { data: environmentalData, isLoading: dataLoading } = useEnvironmentalData(filters);

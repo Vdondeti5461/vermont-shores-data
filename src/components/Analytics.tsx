@@ -303,7 +303,7 @@ const Analytics = () => {
                 <SelectValue placeholder="All months" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All months</SelectItem>
+                <SelectItem value="all">All months</SelectItem>
                 <SelectItem value="01">January</SelectItem>
                 <SelectItem value="02">February</SelectItem>
                 <SelectItem value="03">March</SelectItem>
@@ -322,12 +322,12 @@ const Analytics = () => {
 
           <div className="space-y-2 w-full lg:w-auto">
             <label className="text-sm font-medium">Seasonal Period</label>
-            <Select value={selectedPeriod} onValueChange={(value) => setSelectedPeriod(value as 'fall' | 'winter' | 'spring' | 'summer' | '')}>
+            <Select value={selectedPeriod} onValueChange={(value) => setSelectedPeriod(value as 'fall' | 'winter' | 'spring' | 'summer' | 'all')}>
               <SelectTrigger className="w-full lg:w-48">
                 <SelectValue placeholder="All periods" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All periods</SelectItem>
+                <SelectItem value="all">All periods</SelectItem>
                 <SelectItem value="winter">Winter (Dec-Feb)</SelectItem>
                 <SelectItem value="spring">Spring (Mar-May)</SelectItem>
                 <SelectItem value="summer">Summer (Jun-Aug)</SelectItem>
