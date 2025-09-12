@@ -95,55 +95,6 @@ const Analytics = () => {
     );
   }, [locations, selectedLocations.length, setSelectedLocations]);
 
-  // Show loading skeleton while fetching data
-  if (isLoading) {
-    return (
-      <section id="analytics" className="py-12 sm:py-16 md:py-20 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12 sm:mb-16">
-            <Badge variant="outline" className="mb-4 text-xs sm:text-sm">
-              Real-time Seasonal Analytics
-            </Badge>
-            <h2 className="scientific-heading text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-4 sm:mb-6 px-2">
-              <span className="text-primary">Seasonal</span> Environmental Analytics
-            </h2>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8 sm:mb-12 px-4 sm:px-0">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Card key={i} className="data-card">
-                <CardContent className="p-6">
-                  <Skeleton className="h-8 w-8 mb-4" />
-                  <Skeleton className="h-4 w-24 mb-2" />
-                  <Skeleton className="h-8 w-16 mb-2" />
-                  <Skeleton className="h-4 w-32" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  // Show error state if there's an error
-  if (hasError) {
-    return (
-      <section id="analytics" className="py-12 sm:py-16 md:py-20 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold mb-4">Data Loading Error</h2>
-            <p className="text-muted-foreground mb-4">
-              Unable to load analytics data. Please try again.
-            </p>
-            <Button onClick={() => window.location.reload()}>
-              Retry
-            </Button>
-          </div>
-        </div>
-      </section>
-    );
-  }
-
   // Memoized seasonal data generation for performance
   const seasonalData = useMemo(() => {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -253,6 +204,111 @@ const Analytics = () => {
       }
     }
   ], [computedMetrics]);
+
+  // Show loading skeleton while fetching data
+  if (isLoading) {
+    return (
+      <section id="analytics" className="py-12 sm:py-16 md:py-20 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12 sm:mb-16">
+            <Badge variant="outline" className="mb-4 text-xs sm:text-sm">
+              Real-time Seasonal Analytics
+            </Badge>
+            <h2 className="scientific-heading text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-4 sm:mb-6 px-2">
+              <span className="text-primary">Seasonal</span> Environmental Analytics
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8 sm:mb-12 px-4 sm:px-0">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Card key={i} className="data-card">
+                <CardContent className="p-6">
+                  <Skeleton className="h-8 w-8 mb-4" />
+                  <Skeleton className="h-4 w-24 mb-2" />
+                  <Skeleton className="h-8 w-16 mb-2" />
+                  <Skeleton className="h-4 w-32" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // Show error state if there's an error
+  if (hasError) {
+    return (
+      <section id="analytics" className="py-12 sm:py-16 md:py-20 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-4">Data Loading Error</h2>
+            <p className="text-muted-foreground mb-4">
+              Unable to load analytics data. Please try again.
+            </p>
+            <Button onClick={() => window.location.reload()}>
+              Retry
+            </Button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // Memoized seasonal data generation for performance
+  const seasonalData = useMemo(() => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    if (!monthlyTrends || Object.keys(monthlyTrends).length === 0) {
+      // Fallback to current environmental data grouped by month
+      return months.map((month, index) => {
+        const monthData = environmentalData.filter(d => {
+          const date = new Date(d.datetime);
+          return date.getMonth() === index;
+        });
+        
+        const validTemps = monthData.filter(d => d.temperature != null);
+        const validPrecip = monthData.filter(d => d.precipitation != null);
+        const validWind = monthData.filter(d => d.wind_speed != null);
+        const validSnow = monthData.filter(d => d.snow_depth != null);
+
+        return {
+          month,
+          Temperature: validTemps.length > 0 ? 
+            Number((validTemps.reduce((sum, d) => sum + d.temperature!, 0) / validTemps.length).toFixed(1)) : 0,
+          Precipitation: validPrecip.length > 0 ? 
+            Number((validPrecip.reduce((sum, d) => sum + d.precipitation!, 0) / validPrecip.length).toFixed(1)) : 0,
+          'Wind Speed': validWind.length > 0 ? 
+            Number((validWind.reduce((sum, d) => sum + d.wind_speed!, 0) / validWind.length).toFixed(1)) : 0,
+          'Snow Pack': validSnow.length > 0 ? 
+            Number((validSnow.reduce((sum, d) => sum + d.snow_depth!, 0) / validSnow.length).toFixed(1)) : 0
+        };
+      });
+    }
+
+    return months.map((month, index) => {
+      const monthKey = `${new Date().getFullYear()}-${String(index + 1).padStart(2, '0')}`;
+      const monthData = monthlyTrends[monthKey] || [];
+      
+      const validTemps = monthData.filter(d => d.temperature != null);
+      const validPrecip = monthData.filter(d => d.precipitation != null);
+      const validWind = monthData.filter(d => d.wind_speed != null);
+      const validSnow = monthData.filter(d => d.snow_depth != null);
+
+      return {
+        month,
+        Temperature: validTemps.length > 0 ? 
+          Number((validTemps.reduce((sum, d) => sum + d.temperature!, 0) / validTemps.length).toFixed(1)) : 0,
+        Precipitation: validPrecip.length > 0 ? 
+          Number((validPrecip.reduce((sum, d) => sum + d.precipitation!, 0) / validPrecip.length).toFixed(1)) : 0,
+        'Wind Speed': validWind.length > 0 ? 
+          Number((validWind.reduce((sum, d) => sum + d.wind_speed!, 0) / validWind.length).toFixed(1)) : 0,
+        'Snow Pack': validSnow.length > 0 ? 
+          Number((validSnow.reduce((sum, d) => sum + d.snow_depth!, 0) / validSnow.length).toFixed(1)) : 0
+      };
+    });
+  }, [environmentalData, monthlyTrends]);
+
+  // currentMetrics useMemo moved above to keep Hooks order consistent
 
   // Recent anomalies and events
   const anomalies = [
