@@ -241,13 +241,25 @@ const Analytics = () => {
       <section id="analytics" className="py-12 sm:py-16 md:py-20 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="text-center">
-            <h2 className="text-2xl font-bold mb-4">Data Loading Error</h2>
-            <p className="text-muted-foreground mb-4">
-              Unable to load analytics data. Please try again.
-            </p>
-            <Button onClick={() => window.location.reload()}>
-              Retry
-            </Button>
+            <div className="mb-6">
+              <Activity className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <h2 className="text-2xl font-bold mb-4">API Service Temporarily Unavailable</h2>
+              <p className="text-muted-foreground mb-4 max-w-md mx-auto">
+                The environmental data API is currently experiencing downtime or maintenance. 
+                Displaying fallback data where available.
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button onClick={() => window.location.reload()} variant="default">
+                Try Again
+              </Button>
+              <Button 
+                onClick={() => navigate('/research')} 
+                variant="outline"
+              >
+                View Static Research
+              </Button>
+            </div>
           </div>
         </div>
       </section>
