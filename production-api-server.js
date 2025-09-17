@@ -4,31 +4,12 @@ const mysql = require('mysql2/promise');
 const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 3001;
-const DB_HOST = process.env.MYSQL_HOST || 'web5.uvm.edu';
 
-// CORS configuration (allow current preview/hosted domains and local)
-const corsOptions = {
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true); // non-browser or same-origin
-    const allowed = [
-      /^https?:\/\/localhost(:\d+)?$/,
-      /^https?:\/\/127\.0\.0\.1(:\d+)?$/,
-      /^https:\/\/.*\.lovableproject\.com$/,
-      /^https:\/\/.*\.lovable\.dev$/,
-      /^https:\/\/vdondeti\.w3\.uvm\.edu$/,
-      /^https:\/\/www\.uvm\.edu$/
-    ];
-    if (allowed.some((re) => re.test(origin))) {
-      return callback(null, true);
-    }
-    return callback(new Error(`Not allowed by CORS: ${origin}`));
-  },
-  credentials: true,
-  methods: ['GET', 'HEAD', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-};
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
+// CORS configuration
+app.use(cors({
+  origin: ['https://www.uvm.edu', 'https://vdondeti.w3.uvm.edu', 'http://localhost:5173', 'https://5d5ff90d-8cee-4075-81bd-555a25d8e14f.sandbox.lovable.dev'],
+  credentials: true
+}));
 
 app.use(express.json());
 
@@ -65,7 +46,7 @@ let pool;
 async function connectDB() {
   try {
     pool = mysql.createPool({
-      host: DB_HOST,
+      host: 'web5.uvm.edu',
       user: process.env.MYSQL_USER || 'crrels2s_admin',
       password: process.env.MYSQL_PASSWORD || 'y0m5dxldXSLP',
       port: Number(process.env.MYSQL_PORT) || 3306,
@@ -601,7 +582,7 @@ async function startServer() {
     await connectDB();
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
-      console.log(`📊 Database host: ${DB_HOST}`);
+      console.log(`📊 Database host: web5.uvm.edu`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);
