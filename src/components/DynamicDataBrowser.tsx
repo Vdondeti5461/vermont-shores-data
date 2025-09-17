@@ -92,11 +92,7 @@ const DynamicDataBrowser = () => {
       return data;
     } catch (error) {
       console.error(`[API Error] ${description}:`, error);
-      toast({
-        title: "API Error",
-        description: `${description} failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        variant: "destructive",
-      });
+      // Suppress destructive toast to avoid noisy UI when API is down; callers will handle fallbacks
       throw error;
     }
   };
@@ -125,7 +121,16 @@ const DynamicDataBrowser = () => {
         });
       }
     } catch (error) {
-      setDatabases([]);
+      // Fallback to local service when API is unavailable
+      const fallback = await LocalDatabaseService.getDatabasesInfo();
+      setDatabases(
+        fallback.databases.map((d: any) => ({
+          key: d.id,
+          name: d.database_name || d.name,
+          displayName: d.name,
+          description: d.category || ''
+        }))
+      );
     } finally {
       setLoading(false);
     }
@@ -147,7 +152,14 @@ const DynamicDataBrowser = () => {
         });
       }
     } catch (error) {
-      setTables([]);
+      const localTables = await LocalDatabaseService.getTables(databaseKey);
+      setTables(localTables.map((t: any) => ({
+        name: t.name || t,
+        displayName: t.displayName || t.name || t,
+        description: t.description || `Data table from ${databaseKey}`,
+        rowCount: t.rowCount || undefined,
+        primaryAttributes: []
+      })));
     } finally {
       setLoading(false);
     }
