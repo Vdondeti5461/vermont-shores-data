@@ -4,6 +4,7 @@ const mysql = require('mysql2/promise');
 const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 3001;
+const DB_HOST = process.env.MYSQL_HOST || 'web5.uvm.edu';
 
 // CORS configuration (allow current preview/hosted domains and local)
 const corsOptions = {
@@ -64,7 +65,7 @@ let pool;
 async function connectDB() {
   try {
     pool = mysql.createPool({
-      host: 'web5.uvm.edu',
+      host: DB_HOST,
       user: process.env.MYSQL_USER || 'crrels2s_admin',
       password: process.env.MYSQL_PASSWORD || 'y0m5dxldXSLP',
       port: Number(process.env.MYSQL_PORT) || 3306,
@@ -600,7 +601,7 @@ async function startServer() {
     await connectDB();
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
-      console.log(`📊 Database host: web5.uvm.edu`);
+      console.log(`📊 Database host: ${DB_HOST}`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);
