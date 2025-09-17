@@ -5,11 +5,29 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// CORS configuration
-app.use(cors({
-  origin: ['https://www.uvm.edu', 'https://vdondeti.w3.uvm.edu', 'http://localhost:5173', 'https://5d5ff90d-8cee-4075-81bd-555a25d8e14f.sandbox.lovable.dev'],
-  credentials: true
-}));
+// CORS configuration (allow current preview/hosted domains and local)
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true); // non-browser or same-origin
+    const allowed = [
+      /^https?:\/\/localhost(:\d+)?$/,
+      /^https?:\/\/127\.0\.0\.1(:\d+)?$/,
+      /^https:\/\/.*\.lovableproject\.com$/,
+      /^https:\/\/.*\.lovable\.dev$/,
+      /^https:\/\/vdondeti\.w3\.uvm\.edu$/,
+      /^https:\/\/www\.uvm\.edu$/
+    ];
+    if (allowed.some((re) => re.test(origin))) {
+      return callback(null, true);
+    }
+    return callback(new Error(`Not allowed by CORS: ${origin}`));
+  },
+  credentials: true,
+  methods: ['GET', 'HEAD', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 app.use(express.json());
 
