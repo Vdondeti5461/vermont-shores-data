@@ -52,14 +52,8 @@ export class SeasonalAnalyticsService {
 
   static async getLocations(): Promise<Location[]> {
     try {
-      // First try to get available seasons/tables
+      // First get available seasons/tables
       const seasons = await this.getSeasons();
-      
-      // If no seasons available (API down), return fallback locations
-      if (seasons.length === 0) {
-        return this.getFallbackLocations();
-      }
-      
       const uniqueLocations = new Set<string>();
       
       // Fetch data from all available tables to get unique locations
@@ -71,10 +65,7 @@ export class SeasonalAnalyticsService {
             limit: '1000' // Get enough data to find all locations
           });
 
-          const response = await fetch(`${API_BASE_URL}/api/data?${params}`, {
-            signal: AbortSignal.timeout(10000) // 10 second timeout
-          });
-          
+          const response = await fetch(`${API_BASE_URL}/api/data?${params}`);
           if (response.ok) {
             const data = await response.json();
             
@@ -95,79 +86,28 @@ export class SeasonalAnalyticsService {
         }
       }
 
-      // If we got locations from API, return them
-      if (uniqueLocations.size > 0) {
-        const locations: Location[] = Array.from(uniqueLocations)
-          .filter(loc => loc && loc.length > 0)
-          .map(locationName => ({
-            id: locationName,
-            name: locationName
-          }))
-          .sort((a, b) => a.name.localeCompare(b.name));
-        return locations;
-      }
-      
-      // Otherwise return fallback locations
-      return this.getFallbackLocations();
+      // Convert unique locations to Location objects
+      const locations: Location[] = Array.from(uniqueLocations)
+        .filter(loc => loc && loc.length > 0)
+        .map(locationName => ({
+          id: locationName,
+          name: locationName
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      return locations;
     } catch (error) {
       console.error('Error fetching locations:', error);
-      // Return fallback locations if API fails
-      return this.getFallbackLocations();
+      // Return empty array if API fails so locations can be fetched when seasons are available
+      return [];
     }
-  }
-
-  private static getFallbackLocations(): Location[] {
-    return [
-      { id: 'RB01', name: 'Mansfield East Ranch Brook 1' },
-      { id: 'RB02', name: 'Mansfield East Ranch Brook 2' },
-      { id: 'RB03', name: 'Mansfield East Ranch Brook 3' },
-      { id: 'RB04', name: 'Mansfield East Ranch Brook 4' },
-      { id: 'RB05', name: 'Mansfield East Ranch Brook 5' },
-      { id: 'RB06', name: 'Mansfield East Ranch Brook 6' },
-      { id: 'RB07', name: 'Mansfield East Ranch Brook 7' },
-      { id: 'RB08', name: 'Mansfield East Ranch Brook 8' },
-      { id: 'RB09', name: 'Mansfield East Ranch Brook 9' },
-      { id: 'RB10', name: 'Mansfield East Ranch Brook 10' },
-      { id: 'RB11', name: 'Mansfield East Ranch Brook 11' },
-      { id: 'RB12', name: 'Mansfield East FEMC' },
-      { id: 'SPER', name: 'Spear Street' },
-      { id: 'SR01', name: 'Sleepers R3/Main' },
-      { id: 'SR11', name: 'Sleepers W1/R11' },
-      { id: 'SR25', name: 'Sleepers R25' },
-      { id: 'JRCL', name: 'Jericho Clearing' },
-      { id: 'JRFO', name: 'Jericho Forest' },
-      { id: 'PROC', name: 'Mansfield West Proctor' },
-      { id: 'PTSH', name: 'Potash Brook' },
-      { id: 'SUMM', name: 'Mansfield Summit' },
-      { id: 'UNDR', name: 'Mansfield West SCAN' }
-    ];
-  }
-
-  private static getFallbackSeasons(): Season[] {
-    return [
-      {
-        id: 'cleaned_data_season_2022_2023',
-        name: '2022-2023 Season',
-        start_date: '2022-10-01',
-        end_date: '2023-09-30'
-      },
-      {
-        id: 'cleaned_data_season_2023_2024',
-        name: '2023-2024 Season',
-        start_date: '2023-10-01',
-        end_date: '2024-09-30'
-      }
-    ];
   }
 
   static async getSeasons(): Promise<Season[]> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/databases`, {
-        signal: AbortSignal.timeout(10000) // 10 second timeout
-      });
+      const response = await fetch(`${API_BASE_URL}/api/databases`);
       if (!response.ok) {
-        console.warn(`API returned status ${response.status}, falling back to default seasons`);
-        return this.getFallbackSeasons();
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
       
@@ -194,11 +134,37 @@ export class SeasonalAnalyticsService {
         }
       }
       
-      return seasons.length > 0 ? seasons : this.getFallbackSeasons();
+      return seasons.length > 0 ? seasons : [
+        {
+          id: 'cleaned_data_season_2022_2023',
+          name: '2022-2023',
+          start_date: '2022-09-01',
+          end_date: '2023-08-31'
+        },
+        {
+          id: 'cleaned_data_season_2023_2024',
+          name: '2023-2024',
+          start_date: '2023-09-01',
+          end_date: '2024-08-31'
+        }
+      ];
     } catch (error) {
       console.error('Error fetching seasons:', error);
-      // Return fallback seasons if API fails
-      return this.getFallbackSeasons();
+      // Return default seasons if API fails
+      return [
+        {
+          id: 'cleaned_data_season_2022_2023',
+          name: '2022-2023',
+          start_date: '2022-09-01',
+          end_date: '2023-08-31'
+        },
+        {
+          id: 'cleaned_data_season_2023_2024',
+          name: '2023-2024',
+          start_date: '2023-09-01',
+          end_date: '2024-08-31'
+        }
+      ];
     }
   }
 

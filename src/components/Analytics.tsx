@@ -241,25 +241,13 @@ const Analytics = () => {
       <section id="analytics" className="py-12 sm:py-16 md:py-20 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="text-center">
-            <div className="mb-6">
-              <Activity className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <h2 className="text-2xl font-bold mb-4">API Service Temporarily Unavailable</h2>
-              <p className="text-muted-foreground mb-4 max-w-md mx-auto">
-                The environmental data API is currently experiencing downtime or maintenance. 
-                Displaying fallback data where available.
-              </p>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button onClick={() => window.location.reload()} variant="default">
-                Try Again
-              </Button>
-              <Button 
-                onClick={() => navigate('/research')} 
-                variant="outline"
-              >
-                View Static Research
-              </Button>
-            </div>
+            <h2 className="text-2xl font-bold mb-4">Data Loading Error</h2>
+            <p className="text-muted-foreground mb-4">
+              Unable to load analytics data. Please try again.
+            </p>
+            <Button onClick={() => window.location.reload()}>
+              Retry
+            </Button>
           </div>
         </div>
       </section>
@@ -291,79 +279,76 @@ const Analytics = () => {
         </div>
 
         {/* Enhanced Controls with seasonal filtering */}
-        <div className="bg-card/50 backdrop-blur-sm rounded-lg border p-4 sm:p-6 mb-8">
-          <h3 className="text-lg font-semibold mb-4 text-center sm:text-left">Data Filters</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">Season</label>
-              <Select value={selectedSeason} onValueChange={setSelectedSeason}>
-                <SelectTrigger className="w-full min-h-[44px]">
-                  <SelectValue placeholder="Select season" />
-                </SelectTrigger>
-                <SelectContent className="z-50">
-                  {seasons.map(season => (
-                    <SelectItem key={season.id} value={season.id}>
-                      {season.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+        <div className="flex flex-col lg:flex-row flex-wrap gap-4 mb-8 justify-center">
+          <div className="space-y-2 w-full lg:w-auto">
+            <label className="text-sm font-medium">Season</label>
+            <Select value={selectedSeason} onValueChange={setSelectedSeason}>
+              <SelectTrigger className="w-full lg:w-48">
+                <SelectValue placeholder="Select season" />
+              </SelectTrigger>
+              <SelectContent>
+                {seasons.map(season => (
+                  <SelectItem key={season.id} value={season.id}>
+                    {season.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">Month Filter</label>
-              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                <SelectTrigger className="w-full min-h-[44px]">
-                  <SelectValue placeholder="All months" />
-                </SelectTrigger>
-                <SelectContent className="z-50">
-                  <SelectItem value="all">All months</SelectItem>
-                  <SelectItem value="01">January</SelectItem>
-                  <SelectItem value="02">February</SelectItem>
-                  <SelectItem value="03">March</SelectItem>
-                  <SelectItem value="04">April</SelectItem>
-                  <SelectItem value="05">May</SelectItem>
-                  <SelectItem value="06">June</SelectItem>
-                  <SelectItem value="07">July</SelectItem>
-                  <SelectItem value="08">August</SelectItem>
-                  <SelectItem value="09">September</SelectItem>
-                  <SelectItem value="10">October</SelectItem>
-                  <SelectItem value="11">November</SelectItem>
-                  <SelectItem value="12">December</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="space-y-2 w-full lg:w-auto">
+            <label className="text-sm font-medium">Month Filter</label>
+            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+              <SelectTrigger className="w-full lg:w-48">
+                <SelectValue placeholder="All months" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All months</SelectItem>
+                <SelectItem value="01">January</SelectItem>
+                <SelectItem value="02">February</SelectItem>
+                <SelectItem value="03">March</SelectItem>
+                <SelectItem value="04">April</SelectItem>
+                <SelectItem value="05">May</SelectItem>
+                <SelectItem value="06">June</SelectItem>
+                <SelectItem value="07">July</SelectItem>
+                <SelectItem value="08">August</SelectItem>
+                <SelectItem value="09">September</SelectItem>
+                <SelectItem value="10">October</SelectItem>
+                <SelectItem value="11">November</SelectItem>
+                <SelectItem value="12">December</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">Seasonal Period</label>
-              <Select value={selectedPeriod} onValueChange={(value) => setSelectedPeriod(value as 'fall' | 'winter' | 'spring' | 'summer' | 'all')}>
-                <SelectTrigger className="w-full min-h-[44px]">
-                  <SelectValue placeholder="All periods" />
-                </SelectTrigger>
-                <SelectContent className="z-50">
-                  <SelectItem value="all">All periods</SelectItem>
-                  <SelectItem value="winter">Winter (Dec-Feb)</SelectItem>
-                  <SelectItem value="spring">Spring (Mar-May)</SelectItem>
-                  <SelectItem value="summer">Summer (Jun-Aug)</SelectItem>
-                  <SelectItem value="fall">Fall (Sep-Nov)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="space-y-2 w-full lg:w-auto">
+            <label className="text-sm font-medium">Seasonal Period</label>
+            <Select value={selectedPeriod} onValueChange={(value) => setSelectedPeriod(value as 'fall' | 'winter' | 'spring' | 'summer' | 'all')}>
+              <SelectTrigger className="w-full lg:w-48">
+                <SelectValue placeholder="All periods" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All periods</SelectItem>
+                <SelectItem value="winter">Winter (Dec-Feb)</SelectItem>
+                <SelectItem value="spring">Spring (Mar-May)</SelectItem>
+                <SelectItem value="summer">Summer (Jun-Aug)</SelectItem>
+                <SelectItem value="fall">Fall (Sep-Nov)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">Metric</label>
-              <Select value={selectedMetric} onValueChange={setSelectedMetric}>
-                <SelectTrigger className="w-full min-h-[44px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="z-50">
-                  <SelectItem value="Temperature">Temperature</SelectItem>
-                  <SelectItem value="Precipitation">Precipitation</SelectItem>
-                  <SelectItem value="Wind Speed">Wind Speed</SelectItem>
-                  <SelectItem value="Snow Pack">Snow Pack</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="space-y-2 w-full lg:w-auto">
+            <label className="text-sm font-medium">Metric</label>
+            <Select value={selectedMetric} onValueChange={setSelectedMetric}>
+              <SelectTrigger className="w-full lg:w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Temperature">Temperature</SelectItem>
+                <SelectItem value="Precipitation">Precipitation</SelectItem>
+                <SelectItem value="Wind Speed">Wind Speed</SelectItem>
+                <SelectItem value="Snow Pack">Snow Pack</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -391,18 +376,17 @@ const Analytics = () => {
                     Select All Locations
                   </label>
                 </div>
-                <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 max-h-64 sm:max-h-48 overflow-y-auto">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 max-h-48 overflow-y-auto">
                   {locations.map((location) => (
-                    <div key={location.id} className="flex items-center space-x-2 p-3 sm:p-2 rounded-md hover:bg-muted/50 transition-colors min-h-[44px] sm:min-h-auto">
+                    <div key={location.id} className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted/50">
                       <Checkbox
                         id={`location-${location.id}`}
                         checked={selectedLocations.includes(location.id)}
                         onCheckedChange={() => handleLocationToggle(location.id)}
-                        className="min-w-[16px] min-h-[16px]"
                       />
                       <label 
                         htmlFor={`location-${location.id}`} 
-                        className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
+                        className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
                       >
                         {location.name}
                       </label>
@@ -419,36 +403,32 @@ const Analytics = () => {
           </Card>
         </div>
 
-        {/* Key Metrics Cards */}
-        <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8 sm:mb-12">
+        {/* Current Metrics with Seasonal Context */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8 sm:mb-12 px-4 sm:px-0">
           {currentMetrics.map((metric, index) => {
             const Icon = metric.icon;
             return (
-              <Card key={index} className="data-card hover:shadow-lg transition-all duration-300 group">
-                <CardContent className="p-4 sm:p-6">
+              <Card key={index} className="data-card hover:shadow-lg transition-shadow">
+                <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <div className="p-2 sm:p-3 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                      <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-                    </div>
-                    <div className="flex items-center text-emerald-600">
-                      {metric.trend === 'up' ? (
-                        <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" />
-                      ) : (
-                        <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5" />
-                      )}
-                    </div>
+                    <Icon className="h-8 w-8 text-primary" />
+                    {metric.trend === 'up' ? (
+                      <TrendingUp className="h-5 w-5 text-success" />
+                    ) : (
+                      <TrendingDown className="h-5 w-5 text-destructive" />
+                    )}
                   </div>
-                  <div className="space-y-1 sm:space-y-2">
-                    <span className="text-xs sm:text-sm font-medium text-muted-foreground block">{metric.label}</span>
-                    <div className="text-xl sm:text-2xl lg:text-3xl font-bold">{metric.value}</div>
-                    <div className={`text-xs sm:text-sm ${metric.trend === 'up' ? 'text-success' : 'text-destructive'}`}>
+                  <div className="space-y-2">
+                    <span className="text-sm font-medium text-muted-foreground">{metric.label}</span>
+                    <div className="text-3xl font-bold">{metric.value}</div>
+                    <div className={`text-sm ${metric.trend === 'up' ? 'text-success' : 'text-destructive'}`}>
                       {metric.change}
                     </div>
-                    <div className="grid grid-cols-2 gap-1 text-2xs sm:text-xs mt-2 sm:mt-3 pt-2 sm:pt-3 border-t">
-                      <span className="truncate">Winter: {metric.seasonal.winter}</span>
-                      <span className="truncate">Spring: {metric.seasonal.spring}</span>
-                      <span className="truncate">Summer: {metric.seasonal.summer}</span>
-                      <span className="truncate">Fall: {metric.seasonal.fall}</span>
+                    <div className="grid grid-cols-2 gap-1 text-xs mt-3 pt-3 border-t">
+                      <span>Winter: {metric.seasonal.winter}</span>
+                      <span>Spring: {metric.seasonal.spring}</span>
+                      <span>Summer: {metric.seasonal.summer}</span>
+                      <span>Fall: {metric.seasonal.fall}</span>
                     </div>
                   </div>
                 </CardContent>
@@ -457,32 +437,28 @@ const Analytics = () => {
           })}
         </div>
 
-        {/* Interactive Charts and Analytics */}
+        {/* Main Analytics Tabs */}
         <Tabs defaultValue="seasonal" className="space-y-6 sm:space-y-8">
-          <div className="flex justify-center overflow-x-auto pb-2">
-            <TabsList className="grid w-full max-w-2xl grid-cols-2 sm:grid-cols-4 min-h-[48px] p-1">
-              <TabsTrigger value="seasonal" className="flex items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm">
-                <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Seasonal</span>
-                <span className="sm:hidden">Season</span>
-              </TabsTrigger>
-              <TabsTrigger value="trends" className="flex items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm">
-                <LineChart className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Trends</span>
-                <span className="sm:hidden">Trend</span>
-              </TabsTrigger>
-              <TabsTrigger value="comparison" className="flex items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm">
-                <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Compare</span>
-                <span className="sm:hidden">Comp</span>
-              </TabsTrigger>
-              <TabsTrigger value="anomalies" className="flex items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm">
-                <Activity className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Events</span>
-                <span className="sm:hidden">Event</span>
-              </TabsTrigger>
-            </TabsList>
-          </div>
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:w-2/3 mx-auto h-auto p-1 text-xs sm:text-sm">
+            <TabsTrigger value="seasonal" className="flex items-center gap-1 sm:gap-2 p-2 sm:p-3">
+              <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Seasonal</span>
+              <span className="sm:hidden">Season</span>
+            </TabsTrigger>
+            <TabsTrigger value="trends" className="flex items-center gap-1 sm:gap-2 p-2 sm:p-3">
+              <LineChart className="h-3 w-3 sm:h-4 sm:w-4" />
+              Trends
+            </TabsTrigger>
+            <TabsTrigger value="comparison" className="flex items-center gap-1 sm:gap-2 p-2 sm:p-3">
+              <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Compare</span>
+              <span className="sm:hidden">Comp</span>
+            </TabsTrigger>
+            <TabsTrigger value="anomalies" className="flex items-center gap-1 sm:gap-2 p-2 sm:p-3">
+              <Activity className="h-3 w-3 sm:h-4 sm:w-4" />
+              Events
+            </TabsTrigger>
+          </TabsList>
 
           <TabsContent value="seasonal" className="space-y-8">
             <div className="grid lg:grid-cols-2 gap-8">
@@ -495,40 +471,16 @@ const Analytics = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="w-full h-[250px] sm:h-[300px] lg:h-[350px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RechartsLineChart data={seasonalData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                        <XAxis 
-                          dataKey="month" 
-                          className="text-xs" 
-                          tick={{ fontSize: 10 }}
-                          tickMargin={8}
-                        />
-                        <YAxis 
-                          className="text-xs" 
-                          tick={{ fontSize: 10 }}
-                          tickMargin={8}
-                        />
-                        <Tooltip 
-                          contentStyle={{ 
-                            background: 'hsl(var(--background))', 
-                            border: '1px solid hsl(var(--border))', 
-                            borderRadius: '6px',
-                            fontSize: '12px'
-                          }} 
-                        />
-                        <Legend wrapperStyle={{ fontSize: '12px' }} />
-                        <Line 
-                          type="monotone" 
-                          dataKey={selectedMetric} 
-                          stroke="hsl(var(--primary))" 
-                          strokeWidth={2} 
-                          dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 3 }} 
-                        />
-                      </RechartsLineChart>
-                    </ResponsiveContainer>
-                  </div>
+                   <ResponsiveContainer width="100%" height={300}>
+                     <RechartsLineChart data={seasonalData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Line type="monotone" dataKey={selectedMetric} stroke="#3b82f6" strokeWidth={2} />
+                    </RechartsLineChart>
+                  </ResponsiveContainer>
                 </CardContent>
               </Card>
 
@@ -538,69 +490,19 @@ const Analytics = () => {
                   <CardTitle>All Metrics Distribution</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="w-full h-[250px] sm:h-[300px] lg:h-[350px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={seasonalData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-                        <defs>
-                          <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8} />
-                            <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.1} />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                        <XAxis 
-                          dataKey="month" 
-                          className="text-xs" 
-                          tick={{ fontSize: 10 }}
-                          tickMargin={8}
-                        />
-                        <YAxis 
-                          className="text-xs" 
-                          tick={{ fontSize: 10 }}
-                          tickMargin={8}
-                        />
-                        <Tooltip 
-                          contentStyle={{ 
-                            background: 'hsl(var(--background))', 
-                            border: '1px solid hsl(var(--border))', 
-                            borderRadius: '6px',
-                            fontSize: '12px'
-                          }} 
-                        />
-                        <Area 
-                          type="monotone" 
-                          dataKey="Temperature" 
-                          stackId="1" 
-                          stroke="hsl(var(--primary))" 
-                          fill="url(#colorGradient)" 
-                        />
-                        <Area 
-                          type="monotone" 
-                          dataKey="Precipitation" 
-                          stackId="2" 
-                          stroke="hsl(var(--secondary))" 
-                          fill="hsl(var(--secondary))" 
-                          fillOpacity={0.3} 
-                        />
-                        <Area 
-                          type="monotone" 
-                          dataKey="Wind Speed" 
-                          stackId="3" 
-                          stroke="hsl(var(--accent))" 
-                          fill="hsl(var(--accent))" 
-                          fillOpacity={0.3} 
-                        />
-                        <Area 
-                          type="monotone" 
-                          dataKey="Snow Pack" 
-                          stackId="4" 
-                          stroke="hsl(var(--muted-foreground))" 
-                          fill="hsl(var(--muted-foreground))" 
-                          fillOpacity={0.3} 
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
+                   <ResponsiveContainer width="100%" height={300}>
+                     <AreaChart data={seasonalData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Area type="monotone" dataKey="Temperature" stackId="1" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.3} />
+                      <Area type="monotone" dataKey="Precipitation" stackId="2" stroke="#10b981" fill="#10b981" fillOpacity={0.3} />
+                      <Area type="monotone" dataKey="Wind Speed" stackId="3" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.3} />
+                      <Area type="monotone" dataKey="Snow Pack" stackId="4" stroke="#ef4444" fill="#ef4444" fillOpacity={0.3} />
+                    </AreaChart>
+                  </ResponsiveContainer>
                 </CardContent>
               </Card>
             </div>

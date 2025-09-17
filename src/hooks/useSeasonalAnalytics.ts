@@ -67,8 +67,8 @@ export const useSeasonalAnalyticsState = () => {
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
   const [selectedPeriod, setSelectedPeriod] = useState<'fall' | 'winter' | 'spring' | 'summer' | 'all'>('all');
 
-  const { data: locations, isLoading: locationsLoading, error: locationsError } = useSeasonalLocations();
-  const { data: seasons, isLoading: seasonsLoading, error: seasonsError } = useSeasonalSeasons();
+  const { data: locations, isLoading: locationsLoading } = useSeasonalLocations();
+  const { data: seasons, isLoading: seasonsLoading } = useSeasonalSeasons();
 
   const filters: TimeSeriesFilter = {
     locationIds: selectedLocations.length > 0 ? selectedLocations : undefined,
@@ -77,20 +77,10 @@ export const useSeasonalAnalyticsState = () => {
     seasonPeriod: (selectedPeriod && selectedPeriod !== 'all') ? selectedPeriod : undefined,
   };
 
-  const { data: environmentalData, isLoading: dataLoading, error: dataError } = useEnvironmentalData(filters);
-  const { data: seasonalMetrics, isLoading: metricsLoading, error: metricsError } = useSeasonalMetrics(filters);
-  const { data: monthlyTrends, isLoading: monthlyLoading, error: monthlyError } = useMonthlyTrends(filters);
-  const { data: seasonalTrends, isLoading: seasonalLoading, error: seasonalError } = useSeasonalTrends(filters);
-
-  // Check for API connectivity errors (503, network failures, etc.)
-  const hasApiError = Boolean(
-    locationsError || 
-    seasonsError || 
-    dataError || 
-    metricsError || 
-    monthlyError || 
-    seasonalError
-  );
+  const { data: environmentalData, isLoading: dataLoading } = useEnvironmentalData(filters);
+  const { data: seasonalMetrics, isLoading: metricsLoading } = useSeasonalMetrics(filters);
+  const { data: monthlyTrends, isLoading: monthlyLoading } = useMonthlyTrends(filters);
+  const { data: seasonalTrends, isLoading: seasonalLoading } = useSeasonalTrends(filters);
 
   return {
     // Data
@@ -115,7 +105,7 @@ export const useSeasonalAnalyticsState = () => {
     
     // Loading states
     isLoading: locationsLoading || seasonsLoading || dataLoading || metricsLoading || monthlyLoading || seasonalLoading,
-    hasError: hasApiError, // Show error when API is down
+    hasError: false, // You can add error handling as needed
     
     // Filters object for convenience
     filters

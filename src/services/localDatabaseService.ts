@@ -210,64 +210,33 @@ export class LocalDatabaseService {
       const url = new URL(`${this.baseUrl}/api/databases/${originalKey}/locations`);
       // Prefer canonical list for raw_data to guarantee 22 sites
       if (originalKey === 'raw_data') url.searchParams.set('canonical', '1');
-      
-      const response = await fetch(url.toString(), {
-        signal: AbortSignal.timeout(10000) // 10 second timeout
-      });
-      
-      if (!response.ok) {
-        console.warn(`Failed to fetch locations for ${database}, falling back to canonical locations`);
-        return this.buildCanonicalLocations();
-      }
-      
+      const response = await fetch(url.toString());
+      if (!response.ok) throw new Error('Failed to fetch locations');
       const data = await response.json();
       const arr = Array.isArray(data) ? data : [];
-      
-      // Fallback if backend does not support canonical param or returns empty data
+      // Fallback if backend does not support canonical param
       if (originalKey === 'raw_data' && arr.length < 22) {
         return this.buildCanonicalLocations();
       }
-      
       return arr as LocationData[];
     } catch (error) {
       console.error('Error fetching locations:', error);
-      // Fallback to canonical locations for any database when API fails
-      return this.buildCanonicalLocations();
+      // Last-resort fallback for raw_data
+      if (database === 'raw_data') return this.buildCanonicalLocations();
+      return [];
     }
   }
 
   static async getTables(database: string = 'raw_data'): Promise<any[]> {
     try {
       const originalKey = this.getOriginalDatabaseKey(database);
-      const response = await fetch(`${this.baseUrl}/api/databases/${originalKey}/tables`, {
-        signal: AbortSignal.timeout(10000) // 10 second timeout
-      });
-      
-      if (!response.ok) {
-        console.warn(`Failed to fetch tables for ${database}, falling back to default tables`);
-        return this.getFallbackTables(database);
-      }
-      
+      const response = await fetch(`${this.baseUrl}/api/databases/${originalKey}/tables`);
+      if (!response.ok) throw new Error('Failed to fetch tables');
       const data = await response.json();
       return data.tables || data || [];
     } catch (error) {
       console.error('Error fetching tables:', error);
-      return this.getFallbackTables(database);
-    }
-  }
-
-  private static getFallbackTables(database: string): any[] {
-    switch (database) {
-      case 'seasonal_clean':
-        return ['cleaned_data_season_2022_2023', 'cleaned_data_season_2023_2024'];
-      case 'raw_data':
-        return ['table1', 'Wind', 'SnowpkTempProfile', 'Precipitation'];
-      case 'initial_clean_data':
-        return ['initial_cleaned_table1', 'initial_cleaned_wind'];
-      case 'research_use':
-        return ['research_ready_table1', 'research_wind'];
-      default:
-        return ['table1'];
+      return [];
     }
   }
 

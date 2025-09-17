@@ -53,12 +53,9 @@ export class DataDownloadService {
   // Get all available databases
   static async getDatabases(): Promise<DatabaseInfo[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/databases`, {
-        signal: AbortSignal.timeout(10000)
-      });
+      const response = await fetch(`${this.baseUrl}/api/databases`);
       if (!response.ok) {
-        console.warn(`getDatabases: API returned ${response.status}, using fallback`);
-        return this.getFallbackDatabases();
+        throw new Error(`Failed to fetch databases: ${response.statusText}`);
       }
       
       const data = await response.json();
@@ -76,19 +73,16 @@ export class DataDownloadService {
       return databases.sort((a, b) => (a.order || 0) - (b.order || 0));
     } catch (error) {
       console.error('Error fetching databases:', error);
-      return this.getFallbackDatabases();
+      throw new Error('Failed to load available databases');
     }
   }
 
   // Get tables for a specific database
   static async getTables(databaseId: string): Promise<TableInfo[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/databases/${databaseId}/tables`, {
-        signal: AbortSignal.timeout(10000)
-      });
+      const response = await fetch(`${this.baseUrl}/api/databases/${databaseId}/tables`);
       if (!response.ok) {
-        console.warn(`getTables: API returned ${response.status} for ${databaseId}, using fallback`);
-        return this.getFallbackTables(databaseId);
+        throw new Error(`Failed to fetch tables: ${response.statusText}`);
       }
       
       const data = await response.json();
@@ -102,7 +96,57 @@ export class DataDownloadService {
       }));
     } catch (error) {
       console.error(`Error fetching tables for ${databaseId}:`, error);
-      return this.getFallbackTables(databaseId);
+      throw new Error(`Failed to load tables for ${databaseId}`);
+    }
+  }
+
+  // Get locations for a specific database
+  static async getLocations(databaseId: string): Promise<LocationInfo[]> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/databases/${databaseId}/locations`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch locations: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      const locations = Array.isArray(data) ? data : data.locations || [];
+      
+      return locations.map((location: any) => ({
+        id: location.id,
+        name: location.name,
+        displayName: location.display_name || location.displayName || location.name,
+        latitude: location.latitude,
+        longitude: location.longitude,
+        elevation: location.elevation
+      }));
+    } catch (error) {
+      console.error(`Error fetching locations for ${databaseId}:`, error);
+      throw new Error(`Failed to load locations for ${databaseId}`);
+    }
+  }
+
+  // Get attributes/columns for a specific table
+  static async getTableAttributes(databaseId: string, tableName: string): Promise<AttributeInfo[]> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/databases/${databaseId}/tables/${tableName}/attributes`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch attributes: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      const attributes = Array.isArray(data) ? data : data.attributes || data.columns || [];
+      
+      return attributes.map((attr: any) => ({
+        name: attr.name || attr.column_name,
+        type: attr.type || attr.data_type || 'unknown',
+        category: this.categorizeAttribute(attr.name || attr.column_name),
+        isPrimary: attr.is_primary || attr.isPrimary || ['TIMESTAMP', 'Location', 'Record'].includes(attr.name),
+        nullable: attr.nullable !== false,
+        comment: attr.comment || attr.description
+      }));
+    } catch (error) {
+      console.error(`Error fetching attributes for ${databaseId}.${tableName}:`, error);
+      throw new Error(`Failed to load attributes for ${tableName}`);
     }
   }
 
@@ -204,150 +248,41 @@ export class DataDownloadService {
       if (previewFilters.locations && previewFilters.locations.length > 0) {
         params.append('location', previewFilters.locations[0]); // Just first location for preview
       }
-      if (previewFilters.startDate) params.append('start_date', previewFilters.startDate);
-      if (previewFilters.endDate) params.append('end_date', previewFilters.endDate);
+      if (previewFilters.startDate) {
+        params.append('start_date', previewFilters.startDate);
+      }
+      if (previewFilters.endDate) {
+        params.append('end_date', previewFilters.endDate);
+      }
       if (previewFilters.attributes && previewFilters.attributes.length > 0) {
         params.append('attributes', previewFilters.attributes.join(','));
       }
       params.append('limit', previewLimit.toString());
 
       const response = await fetch(
-        `${this.baseUrl}/api/databases/${filters.database}/data/${filters.table}?${params.toString()}`,
-        { signal: AbortSignal.timeout(10000) }
+        `${this.baseUrl}/api/databases/${filters.database}/data/${filters.table}?${params.toString()}`
       );
       
       if (!response.ok) {
-        console.warn(`previewData: API returned ${response.status}, returning empty preview`);
-        return [];
+        throw new Error(`Preview failed: ${response.statusText}`);
       }
 
       const data = await response.json();
       return Array.isArray(data) ? data : data.data || [];
     } catch (error) {
-      console.warn('Preview error; returning empty preview:', error);
-      return [];
+      console.error('Preview error:', error);
+      throw new Error('Failed to preview data');
     }
   }
 
   // Health check
   static async checkHealth(): Promise<boolean> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/health`, { signal: AbortSignal.timeout(7000) });
+      const response = await fetch(`${this.baseUrl}/api/health`);
       return response.ok;
-    } catch {
+    } catch (error) {
+      console.error('Health check failed:', error);
       return false;
     }
-  }
-
-  // ===== Fallback helpers when API is unavailable =====
-  private static getFallbackDatabases(): DatabaseInfo[] {
-    return [
-      { id: 'raw_data', name: 'Raw Environmental Data', database_name: 'raw_data', description: 'Raw sensor feeds', category: 'raw', order: 1 },
-      { id: 'initial_clean_data', name: 'Initially Cleaned Data', database_name: 'initial_clean_data', description: 'QC pass 1', category: 'clean', order: 2 },
-      { id: 'seasonal_clean', name: 'Seasonally Cleaned Data', database_name: 'seasonal_clean', description: 'Seasonal QC', category: 'seasonal', order: 3 },
-      { id: 'research_use', name: 'Research-Ready Data', database_name: 'research_use', description: 'Processed analytics', category: 'research', order: 4 },
-    ];
-  }
-
-  private static getFallbackTables(databaseId: string): TableInfo[] {
-    switch (databaseId) {
-      case 'seasonal_clean':
-        return [
-          { name: 'cleaned_data_season_2022_2023' },
-          { name: 'cleaned_data_season_2023_2024' }
-        ];
-      case 'raw_data':
-        return [ { name: 'table1' }, { name: 'Wind' }, { name: 'SnowpkTempProfile' }, { name: 'Precipitation' } ];
-      default:
-        return [ { name: 'table1' } ];
-    }
-  }
-
-  static async getLocations(databaseId: string): Promise<LocationInfo[]> {
-    try {
-      const response = await fetch(`${this.baseUrl}/api/databases/${databaseId}/locations`, {
-        signal: AbortSignal.timeout(10000)
-      });
-      if (!response.ok) {
-        console.warn(`getLocations: API returned ${response.status} for ${databaseId}, using fallback`);
-        return this.getCanonicalLocations();
-      }
-      
-      const data = await response.json();
-      const locations = Array.isArray(data) ? data : data.locations || [];
-      
-      return locations.map((location: any, idx: number) => ({
-        id: location.id ?? idx + 1,
-        name: location.name,
-        displayName: location.display_name || location.displayName || location.name,
-        latitude: location.latitude,
-        longitude: location.longitude,
-        elevation: location.elevation
-      }));
-    } catch (error) {
-      console.warn(`Error fetching locations for ${databaseId}, using fallback:`, error);
-      return this.getCanonicalLocations();
-    }
-  }
-
-  static async getTableAttributes(databaseId: string, tableName: string): Promise<AttributeInfo[]> {
-    try {
-      const response = await fetch(`${this.baseUrl}/api/databases/${databaseId}/tables/${tableName}/attributes`, {
-        signal: AbortSignal.timeout(10000)
-      });
-      if (!response.ok) {
-        console.warn(`getTableAttributes: API returned ${response.status}, using fallback`);
-        return this.getFallbackAttributes(tableName);
-      }
-      
-      const data = await response.json();
-      const attributes = Array.isArray(data) ? data : data.attributes || data.columns || [];
-      
-      return attributes.map((attr: any) => ({
-        name: attr.name || attr.column_name,
-        type: attr.type || attr.data_type || 'unknown',
-        category: this.categorizeAttribute(attr.name || attr.column_name),
-        isPrimary: attr.is_primary || attr.isPrimary || ['TIMESTAMP', 'Location', 'Record'].includes(attr.name),
-        nullable: attr.nullable !== false,
-        comment: attr.comment || attr.description
-      }));
-    } catch (error) {
-      console.warn(`Error fetching attributes for ${databaseId}.${tableName}, using fallback`, error);
-      return this.getFallbackAttributes(tableName);
-    }
-  }
-
-  private static getCanonicalLocations(): LocationInfo[] {
-    const ids = [
-      ['RB01','Mansfield East Ranch Brook 1'],['RB02','Mansfield East Ranch Brook 2'],['RB03','Mansfield East Ranch Brook 3'],
-      ['RB04','Mansfield East Ranch Brook 4'],['RB05','Mansfield East Ranch Brook 5'],['RB06','Mansfield East Ranch Brook 6'],
-      ['RB07','Mansfield East Ranch Brook 7'],['RB08','Mansfield East Ranch Brook 8'],['RB09','Mansfield East Ranch Brook 9'],
-      ['RB10','Mansfield East Ranch Brook 10'],['RB11','Mansfield East Ranch Brook 11'],['RB12','Mansfield East FEMC'],
-      ['SPER','Spear Street'],['SR01','Sleepers R3/Main'],['SR11','Sleepers W1/R11'],['SR25','Sleepers R25'],
-      ['JRCL','Jericho Clearing'],['JRFO','Jericho Forest'],['PROC','Mansfield West Proctor'],['PTSH','Potash Brook'],
-      ['SUMM','Mansfield Summit'],['UNDR','Mansfield West SCAN']
-    ];
-    return ids.map((p, i) => ({ id: i + 1, name: p[0], displayName: p[1], latitude: 0, longitude: 0, elevation: 0 }));
-  }
-
-  private static getFallbackAttributes(tableName: string): AttributeInfo[] {
-    // Primary keys
-    const base: AttributeInfo[] = [
-      { name: 'TIMESTAMP', type: 'datetime', category: 'timestamp', isPrimary: true, nullable: false },
-      { name: 'Location', type: 'string', category: 'location', isPrimary: true, nullable: false },
-      { name: 'Record', type: 'int', category: 'other', isPrimary: false, nullable: true },
-    ];
-
-    // Common metrics from shared schema
-    const metrics: AttributeInfo[] = [
-      { name: 'Bal_soil_Min', type: 'float', category: 'temperature' },
-      { name: 'Precip', type: 'float', category: 'precipitation' },
-      { name: 'AIRTC_Avg', type: 'float', category: 'temperature' },
-      { name: 'SW_ul', type: 'float', category: 'snow' },
-      { name: 'Snow_Depth_SRDD', type: 'float', category: 'snow' },
-      { name: 'RH', type: 'float', category: 'humidity' },
-    ];
-
-    return [...base, ...metrics];
   }
 }
