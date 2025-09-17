@@ -106,56 +106,6 @@ export class DataDownloadService {
     }
   }
 
-  // Get locations for a specific database
-  static async getLocations(databaseId: string): Promise<LocationInfo[]> {
-    try {
-      const response = await fetch(`${this.baseUrl}/api/databases/${databaseId}/locations`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch locations: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      const locations = Array.isArray(data) ? data : data.locations || [];
-      
-      return locations.map((location: any) => ({
-        id: location.id,
-        name: location.name,
-        displayName: location.display_name || location.displayName || location.name,
-        latitude: location.latitude,
-        longitude: location.longitude,
-        elevation: location.elevation
-      }));
-    } catch (error) {
-      console.error(`Error fetching locations for ${databaseId}:`, error);
-      throw new Error(`Failed to load locations for ${databaseId}`);
-    }
-  }
-
-  // Get attributes/columns for a specific table
-  static async getTableAttributes(databaseId: string, tableName: string): Promise<AttributeInfo[]> {
-    try {
-      const response = await fetch(`${this.baseUrl}/api/databases/${databaseId}/tables/${tableName}/attributes`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch attributes: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      const attributes = Array.isArray(data) ? data : data.attributes || data.columns || [];
-      
-      return attributes.map((attr: any) => ({
-        name: attr.name || attr.column_name,
-        type: attr.type || attr.data_type || 'unknown',
-        category: this.categorizeAttribute(attr.name || attr.column_name),
-        isPrimary: attr.is_primary || attr.isPrimary || ['TIMESTAMP', 'Location', 'Record'].includes(attr.name),
-        nullable: attr.nullable !== false,
-        comment: attr.comment || attr.description
-      }));
-    } catch (error) {
-      console.error(`Error fetching attributes for ${databaseId}.${tableName}:`, error);
-      throw new Error(`Failed to load attributes for ${tableName}`);
-    }
-  }
-
   // Categorize attributes based on name patterns
   private static categorizeAttribute(name: string): string {
     const lowerName = name.toLowerCase();
