@@ -582,7 +582,7 @@ async function startServer() {
     await connectDB();
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
-      console.log(`📊 Database host: web5.uvm.edu`);
+      console.log(`📊 Database host: ${process.env.MYSQL_HOST || 'localhost'}`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);

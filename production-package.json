@@ -2,10 +2,10 @@
   "name": "summit2shore-api",
   "version": "1.0.0",
   "description": "Production API server for Summit2Shore environmental data platform",
-  "main": "production-api-server.js",
+  "main": "production-api-server.cjs",
   "scripts": {
-    "start": "node production-api-server.js",
-    "dev": "node production-api-server.js",
+    "start": "node production-api-server.cjs",
+    "dev": "node production-api-server.cjs",
     "test": "curl http://localhost:3001/health"
   },
   "dependencies": {
