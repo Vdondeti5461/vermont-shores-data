@@ -46,7 +46,7 @@ let pool;
 async function connectDB() {
   try {
     pool = mysql.createPool({
-      host: 'web5.uvm.edu',
+      host: process.env.MYSQL_HOST || 'localhost',
       user: process.env.MYSQL_USER || 'crrels2s_admin',
       password: process.env.MYSQL_PASSWORD || 'y0m5dxldXSLP',
       port: Number(process.env.MYSQL_PORT) || 3306,
