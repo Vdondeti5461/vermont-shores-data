@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({ override: true });
 const express = require('express');
 const mysql = require('mysql2/promise');
 const cors = require('cors');
@@ -57,7 +57,7 @@ async function connectDB() {
     });
     
     const connection = await pool.getConnection();
-    console.log('✅ Connected to MySQL server: web5.uvm.edu');
+    console.log(`✅ Connected to MySQL server: ${process.env.MYSQL_HOST || 'localhost'}`);
     connection.release();
   } catch (error) {
     console.error('❌ Database connection failed:', error);
