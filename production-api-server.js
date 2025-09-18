@@ -1,4 +1,4 @@
-require('dotenv').config({ override: true });
+require('dotenv').config();
 const express = require('express');
 const mysql = require('mysql2/promise');
 const cors = require('cors');
@@ -46,7 +46,7 @@ let pool;
 async function connectDB() {
   try {
     pool = mysql.createPool({
-      host: process.env.MYSQL_HOST || 'localhost',
+      host: 'web5.uvm.edu',
       user: process.env.MYSQL_USER || 'crrels2s_admin',
       password: process.env.MYSQL_PASSWORD || 'y0m5dxldXSLP',
       port: Number(process.env.MYSQL_PORT) || 3306,
@@ -57,7 +57,7 @@ async function connectDB() {
     });
     
     const connection = await pool.getConnection();
-    console.log(`✅ Connected to MySQL server: ${process.env.MYSQL_HOST || 'localhost'}`);
+    console.log('✅ Connected to MySQL server: web5.uvm.edu');
     connection.release();
   } catch (error) {
     console.error('❌ Database connection failed:', error);
@@ -582,7 +582,7 @@ async function startServer() {
     await connectDB();
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
-      console.log(`📊 Database host: ${process.env.MYSQL_HOST || 'localhost'}`);
+      console.log(`📊 Database host: web5.uvm.edu`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);
