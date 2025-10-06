@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart3, TrendingUp, Clock, Database } from 'lucide-react';
+import { BarChart3, TrendingUp, Clock, Database, Map, LineChart, Layers } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const AnalyticsPage = () => {
@@ -86,139 +86,296 @@ const AnalyticsPage = () => {
           </div>
         </section>
 
-        {/* Main Analytics Dashboard */}
+        {/* Analytics Subsections Navigation */}
         <section className="py-16">
           <div className="container mx-auto px-4">
-            <div className="text-center mb-12">
-              <Badge variant="outline" className="mb-4">
-                Live Dashboard
-              </Badge>
-              <h2 className="scientific-heading text-3xl md:text-4xl mb-6">
-                Current <span className="text-primary">Conditions</span>
-              </h2>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Real-time environmental data from all monitoring stations across Vermont
-              </p>
-            </div>
-
-            <Analytics />
-          </div>
-        </section>
-
-        {/* Analytics Categories */}
-        <section className="py-16 bg-muted/30">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-12">
-              <Badge variant="outline" className="mb-4">
-                Analysis Tools
-              </Badge>
-              <h2 className="scientific-heading text-3xl md:text-4xl mb-6">
-                Explore <span className="text-primary">Data Insights</span>
-              </h2>
-            </div>
-
-            <Tabs defaultValue="climate" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="climate">Climate</TabsTrigger>
-                <TabsTrigger value="hydrology">Hydrology</TabsTrigger>
-                <TabsTrigger value="air-quality">Air Quality</TabsTrigger>
-                <TabsTrigger value="soil">Soil</TabsTrigger>
+            <Tabs defaultValue="maps" className="w-full">
+              <TabsList className="grid w-full grid-cols-3 mb-8">
+                <TabsTrigger value="maps" className="gap-2">
+                  <Map className="w-4 h-4" />
+                  Maps/Analysis
+                </TabsTrigger>
+                <TabsTrigger value="plots" className="gap-2">
+                  <LineChart className="w-4 h-4" />
+                  Plots
+                </TabsTrigger>
+                <TabsTrigger value="others" className="gap-2">
+                  <Layers className="w-4 h-4" />
+                  Others
+                </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="climate" className="mt-8">
+              {/* Maps/Analysis Tab */}
+              <TabsContent value="maps" className="space-y-8">
+                <div className="text-center mb-8">
+                  <h2 className="scientific-heading text-3xl md:text-4xl mb-4">
+                    Spatial <span className="text-primary">Analysis</span>
+                  </h2>
+                  <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                    Interactive maps and geographic visualization of environmental data
+                  </p>
+                </div>
+
                 <div className="grid md:grid-cols-2 gap-8">
                   <Card>
                     <CardHeader>
-                      <CardTitle>Temperature Trends</CardTitle>
+                      <CardTitle>Snow Depth Mapping</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <p className="text-muted-foreground mb-4">
-                        Long-term temperature patterns and seasonal variations across different elevations.
+                        Geographic distribution of snow depth measurements across monitoring stations.
                       </p>
                       <Button asChild variant="outline">
-                        <Link to="/analytics/climate/temperature">View Analysis</Link>
+                        <Link to="/analytics/snow-depth">View Map</Link>
                       </Button>
                     </CardContent>
                   </Card>
 
                   <Card>
                     <CardHeader>
-                      <CardTitle>Precipitation Patterns</CardTitle>
+                      <CardTitle>Station Network</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <p className="text-muted-foreground mb-4">
-                        Rainfall and snowfall analysis, including intensity and seasonal distribution.
+                        Explore all monitoring stations and their real-time measurements.
                       </p>
                       <Button asChild variant="outline">
-                        <Link to="/analytics/climate/precipitation">View Analysis</Link>
+                        <Link to="/analytics/realtime">View Network</Link>
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Elevation Analysis</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-muted-foreground mb-4">
+                        Compare environmental conditions across different elevation zones.
+                      </p>
+                      <Button asChild variant="outline">
+                        <Link to="/analytics/advanced">View Analysis</Link>
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Regional Comparison</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-muted-foreground mb-4">
+                        Spatial patterns and regional variations in climate data.
+                      </p>
+                      <Button asChild variant="outline">
+                        <Link to="/analytics/historical">View Comparison</Link>
                       </Button>
                     </CardContent>
                   </Card>
                 </div>
               </TabsContent>
 
-              <TabsContent value="hydrology" className="mt-8">
+              {/* Plots Tab */}
+              <TabsContent value="plots" className="space-y-8">
+                <div className="text-center mb-8">
+                  <Badge variant="outline" className="mb-4">
+                    Live Dashboard
+                  </Badge>
+                  <h2 className="scientific-heading text-3xl md:text-4xl mb-6">
+                    Current <span className="text-primary">Conditions</span>
+                  </h2>
+                  <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                    Real-time environmental data visualization and time series analysis
+                  </p>
+                </div>
+
+                <Analytics />
+
+                <div className="mt-16">
+                  <div className="text-center mb-8">
+                    <Badge variant="outline" className="mb-4">
+                      Analysis Tools
+                    </Badge>
+                    <h2 className="scientific-heading text-3xl md:text-4xl mb-6">
+                      Time Series <span className="text-primary">Analysis</span>
+                    </h2>
+                  </div>
+
+                  <Tabs defaultValue="climate" className="w-full">
+                    <TabsList className="grid w-full grid-cols-4">
+                      <TabsTrigger value="climate">Climate</TabsTrigger>
+                      <TabsTrigger value="hydrology">Hydrology</TabsTrigger>
+                      <TabsTrigger value="air-quality">Air Quality</TabsTrigger>
+                      <TabsTrigger value="soil">Soil</TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="climate" className="mt-8">
+                      <div className="grid md:grid-cols-2 gap-8">
+                        <Card>
+                          <CardHeader>
+                            <CardTitle>Temperature Trends</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-muted-foreground mb-4">
+                              Long-term temperature patterns and seasonal variations across different elevations.
+                            </p>
+                            <Button asChild variant="outline">
+                              <Link to="/analytics/climate/temperature">View Analysis</Link>
+                            </Button>
+                          </CardContent>
+                        </Card>
+
+                        <Card>
+                          <CardHeader>
+                            <CardTitle>Precipitation Patterns</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-muted-foreground mb-4">
+                              Rainfall and snowfall analysis, including intensity and seasonal distribution.
+                            </p>
+                            <Button asChild variant="outline">
+                              <Link to="/analytics/climate/precipitation">View Analysis</Link>
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="hydrology" className="mt-8">
+                      <div className="grid md:grid-cols-2 gap-8">
+                        <Card>
+                          <CardHeader>
+                            <CardTitle>Snow Water Equivalent</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-muted-foreground mb-4">
+                              Snow pack analysis and water content measurements across elevation gradients.
+                            </p>
+                            <Button asChild variant="outline">
+                              <Link to="/analytics/hydrology/snow">View Analysis</Link>
+                            </Button>
+                          </CardContent>
+                        </Card>
+
+                        <Card>
+                          <CardHeader>
+                            <CardTitle>Soil Moisture</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-muted-foreground mb-4">
+                              Soil water content monitoring and drought condition assessments.
+                            </p>
+                            <Button asChild variant="outline">
+                              <Link to="/analytics/hydrology/soil-moisture">View Analysis</Link>
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="air-quality" className="mt-8">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Atmospheric Conditions</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-muted-foreground mb-4">
+                            Air quality metrics, humidity levels, and atmospheric pressure analysis.
+                          </p>
+                          <Button asChild variant="outline">
+                            <Link to="/analytics/air-quality">View Analysis</Link>
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    </TabsContent>
+
+                    <TabsContent value="soil" className="mt-8">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Soil Conditions</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-muted-foreground mb-4">
+                            Soil temperature, moisture content, and seasonal freeze-thaw cycles.
+                          </p>
+                          <Button asChild variant="outline">
+                            <Link to="/analytics/soil">View Analysis</Link>
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    </TabsContent>
+                  </Tabs>
+                </div>
+              </TabsContent>
+
+              {/* Others Tab */}
+              <TabsContent value="others" className="space-y-8">
+                <div className="text-center mb-8">
+                  <h2 className="scientific-heading text-3xl md:text-4xl mb-4">
+                    Additional <span className="text-primary">Tools</span>
+                  </h2>
+                  <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                    Data quality metrics, advanced features, and specialized analysis tools
+                  </p>
+                </div>
+
                 <div className="grid md:grid-cols-2 gap-8">
                   <Card>
                     <CardHeader>
-                      <CardTitle>Snow Water Equivalent</CardTitle>
+                      <CardTitle>Data Quality Metrics</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <p className="text-muted-foreground mb-4">
-                        Snow pack analysis and water content measurements across elevation gradients.
+                        Quality assurance reports, completeness metrics, and validation status.
                       </p>
                       <Button asChild variant="outline">
-                        <Link to="/analytics/hydrology/snow">View Analysis</Link>
+                        <Link to="/analytics/quality">View Metrics</Link>
                       </Button>
                     </CardContent>
                   </Card>
 
                   <Card>
                     <CardHeader>
-                      <CardTitle>Soil Moisture</CardTitle>
+                      <CardTitle>Advanced Analytics</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <p className="text-muted-foreground mb-4">
-                        Soil water content monitoring and drought condition assessments.
+                        Machine learning models, forecasting, and predictive analysis.
                       </p>
                       <Button asChild variant="outline">
-                        <Link to="/analytics/hydrology/soil-moisture">View Analysis</Link>
+                        <Link to="/analytics/advanced">Explore</Link>
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Historical Trends</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-muted-foreground mb-4">
+                        Long-term climate patterns and multi-year trend analysis.
+                      </p>
+                      <Button asChild variant="outline">
+                        <Link to="/analytics/historical">View Trends</Link>
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Export & Reports</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-muted-foreground mb-4">
+                        Download data, generate custom reports, and export visualizations.
+                      </p>
+                      <Button asChild variant="outline">
+                        <Link to="/data-download">Access Tools</Link>
                       </Button>
                     </CardContent>
                   </Card>
                 </div>
-              </TabsContent>
-
-              <TabsContent value="air-quality" className="mt-8">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Atmospheric Conditions</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground mb-4">
-                      Air quality metrics, humidity levels, and atmospheric pressure analysis.
-                    </p>
-                    <Button asChild variant="outline">
-                      <Link to="/analytics/air-quality">View Analysis</Link>
-                    </Button>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="soil" className="mt-8">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Soil Conditions</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground mb-4">
-                      Soil temperature, moisture content, and seasonal freeze-thaw cycles.
-                    </p>
-                    <Button asChild variant="outline">
-                      <Link to="/analytics/soil">View Analysis</Link>
-                    </Button>
-                  </CardContent>
-                </Card>
               </TabsContent>
             </Tabs>
           </div>
