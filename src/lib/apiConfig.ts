@@ -8,14 +8,14 @@ export const getApiBaseUrl = (): string => {
   const cfg = w?.__APP_CONFIG__?.API_BASE_URL as string | undefined;
   if (cfg) return cfg.replace(/\/$/, '');
 
-  // 2) Production server for UVM deployment
+  // 2) Production server for UVM deployment - use same domain as current site
   if (w && w.location.hostname.includes('uvm.edu')) {
-    return 'https://vdondeti.w3.uvm.edu';
+    return `https://${w.location.hostname}`;
   }
 
   // 3) Production server for any non-localhost deployment
   if (w && w.location.hostname !== 'localhost' && w.location.hostname !== '127.0.0.1') {
-    return 'https://vdondeti.w3.uvm.edu';
+    return `https://${w.location.hostname}`;
   }
 
   // 4) Optional Vite env for local builds only
