@@ -1,6 +1,7 @@
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Analytics from '@/components/Analytics';
+import TimeSeriesComparison from '@/components/TimeSeriesComparison';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -179,13 +180,27 @@ const AnalyticsPage = () => {
               <TabsContent value="plots" className="space-y-8">
                 <div className="text-center mb-8">
                   <Badge variant="outline" className="mb-4">
+                    Time Series Analysis
+                  </Badge>
+                  <h2 className="scientific-heading text-3xl md:text-4xl mb-6">
+                    Data <span className="text-primary">Comparison</span>
+                  </h2>
+                  <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                    Compare raw and cleaned environmental data across different attributes and locations
+                  </p>
+                </div>
+
+                <TimeSeriesComparison />
+
+                <div className="text-center mb-8 mt-16">
+                  <Badge variant="outline" className="mb-4">
                     Live Dashboard
                   </Badge>
                   <h2 className="scientific-heading text-3xl md:text-4xl mb-6">
                     Current <span className="text-primary">Conditions</span>
                   </h2>
                   <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                    Real-time environmental data visualization and time series analysis
+                    Real-time environmental data visualization
                   </p>
                 </div>
 
