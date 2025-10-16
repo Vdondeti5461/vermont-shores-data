@@ -8,22 +8,55 @@ This guide walks you through deploying the Summit2Shore application to your prod
 
 - **Production Server**: crrels2s.w3.uvm.edu
 - **SSH User**: crrels2s
-- **Web Root**: ~/www-root
-- **API Directory**: ~/www-root/api (to be created)
-- **Current Structure**: You already have www-root folder ready
+- **Web Root**: ~/www-root (frontend files)
+- **API Directory**: ~/api (backend server - separate from www-root)
+- **Current Structure**: 
+  ```
+  ~/
+  ├── api/          # Backend API (to be created)
+  └── www-root/     # Frontend (already exists)
+  ```
+
+## 📸 Reference Structure from vdondeti.w3.uvm.edu
+
+Based on your current production setup:
+```
+~/                              # Home directory
+├── api/                        # Backend API directory
+│   ├── node_modules/          # Dependencies
+│   ├── package.json           
+│   ├── package-lock.json      
+│   ├── production-api-server.js
+│   ├── server.log             # PM2 logs
+│   └── server.pid             # PM2 process ID
+│
+└── www-root/                   # Frontend directory (Apache serves from here)
+    ├── assets/                # Vite bundled JS/CSS
+    ├── favicon.ico
+    ├── index.html             # Main entry point
+    ├── lovable-uploads/       # Uploaded images
+    ├── placeholder.svg
+    └── robots.txt
+```
 
 ## 🔧 Prerequisites Checklist
 
-Before starting, ensure you have:
+**IMPORTANT:** Before starting, complete all prerequisites. See [INSTALLATION_PREREQUISITES.md](./INSTALLATION_PREREQUISITES.md) for detailed installation instructions.
+
+Quick checklist - ensure you have:
 
 - [ ] SSH access to crrels2s@crrels2s.w3.uvm.edu
 - [ ] SSH key configured (password-less login recommended)
 - [ ] Node.js installed on crrels2s server (v14 or higher)
 - [ ] npm installed on crrels2s server
-- [ ] PM2 installed globally on crrels2s server
+- [ ] PM2 installed globally on crrels2s server (`npm install -g pm2`)
 - [ ] Apache web server running
+- [ ] Apache proxy modules enabled (mod_proxy, mod_proxy_http)
 - [ ] MySQL database access (same web5.uvm.edu database)
-- [ ] Git repository access (if using version control)
+- [ ] ~/www-root directory exists on crrels2s
+- [ ] At least 1 GB free disk space
+
+**Run the prerequisites check script** in [INSTALLATION_PREREQUISITES.md](./INSTALLATION_PREREQUISITES.md) to verify all installations.
 
 ## 🚀 Quick Deployment (Automated)
 
@@ -60,21 +93,24 @@ ssh crrels2s@crrels2s.w3.uvm.edu
 ### Step 2: Create API Directory
 
 ```bash
-cd ~/www-root
+# Create API directory at home level (NOT inside www-root)
+cd ~
 mkdir -p api
 cd api
 ```
+
+**Important**: The API directory is separate from www-root, matching the vdondeti setup.
 
 ### Step 3: Upload Backend Files
 
 From your **local machine**, upload the backend files:
 
 ```bash
-# Upload API server file
-scp production-api-server.js crrels2s@crrels2s.w3.uvm.edu:~/www-root/api/
+# Upload API server file to ~/api/ directory
+scp production-api-server.js crrels2s@crrels2s.w3.uvm.edu:~/api/
 
-# Upload package.json
-scp production-package.json crrels2s@crrels2s.w3.uvm.edu:~/www-root/api/package.json
+# Upload package.json (rename from production-package.json)
+scp production-package.json crrels2s@crrels2s.w3.uvm.edu:~/api/package.json
 ```
 
 ### Step 4: Install Backend Dependencies
@@ -82,8 +118,22 @@ scp production-package.json crrels2s@crrels2s.w3.uvm.edu:~/www-root/api/package.
 Back on the **production server**:
 
 ```bash
-cd ~/www-root/api
+cd ~/api
 npm install
+```
+
+**Prerequisites Check:**
+```bash
+# Verify Node.js is installed
+node --version    # Should be v14 or higher
+
+# Verify npm is installed
+npm --version     # Should be 6.x or higher
+
+# If Node.js is not installed, contact your system admin or install:
+# wget https://nodejs.org/dist/v18.17.0/node-v18.17.0-linux-x64.tar.xz
+# tar -xf node-v18.17.0-linux-x64.tar.xz
+# Add to PATH in ~/.bashrc
 ```
 
 Expected output:
@@ -134,10 +184,21 @@ npm install -g pm2
 Start the API server with PM2:
 
 ```bash
-cd ~/www-root/api
+cd ~/api
 pm2 start production-api-server.js --name "summit2shore-api"
 pm2 save
 pm2 startup  # Follow the instructions if prompted
+```
+
+**Expected PM2 Output:**
+```
+[PM2] Starting production-api-server.js in fork_mode
+[PM2] Done.
+┌─────┬──────────────────────┬─────────┬─────────┬──────┬───────┐
+│ id  │ name                 │ mode    │ status  │ cpu  │ memory│
+├─────┼──────────────────────┼─────────┼─────────┼──────┼───────┤
+│ 0   │ summit2shore-api     │ fork    │ online  │ 0%   │ 45 MB │
+└─────┴──────────────────────┴─────────┴─────────┴──────┴───────┘
 ```
 
 Verify PM2 is running:
@@ -226,8 +287,8 @@ From your **local machine**:
 # Create backup of existing files first
 ssh crrels2s@crrels2s.w3.uvm.edu "cp -r ~/www-root ~/backup-www-root-$(date +%F-%H%M%S)"
 
-# Clear existing frontend files (keep API folder)
-ssh crrels2s@crrels2s.w3.uvm.edu "cd ~/www-root && find . -maxdepth 1 -not -name 'api' -not -name '.' -not -name '.htaccess' -exec rm -rf {} + 2>/dev/null || true"
+# Clear existing frontend files (API is separate at ~/api, so this is safe)
+ssh crrels2s@crrels2s.w3.uvm.edu "cd ~/www-root && find . -maxdepth 1 -not -name '.' -not -name '.htaccess' -exec rm -rf {} + 2>/dev/null || true"
 
 # Upload new frontend files
 scp -r dist/* crrels2s@crrels2s.w3.uvm.edu:~/www-root/
@@ -420,11 +481,11 @@ npm run build
 
 ### Backend Update
 ```bash
-# Upload updated API file
-scp production-api-server.js crrels2s@crrels2s.w3.uvm.edu:~/www-root/api/
+# Upload updated API file to ~/api/ directory
+scp production-api-server.js crrels2s@crrels2s.w3.uvm.edu:~/api/
 
 # Restart API
-ssh crrels2s@crrels2s.w3.uvm.edu "pm2 restart summit2shore-api"
+ssh crrels2s@crrels2s.w3.uvm.edu "cd ~/api && pm2 restart summit2shore-api"
 ```
 
 ### Full Update (Frontend + Backend)
@@ -436,30 +497,46 @@ npm run build
 ./deploy-dual.sh production
 
 # Update backend
-scp production-api-server.js crrels2s@crrels2s.w3.uvm.edu:~/www-root/api/
-ssh crrels2s@crrels2s.w3.uvm.edu "pm2 restart summit2shore-api"
+scp production-api-server.js crrels2s@crrels2s.w3.uvm.edu:~/api/
+ssh crrels2s@crrels2s.w3.uvm.edu "cd ~/api && pm2 restart summit2shore-api"
 ```
 
 ---
 
 ## 📁 Directory Structure on Production Server
 
-After successful deployment:
+After successful deployment, your structure will match vdondeti:
 
 ```
-~/
-├── www-root/                    # Web root (Apache serves from here)
-│   ├── index.html              # Main frontend entry point
-│   ├── assets/                 # JS, CSS, images bundled by Vite
-│   ├── lovable-uploads/        # Uploaded images/assets
-│   ├── .htaccess               # Apache rewrite rules
-│   └── api/                    # Backend API
-│       ├── production-api-server.js
-│       ├── package.json
-│       └── node_modules/
-├── backup-www-root-YYYY-MM-DD-HHMMSS/  # Timestamped backups
+~/                                        # Home directory
+├── api/                                  # Backend API (separate directory)
+│   ├── node_modules/                    # npm dependencies
+│   ├── package.json                     # Dependencies list
+│   ├── package-lock.json                # Lock file
+│   ├── production-api-server.js         # Main API server
+│   ├── server.log                       # PM2 logs
+│   └── server.pid                       # PM2 process ID
+│
+├── www-root/                             # Frontend (Apache serves from here)
+│   ├── index.html                       # Main entry point
+│   ├── assets/                          # Vite bundled JS, CSS, fonts
+│   ├── lovable-uploads/                 # User uploaded images
+│   ├── favicon.ico                      # Site icon
+│   ├── placeholder.svg                  # Placeholder image
+│   ├── robots.txt                       # SEO robots file
+│   └── .htaccess                        # Apache config
+│
+├── backup-root-YYYY-MM-DD-HHMMSS/       # Timestamped backups
+├── venv/                                # Python virtual env (if used)
 └── [other files]
 ```
+
+**Key Points:**
+- Backend API is at `~/api/` (NOT inside www-root)
+- Frontend is at `~/www-root/`
+- Apache serves from `~/www-root/`
+- API runs on port 3001 via PM2
+- Apache proxies `/api` and `/health` requests to the backend
 
 ---
 
