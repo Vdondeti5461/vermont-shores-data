@@ -10,65 +10,65 @@ import { Users, BookOpen, Award, Building, Download } from 'lucide-react';
 const Research = () => {
   const researchAreas = [
     {
-      title: 'Climate Change Impacts',
-      description: 'Long-term climate monitoring and impact assessment',
+      title: 'Snow Hydrology',
+      description: 'Snowpack monitoring and water resource prediction',
+      icon: '❄️',
+      publications: 0,
+      projects: 1
+    },
+    {
+      title: 'Climate Monitoring',
+      description: 'Long-term environmental data collection and analysis',
       icon: '🌡️',
-      publications: 15,
-      projects: 3
-    },
-    {
-      title: 'Hydrological Sciences',
-      description: 'Water cycle dynamics and snow hydrology',
-      icon: '💧',
-      publications: 23,
-      projects: 5
-    },
-    {
-      title: 'Forest Ecology',
-      description: 'Forest ecosystem responses to environmental change',
-      icon: '🌲',
-      publications: 18,
-      projects: 4
-    },
-    {
-      title: 'Data Science',
-      description: 'Environmental informatics and modeling',
-      icon: '📊',
-      publications: 12,
+      publications: 0,
       projects: 2
+    },
+    {
+      title: 'Environmental Data Science',
+      description: 'Real-time sensor networks and data quality control',
+      icon: '📊',
+      publications: 0,
+      projects: 1
+    },
+    {
+      title: 'Mountain Ecosystems',
+      description: 'Elevation gradient research and alpine environmental change',
+      icon: '⛰️',
+      publications: 0,
+      projects: 1
     }
   ];
 
   const collaborations = [
     {
-      name: 'USDA Forest Service',
-      type: 'Federal Agency',
-      description: 'Long-term forest monitoring and research partnerships'
+      name: 'U.S. Army CRREL',
+      type: 'Federal Partner',
+      description: 'Cold Regions Research and Engineering Laboratory - Primary partner for Summit-to-Shore snow monitoring network and cold regions research'
     },
     {
-      name: 'NOAA Climate Office',
-      type: 'Federal Agency',
-      description: 'Climate data integration and forecasting research'
+      name: 'NOAA CIROH',
+      type: 'Federal Consortium',
+      description: 'Cooperative Institute for Research to Operations in Hydrology - Advancing water prediction and hydrological forecasting'
     },
     {
       name: 'Vermont Agency of Natural Resources',
       type: 'State Agency',
-      description: 'State-level environmental monitoring and policy support'
+      description: 'State-level environmental monitoring, data sharing, and climate adaptation policy support'
     },
     {
-      name: 'University of New Hampshire',
-      type: 'Academic Partner',
-      description: 'Collaborative research on ecosystem responses'
+      name: 'UVM Water Resources Institute',
+      type: 'UVM Partner',
+      description: 'Interdisciplinary water and climate research coordination and collaborative funding initiatives'
     },
     {
-      name: 'Dartmouth College',
-      type: 'Academic Partner',
-      description: 'Snow and ice research collaborations'
+      name: 'Northeast Snow Study (NESS)',
+      type: 'Regional Network',
+      description: 'Multi-state snow monitoring and hydrological research collaboration across the Northeast region'
     },
     {
-      name: 'McGill University',
-      type: 'International Partner',
-      description: 'Transboundary environmental research'
+      name: 'Mount Washington Observatory',
+      type: 'Research Station',
+      description: 'High-elevation climate data exchange and collaborative alpine weather research'
     }
   ];
 
