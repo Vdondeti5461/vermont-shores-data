@@ -164,28 +164,75 @@ const Research = () => {
               </TabsList>
 
               <TabsContent value="publications" className="mt-4 sm:mt-6 lg:mt-8">
-                <Card className="border-dashed">
-                  <CardHeader className="text-center pb-8">
-                    <BookOpen className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
-                    <CardTitle className="text-2xl">Publications Coming Soon</CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-center pb-8">
-                    <p className="text-muted-foreground max-w-2xl mx-auto mb-6">
-                      Research publications from the Summit-to-Shore Snow Monitoring Network are currently in preparation. 
-                      This section will feature peer-reviewed articles, technical reports, and conference proceedings 
-                      as they become available.
-                    </p>
-                    <div className="bg-primary/5 rounded-lg p-6 max-w-2xl mx-auto">
-                      <p className="text-sm text-muted-foreground mb-2">
-                        <strong>Recent Presentation:</strong>
-                      </p>
-                      <p className="text-sm">
-                        Summit-to-Shore Snow Monitoring Network in Vermont (2023)<br />
-                        <span className="text-muted-foreground">Student Research Conference, UVM ScholarWorks</span>
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
+                <div className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <BookOpen className="h-5 w-5" />
+                        Recent Publications & Conference Proceedings
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {/* Featured Publication */}
+                        <div className="border-l-4 border-primary pl-4 py-4 bg-gradient-to-r from-primary/5 to-transparent rounded-r-lg hover:shadow-sm transition-shadow">
+                          <div className="flex items-start justify-between gap-4 mb-3">
+                            <h4 className="font-semibold text-base lg:text-lg leading-tight pr-2">
+                              Monitoring Mountain Meteorology and Snow Across Elevational Gradients in the Northeast Appalachians and Adirondacks in North America
+                            </h4>
+                            <Badge variant="default" className="shrink-0">2025</Badge>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-sm text-muted-foreground">
+                              <span className="font-medium text-foreground/80">International Mountain Conference 2025 (IMC2025)</span>
+                              <span className="hidden sm:inline text-muted-foreground/50">•</span>
+                              <span className="text-primary font-medium">Innsbruck, Austria</span>
+                              <span className="hidden sm:inline text-muted-foreground/50">•</span>
+                              <span>September 14-18, 2025</span>
+                            </div>
+                            
+                            <p className="text-sm text-muted-foreground leading-relaxed">
+                              <span className="font-medium text-foreground/70">Lead Author:</span> Benes, J. (University of Vermont)
+                            </p>
+                            
+                            <p className="text-sm text-muted-foreground leading-relaxed">
+                              <span className="font-medium text-foreground/70">Co-authors:</span> Beauharnois, M.; Bomblies, A.; Broccolo, J.; Burakowski, E.; Casson, P.; Clemins, P. J.; Contosta, A.; Dondeti, V.; Garret, K.; Grunes, A.; and 11 others
+                            </p>
+                            
+                            <div className="flex flex-wrap gap-2 pt-2">
+                              <Badge variant="outline" className="text-xs">Accepted as Talk</Badge>
+                              <Badge variant="outline" className="text-xs">Mountain Observatories</Badge>
+                              <Badge variant="outline" className="text-xs">Elevational Gradient</Badge>
+                              <Badge variant="outline" className="text-xs">Snow Monitoring</Badge>
+                              <Badge variant="outline" className="text-xs">Extreme Weather</Badge>
+                            </div>
+
+                            <div className="pt-3 flex gap-3">
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => window.open('https://imc2025.info/imc25/abstract/monitoring-meteorology-and-snow-in-mountains-across-elevational-gradients-in-northeast-appalachian-mountains-in-north-america/', '_blank')}
+                              >
+                                View Abstract
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* More Coming Soon */}
+                        <div className="border-dashed border-2 rounded-lg p-6 text-center bg-muted/30">
+                          <BookOpen className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
+                          <h4 className="font-semibold text-lg mb-2">More Publications Coming Soon</h4>
+                          <p className="text-sm text-muted-foreground max-w-xl mx-auto">
+                            Additional peer-reviewed articles, technical reports, and conference proceedings 
+                            from the Summit-to-Shore project are in preparation and will be added as they become available.
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
               </TabsContent>
 
               <TabsContent value="projects" className="mt-4 sm:mt-6 lg:mt-8">
