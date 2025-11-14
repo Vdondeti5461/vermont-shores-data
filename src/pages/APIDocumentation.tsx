@@ -589,7 +589,7 @@ try {
                       </p>
                       <div className="bg-indigo-100 p-3 rounded text-indigo-800 text-xs font-mono">
                         "Summit-to-Shore Environmental Observatory, University of Vermont. 
-                        Accessed via API at {window.location.origin} on {new Date().toISOString().split('T')[0]}."
+                        Accessed via API at https://crrels2s.w3.uvm.edu on {new Date().toISOString().split('T')[0]}."
                       </div>
                     </div>
 
