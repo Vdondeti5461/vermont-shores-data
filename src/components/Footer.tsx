@@ -1,7 +1,8 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Mail, MapPin, Phone, ExternalLink, Github, Database } from 'lucide-react';
+import { Mail, MapPin, Phone, ExternalLink, Database } from 'lucide-react';
 import logo from '@/assets/summit2shore-logo.png';
+import uvmLogo from '@/assets/uvm-logo.png';
 
 const Footer = () => {
   const contactInfo = [
@@ -35,7 +36,7 @@ const Footer = () => {
           {/* Project Info */}
           <div className="lg:col-span-1">
             <div className="flex items-center space-x-3 mb-6">
-              <img src={logo} alt="Summit 2 Shore" className="h-12 w-12 filter brightness-0 invert" />
+              <img src={uvmLogo} alt="University of Vermont" className="h-12 w-auto" />
               <div>
                 <h3 className="text-xl font-bold">Summit 2 Shore</h3>
                 <p className="text-sm text-primary-foreground/80">UVM Research Portal</p>
@@ -125,16 +126,6 @@ const Footer = () => {
                 >
                   <Database className="mr-2 h-4 w-4" />
                   Access Data API
-                </Button>
-              </a>
-              <a href="https://github.com/uvm-summit2shore" target="_blank" rel="noopener noreferrer" className="block">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10"
-                >
-                  <Github className="mr-2 h-4 w-4" />
-                  View on GitHub
                 </Button>
               </a>
             </div>
