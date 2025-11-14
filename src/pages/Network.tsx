@@ -10,10 +10,10 @@ import { MapPin, Thermometer, Wind, CloudSnow, Droplets, Activity, CheckCircle, 
 const Network = () => {
   const monitoringTypes = [
     {
-      id: 'temperature',
-      name: 'Temperature & Humidity',
+      id: 'core',
+      name: 'Core Environmental Data',
       icon: Thermometer,
-      description: 'Air and soil temperature, relative humidity measurements',
+      description: 'Air/soil temperature, humidity, snow depth, radiation, soil moisture and heat flux',
       count: 22,
       color: 'text-red-500'
     },
@@ -21,24 +21,24 @@ const Network = () => {
       id: 'wind',
       name: 'Wind Monitoring',
       icon: Wind,
-      description: 'Wind speed, direction, and gust measurements',
-      count: 18,
+      description: 'Wind speed, direction, gusts, and vector averages',
+      count: 22,
       color: 'text-blue-500'
     },
     {
       id: 'snow',
-      name: 'Snow & Ice',
+      name: 'Snowpack Analysis',
       icon: CloudSnow,
-      description: 'Snow depth, water equivalent, ice content',
-      count: 20,
+      description: 'Snow depth, water equivalent, density, ice and water content, temperature profiles',
+      count: 22,
       color: 'text-cyan-500'
     },
     {
       id: 'precipitation',
       name: 'Precipitation',
       icon: Droplets,
-      description: 'Rainfall, snowfall, and accumulation data',
-      count: 16,
+      description: 'Real-time and NRT precipitation intensity and accumulation',
+      count: 22,
       color: 'text-blue-600'
     }
   ];
@@ -254,11 +254,11 @@ const Network = () => {
                       <div className="space-y-4">
                          <div className="flex justify-between items-center">
                            <span className="text-sm text-muted-foreground">Elevation Range</span>
-                           <span className="font-medium">45m - 1,169m</span>
+                           <span className="font-medium">47m - 1,163m</span>
                          </div>
                         <div className="flex justify-between items-center">
                           <span className="text-sm text-muted-foreground">Regions Covered</span>
-                          <span className="font-medium">6 regions</span>
+                          <span className="font-medium">2 regions (Ranch Brook + Distributed)</span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-sm text-muted-foreground">Data Streams</span>
@@ -276,7 +276,7 @@ const Network = () => {
                       <div className="space-y-4">
                         <div className="flex justify-between items-center">
                           <span className="text-sm text-muted-foreground">Collection Interval</span>
-                          <span className="font-medium">15 minutes</span>
+                          <span className="font-medium">10 minutes</span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-sm text-muted-foreground">Data Quality</span>
@@ -314,10 +314,10 @@ const Network = () => {
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2 text-sm text-muted-foreground">
-                    <li>• 15-minute measurement intervals</li>
+                    <li>• 10-minute measurement intervals</li>
                     <li>• Real-time data transmission</li>
-                    <li>• Quality assurance protocols</li>
-                    <li>• Automated backup systems</li>
+                    <li>• Multi-tier quality assurance (Raw → Clean → QAQC → Seasonal)</li>
+                    <li>• Automated backup and archival systems</li>
                   </ul>
                 </CardContent>
               </Card>
@@ -328,10 +328,10 @@ const Network = () => {
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2 text-sm text-muted-foreground">
-                    <li>• Campbell Scientific dataloggers</li>
-                    <li>• Research-grade sensors</li>
-                    <li>• Solar power systems</li>
-                    <li>• Cellular communication</li>
+                    <li>• Campbell Scientific CR1000X/CR6 dataloggers</li>
+                    <li>• Research-grade environmental sensors</li>
+                    <li>• Solar power with battery backup</li>
+                    <li>• Cellular telemetry for real-time data</li>
                   </ul>
                 </CardContent>
               </Card>
@@ -342,10 +342,10 @@ const Network = () => {
                 </CardHeader>
                 <CardContent>
                    <ul className="space-y-2 text-sm text-muted-foreground">
-                     <li>• Elevation range: 45-1,169m</li>
-                     <li>• Multiple climate zones</li>
-                     <li>• Lake and mountain sites</li>
-                     <li>• Urban and forest locations</li>
+                     <li>• Elevation range: 47-1,163m (154-3,816 ft)</li>
+                     <li>• Alpine to lakeshore transects</li>
+                     <li>• Multiple land cover types</li>
+                     <li>• Ranch Brook intensive study area</li>
                    </ul>
                 </CardContent>
               </Card>
