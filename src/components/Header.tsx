@@ -82,23 +82,23 @@ const Header = () => {
               );
             })}
             
-            {/* Analytics Dropdown */}
+            {/* Data Download Dropdown */}
             <NavigationMenu>
               <NavigationMenuList>
                 <NavigationMenuItem>
                   <NavigationMenuTrigger 
                     className={`flex items-center space-x-1 transition-all duration-200 font-medium px-2 py-1 rounded-md ${
-                      location.pathname.startsWith('/analytics')
+                      location.pathname.startsWith('/download') || location.pathname.startsWith('/documentation')
                         ? 'text-primary bg-primary/10' 
                         : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
                     }`}
                   >
-                    <BarChart3 className="h-4 w-4" />
-                    <span className="text-sm">Analytics</span>
+                    <Download className="h-4 w-4" />
+                    <span className="text-sm">Data Download</span>
                   </NavigationMenuTrigger>
                   <NavigationMenuContent>
                     <ul className="grid w-[400px] gap-3 p-4 bg-popover">
-                      {analyticsSubsections.map((item) => {
+                      {dataDownloadSubsections.map((item) => {
                         const Icon = item.icon;
                         return (
                           <li key={item.label}>
@@ -127,23 +127,23 @@ const Header = () => {
               </NavigationMenuList>
             </NavigationMenu>
 
-            {/* Data Download Dropdown */}
+            {/* Analytics Dropdown */}
             <NavigationMenu>
               <NavigationMenuList>
                 <NavigationMenuItem>
                   <NavigationMenuTrigger 
                     className={`flex items-center space-x-1 transition-all duration-200 font-medium px-2 py-1 rounded-md ${
-                      location.pathname.startsWith('/download') || location.pathname.startsWith('/documentation')
+                      location.pathname.startsWith('/analytics')
                         ? 'text-primary bg-primary/10' 
                         : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
                     }`}
                   >
-                    <Download className="h-4 w-4" />
-                    <span className="text-sm">Data Download</span>
+                    <BarChart3 className="h-4 w-4" />
+                    <span className="text-sm">Analytics</span>
                   </NavigationMenuTrigger>
                   <NavigationMenuContent>
                     <ul className="grid w-[400px] gap-3 p-4 bg-popover">
-                      {dataDownloadSubsections.map((item) => {
+                      {analyticsSubsections.map((item) => {
                         const Icon = item.icon;
                         return (
                           <li key={item.label}>
@@ -214,6 +214,31 @@ const Header = () => {
                 );
               })}
               
+              {/* Data Download Subsection - Mobile */}
+              <div className="px-2 pt-2">
+                <div className="px-2 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Data Download
+                </div>
+                {dataDownloadSubsections.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.label}
+                      to={item.href}
+                      onClick={() => setIsMenuOpen(false)}
+                      className={`flex items-center space-x-3 px-4 py-3 mx-2 transition-all duration-200 rounded-lg font-medium touch:active:scale-98 min-h-[48px] ${
+                        isActive(item.href)
+                          ? 'text-primary bg-primary/10 shadow-sm'
+                          : 'text-muted-foreground hover:text-primary hover:bg-primary/5 active:bg-primary/10'
+                      }`}
+                    >
+                      <Icon className="h-5 w-5 flex-shrink-0" />
+                      <span className="text-base">{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+
               {/* Analytics Subsection - Mobile */}
               <div className="px-2 pt-2">
                 <div className="px-2 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -239,36 +264,9 @@ const Header = () => {
                 })}
               </div>
 
-              {/* Data Download Subsection - Mobile */}
-              <div className="px-2 pt-2">
-                <div className="px-2 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Data Download
-                </div>
-                {dataDownloadSubsections.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <Link
-                      key={item.label}
-                      to={item.href}
-                      onClick={() => setIsMenuOpen(false)}
-                      className={`flex items-center space-x-3 px-4 py-3 mx-2 transition-all duration-200 rounded-lg font-medium touch:active:scale-98 min-h-[48px] ${
-                        isActive(item.href)
-                          ? 'text-primary bg-primary/10 shadow-sm'
-                          : 'text-muted-foreground hover:text-primary hover:bg-primary/5 active:bg-primary/10'
-                      }`}
-                    >
-                      <Icon className="h-5 w-5 flex-shrink-0" />
-                      <span className="text-base">{item.label}</span>
-                    </Link>
-                  );
-                })}
-              </div>
-              
-              <div className="px-4 pt-4">
-                <Button 
-                  className="w-full btn-research text-base py-3 min-h-[48px]"
-                  onClick={() => setIsMenuOpen(false)}
-                >
+              {/* CTA Button - Mobile */}
+              <div className="px-4 pt-3 pb-2">
+                <Button className="btn-research w-full text-base py-6 min-h-[48px]">
                   Access Live Data
                 </Button>
               </div>
