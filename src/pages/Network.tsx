@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { MapPin, Thermometer, Wind, CloudSnow, Droplets, Activity, CheckCircle, AlertCircle } from 'lucide-react';
+import { getSiteColorByCode } from '@/lib/siteColors';
 
 const Network = () => {
   const monitoringTypes = [
@@ -172,7 +173,15 @@ const Network = () => {
                         <TableBody>
                           {locationData.map((station) => (
                             <TableRow key={station.code}>
-                              <TableCell className="font-mono font-medium">{station.code}</TableCell>
+                              <TableCell className="font-mono font-medium">
+                                <div className="flex items-center gap-2">
+                                  <div 
+                                    className="w-3 h-3 rounded-full border border-white shadow-sm flex-shrink-0"
+                                    style={{ backgroundColor: getSiteColorByCode(station.code) }}
+                                  />
+                                  {station.code}
+                                </div>
+                              </TableCell>
                               <TableCell>{station.name}</TableCell>
                               <TableCell>
                                 <Badge variant="outline">{station.region}</Badge>
