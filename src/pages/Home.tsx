@@ -10,13 +10,6 @@ import { Link } from 'react-router-dom';
 const Home = () => {
   const quickLinks = [
     {
-      title: 'Snow Analytics',
-      description: 'Interactive snow depth time series analysis',
-      icon: BarChart3,
-      href: '/analytics/snow-depth',
-      color: 'bg-blue-500'
-    },
-    {
       title: 'Data Network',
       description: 'Explore monitoring stations across Vermont',
       icon: MapPin,
@@ -24,18 +17,25 @@ const Home = () => {
       color: 'bg-green-500'
     },
     {
-      title: 'Live Analytics',
-      description: 'Real-time environmental data visualization',
-      icon: BarChart3,
-      href: '/analytics',
-      color: 'bg-purple-500'
-    },
-    {
       title: 'Download Data',
       description: 'Access research datasets and APIs',
       icon: Download,
       href: '/download',
       color: 'bg-orange-500'
+    },
+    {
+      title: 'Snow Analytics',
+      description: 'Interactive snow depth time series analysis',
+      icon: BarChart3,
+      href: '/analytics/snow-depth',
+      color: 'bg-blue-500'
+    },
+    {
+      title: 'Live Analytics',
+      description: 'Real-time environmental data visualization',
+      icon: BarChart3,
+      href: '/analytics',
+      color: 'bg-purple-500'
     }
   ];
 
