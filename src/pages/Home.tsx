@@ -102,10 +102,10 @@ const Home = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 xs:gap-8">
               <div className="data-card p-4 xs:p-6 touch:active:scale-98 transition-transform">
-                <div className="text-xs xs:text-sm text-muted-foreground mb-2">New Feature</div>
-                <h3 className="font-semibold text-base xs:text-lg mb-3">Snow Depth Analytics</h3>
+                <div className="text-xs xs:text-sm text-muted-foreground mb-2">Current</div>
+                <h3 className="font-semibold text-base xs:text-lg mb-3">Real-Time Data & Analytics</h3>
                 <p className="text-muted-foreground text-sm xs:text-base mb-4 leading-relaxed">
-                  Interactive time series analysis of DBTCDT measurements with raw vs cleaned data comparison.
+                  Developing snow depth analytics platform with real-time data streaming from data loggers and API development.
                 </p>
                 <Link to="/analytics/snow-depth" className="text-primary font-medium hover:underline text-sm xs:text-base">
                   View Analytics →
@@ -113,10 +113,10 @@ const Home = () => {
               </div>
 
               <div className="data-card p-4 xs:p-6 touch:active:scale-98 transition-transform">
-                <div className="text-xs xs:text-sm text-muted-foreground mb-2">January 2024</div>
-                <h3 className="font-semibold text-base xs:text-lg mb-3">New Monitoring Stations</h3>
+                <div className="text-xs xs:text-sm text-muted-foreground mb-2">2024</div>
+                <h3 className="font-semibold text-base xs:text-lg mb-3">Unified Network Collaboration</h3>
                 <p className="text-muted-foreground text-sm xs:text-base mb-4 leading-relaxed">
-                  Added 5 new environmental monitoring stations across Vermont's high-elevation regions.
+                  Partnered with Whiteface Mountain and Mount Washington Observatory to build a unified environmental monitoring network.
                 </p>
                 <Link to="/network" className="text-primary font-medium hover:underline text-sm xs:text-base">
                   View Network →
@@ -124,24 +124,35 @@ const Home = () => {
               </div>
 
               <div className="data-card p-4 xs:p-6 touch:active:scale-98 transition-transform">
-                <div className="text-xs xs:text-sm text-muted-foreground mb-2">December 2023</div>
-                <h3 className="font-semibold text-base xs:text-lg mb-3">Enhanced Analytics</h3>
+                <div className="text-xs xs:text-sm text-muted-foreground mb-2">2023-2024</div>
+                <h3 className="font-semibold text-base xs:text-lg mb-3">Data Standardization & Cleaning</h3>
                 <p className="text-muted-foreground text-sm xs:text-base mb-4 leading-relaxed">
-                  New machine learning models for climate pattern analysis and forecasting.
+                  Implemented multi-stage data cleaning pipeline with calibration and vegetation correction for snow depth measurements.
                 </p>
-                <Link to="/analytics/advanced" className="text-primary font-medium hover:underline text-sm xs:text-base">
-                  Explore Analytics →
+                <Link to="/download" className="text-primary font-medium hover:underline text-sm xs:text-base">
+                  Access Data →
                 </Link>
               </div>
 
               <div className="data-card p-4 xs:p-6 touch:active:scale-98 transition-transform">
-                <div className="text-xs xs:text-sm text-muted-foreground mb-2">November 2023</div>
-                <h3 className="font-semibold text-base xs:text-lg mb-3">Open Data Initiative</h3>
+                <div className="text-xs xs:text-sm text-muted-foreground mb-2">2022-2024</div>
+                <h3 className="font-semibold text-base xs:text-lg mb-3">Network Expansion</h3>
                 <p className="text-muted-foreground text-sm xs:text-base mb-4 leading-relaxed">
-                  All research data now available through our new API and download portal.
+                  Deployed 22+ monitoring stations across Vermont with custom database architecture for environmental data collection.
                 </p>
-                <Link to="/download" className="text-primary font-medium hover:underline text-sm xs:text-base">
-                  Access Data →
+                <Link to="/network" className="text-primary font-medium hover:underline text-sm xs:text-base">
+                  Explore Locations →
+                </Link>
+              </div>
+
+              <div className="data-card p-4 xs:p-6 touch:active:scale-98 transition-transform">
+                <div className="text-xs xs:text-sm text-muted-foreground mb-2">November 2022</div>
+                <h3 className="font-semibold text-base xs:text-lg mb-3">Project Launch</h3>
+                <p className="text-muted-foreground text-sm xs:text-base mb-4 leading-relaxed">
+                  Summit2Shore environmental data collection initiative launched with custom database schema development.
+                </p>
+                <Link to="/about" className="text-primary font-medium hover:underline text-sm xs:text-base">
+                  Learn More →
                 </Link>
               </div>
             </div>
