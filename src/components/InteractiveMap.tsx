@@ -28,6 +28,34 @@ const normalizeCode = (shortName?: string, name?: string) => {
   return ((shortName || name || '').replace(/[^A-Za-z0-9]/g, '')).toUpperCase();
 };
 
+// Standardized color palette - 18 distinct, highly visible colors
+const locationColors = [
+  '#e11d48', // Rose - ID 1
+  '#dc2626', // Red - ID 2
+  '#ea580c', // Orange-red - ID 3
+  '#d97706', // Amber - ID 4
+  '#ca8a04', // Yellow - ID 5
+  '#65a30d', // Lime - ID 6
+  '#16a34a', // Green - ID 7
+  '#059669', // Emerald - ID 8
+  '#0d9488', // Teal - ID 9
+  '#0891b2', // Cyan - ID 10
+  '#0284c7', // Sky - ID 11
+  '#2563eb', // Blue - ID 12
+  '#4f46e5', // Indigo - ID 13
+  '#7c3aed', // Violet - ID 14
+  '#9333ea', // Purple - ID 15
+  '#c026d3', // Fuchsia - ID 16
+  '#db2777', // Pink - ID 17
+  '#f43f5e', // Rose-red - ID 18
+];
+
+// Get color for a site ID
+const getSiteColor = (siteId: number) => {
+  const colorIndex = (siteId - 1) % locationColors.length;
+  return locationColors[colorIndex];
+};
+
 const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
   const mapRef = useRef<any>(null);
   const mapInstanceRef = useRef<any>(null);
@@ -124,23 +152,20 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
         markersRef.current = { byId: {}, byCode: {} };
         siteMapRef.current = { byId: {}, byCode: {} };
 
+        // Standardized color palette - already defined at top level
         // Add site markers with enhanced styling
         mapSites.forEach((site) => {
           const code = normalizeCode(site.shortName, site.name);
 
-          let color = '#3b82f6'; // Default blue
-          let elevationRange = 'Valley';
+          // Assign color based on site ID for consistency
+          const color = getSiteColor(site.id);
           
-          // Color by elevation zone
+          // Determine elevation range for display
+          let elevationRange = 'Valley';
           if (site.elevation >= 800) {
-            color = '#dc2626'; // Red for Alpine (800m+)
             elevationRange = 'Alpine';
           } else if (site.elevation >= 400) {
-            color = '#f59e0b'; // Orange for Montane (400-799m)
             elevationRange = 'Montane';
-          } else {
-            color = '#16a34a'; // Green for Valley (<400m)
-            elevationRange = 'Valley';
           }
           
           const status = site.status || 'active';
@@ -331,10 +356,7 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
                   <div className="flex items-center gap-2">
                     <div 
                       className="w-3 h-3 rounded-full border border-white shadow-sm"
-                      style={{
-                        backgroundColor: site.elevation >= 800 ? '#dc2626' : 
-                                       site.elevation >= 400 ? '#f59e0b' : '#16a34a'
-                      }}
+                      style={{ backgroundColor: getSiteColor(site.id) }}
                     />
                     <span className="truncate">{site.shortName} - {site.name}</span>
                   </div>
@@ -349,10 +371,7 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
               <div className="flex items-center gap-2">
                 <div 
                   className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
-                  style={{
-                    backgroundColor: selectedSite.elevation >= 800 ? '#dc2626' : 
-                                   selectedSite.elevation >= 400 ? '#f59e0b' : '#16a34a'
-                  }}
+                  style={{ backgroundColor: getSiteColor(selectedSite.id) }}
                 />
                 <h4 className="font-semibold text-sm">{selectedSite.shortName}</h4>
               </div>
@@ -458,19 +477,22 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
 
             {/* Compact Legend */}
             <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg p-3 border shadow-lg max-w-xs">
-              <h4 className="font-semibold mb-2 text-sm">Elevation Zones</h4>
+              <h4 className="font-semibold mb-2 text-sm">Station Colors</h4>
+              <p className="text-xs text-muted-foreground mb-2">
+                Each station has a unique color for easy identification.
+              </p>
               <div className="space-y-1">
                 <div className="flex items-center gap-2 text-xs">
                   <div className="w-3 h-3 rounded-full bg-red-600 border border-white"></div>
-                  <span>Alpine ≥800m ({mapSites.filter(s => s.elevation >= 800).length})</span>
+                  <span>Alpine ≥800m ({mapSites.filter(s => s.elevation >= 800).length} stations)</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs">
                   <div className="w-3 h-3 rounded-full bg-orange-500 border border-white"></div>
-                  <span>Montane 400-799m ({mapSites.filter(s => s.elevation >= 400 && s.elevation < 800).length})</span>
+                  <span>Montane 400-799m ({mapSites.filter(s => s.elevation >= 400 && s.elevation < 800).length} stations)</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs">
                   <div className="w-3 h-3 rounded-full bg-green-600 border border-white"></div>
-                  <span>Valley &lt;400m ({mapSites.filter(s => s.elevation < 400).length})</span>
+                  <span>Valley &lt;400m ({mapSites.filter(s => s.elevation < 400).length} stations)</span>
                 </div>
                 {selectedSiteId && (
                   <div className="flex items-center gap-2 text-xs mt-2 pt-2 border-t border-gray-200">
