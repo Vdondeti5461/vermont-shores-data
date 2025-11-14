@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,32 +8,64 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Mail, User, Building, FileDown, AlertCircle, CheckCircle } from 'lucide-react';
+import { Mail, User, Building, FileDown, AlertCircle, CheckCircle, Database as DatabaseIcon } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/apiConfig';
+import { LocalDatabaseService } from '@/services/localDatabaseService';
 
 const BulkDownloadRequest = () => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [databases, setDatabases] = useState<{ id: string; name: string; category: string }[]>([]);
+  const [availableTables, setAvailableTables] = useState<{ id: string; name: string; description: string }[]>([]);
+  const [selectedDatabases, setSelectedDatabases] = useState<string[]>([]);
+  const [selectedTables, setSelectedTables] = useState<string[]>([]);
+  
   const [requestData, setRequestData] = useState({
     name: '',
     email: '',
     organization: '',
     purpose: '',
     research_description: '',
-    datasets_requested: [] as string[],
-    date_range: '',
+    date_range_start: '',
+    date_range_end: '',
     preferred_format: 'CSV'
   });
 
-  const availableDatasets = [
-    { id: 'table1', name: 'Primary Environmental Data', description: 'Temperature, humidity, soil conditions, radiation' },
-    { id: 'wind', name: 'Wind Measurements', description: 'Wind speed and direction data' },
-    { id: 'precipitation', name: 'Precipitation Data', description: 'Rain and snow precipitation measurements' },
-    { id: 'snow_temp', name: 'Snow Temperature Profile', description: 'Temperature at various snow depths' },
-    { id: 'raw_complete', name: 'Complete Raw Dataset', description: 'All unprocessed sensor data' },
-    { id: 'processed_complete', name: 'Complete Processed Dataset', description: 'All quality-controlled data' }
-  ];
+  // Fetch available databases and tables on mount
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const dbInfo = await LocalDatabaseService.getDatabasesInfo();
+        setDatabases(dbInfo.databases.map(db => ({
+          id: db.id,
+          name: db.name,
+          category: db.category || 'Environmental Data'
+        })));
+
+        // Set available tables based on the service
+        const tableDescriptions: Record<string, string> = {
+          'table1': 'Primary environmental data including temperature, humidity, soil conditions, and solar radiation',
+          'wind': 'Wind speed and direction measurements from various monitoring sites',
+          'precipitation': 'Precipitation measurements including rain and snow data',
+          'snow_temp': 'Snow temperature profiles at various depths throughout the snowpack',
+          'raw_complete': 'Complete unprocessed sensor data with all original measurements',
+          'processed_complete': 'Quality-controlled and validated environmental data'
+        };
+
+        setAvailableTables(
+          LocalDatabaseService.getAvailableTables().map(table => ({
+            id: table,
+            name: table.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+            description: tableDescriptions[table] || 'Environmental monitoring data'
+          }))
+        );
+      } catch (error) {
+        console.error('Error loading database info:', error);
+      }
+    };
+    loadData();
+  }, []);
 
   const purposeOptions = [
     'Academic Research',
@@ -52,22 +84,30 @@ const BulkDownloadRequest = () => {
     { value: 'XLSX', label: 'Excel Spreadsheet' }
   ];
 
-  const handleDatasetToggle = (datasetId: string) => {
-    setRequestData(prev => ({
-      ...prev,
-      datasets_requested: prev.datasets_requested.includes(datasetId)
-        ? prev.datasets_requested.filter(id => id !== datasetId)
-        : [...prev.datasets_requested, datasetId]
-    }));
+  const handleDatabaseToggle = (databaseId: string) => {
+    setSelectedDatabases(prev => 
+      prev.includes(databaseId)
+        ? prev.filter(id => id !== databaseId)
+        : [...prev, databaseId]
+    );
+  };
+
+  const handleTableToggle = (tableId: string) => {
+    setSelectedTables(prev => 
+      prev.includes(tableId)
+        ? prev.filter(id => id !== tableId)
+        : [...prev, tableId]
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!requestData.name || !requestData.email || !requestData.purpose || requestData.datasets_requested.length === 0) {
+    if (!requestData.name || !requestData.email || !requestData.purpose || 
+        (selectedDatabases.length === 0 && selectedTables.length === 0)) {
       toast({
         title: "Missing Information",
-        description: "Please fill in all required fields and select at least one dataset",
+        description: "Please fill in all required fields and select at least one database or table",
         variant: "destructive"
       });
       return;
@@ -79,6 +119,11 @@ const BulkDownloadRequest = () => {
       // Prepare the request data with additional metadata
       const submissionData = {
         ...requestData,
+        databases_requested: selectedDatabases,
+        tables_requested: selectedTables,
+        date_range: requestData.date_range_start && requestData.date_range_end 
+          ? `${requestData.date_range_start} to ${requestData.date_range_end}`
+          : 'All available data',
         submitted_at: new Date().toISOString(),
         user_agent: navigator.userAgent,
         page_url: window.location.href
@@ -255,48 +300,9 @@ const BulkDownloadRequest = () => {
                   rows={4}
                 />
               </div>
-
-              <div>
-                <Label htmlFor="date_range">Date Range of Interest</Label>
-                <Input
-                  id="date_range"
-                  value={requestData.date_range}
-                  onChange={(e) => setRequestData(prev => ({ ...prev, date_range: e.target.value }))}
-                  placeholder="e.g., 2020-2023, Winter 2022, All available data"
-                />
-              </div>
             </CardContent>
           </Card>
         </div>
-
-        {/* Dataset Selection */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Dataset Selection *</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Select the datasets you need for your research. Multiple selections are allowed.
-            </p>
-          </CardHeader>
-          <CardContent>
-            <div className="grid sm:grid-cols-1 md:grid-cols-2 gap-4">
-              {availableDatasets.map((dataset) => (
-                <div key={dataset.id} className="flex items-start space-x-3 p-3 border rounded-lg">
-                  <Checkbox
-                    id={dataset.id}
-                    checked={requestData.datasets_requested.includes(dataset.id)}
-                    onCheckedChange={() => handleDatasetToggle(dataset.id)}
-                  />
-                  <div className="flex-1">
-                    <Label htmlFor={dataset.id} className="cursor-pointer">
-                      <div className="font-medium">{dataset.name}</div>
-                      <div className="text-sm text-muted-foreground">{dataset.description}</div>
-                    </Label>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Format Selection */}
         <Card>
