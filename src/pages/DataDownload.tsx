@@ -305,7 +305,7 @@ const DataDownloadPage = () => {
                   </div>
                   <div className="mt-6">
                     <Button asChild>
-                      <Link to="/documentation/feeds">Setup Real-time Feeds</Link>
+                      <Link to="/analytics">View Real-time Data</Link>
                     </Button>
                   </div>
                 </CardContent>
