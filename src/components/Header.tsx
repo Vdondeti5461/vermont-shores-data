@@ -22,8 +22,7 @@ const Header = () => {
 
   const researchSubsections = [
     { label: 'Research Team', href: '/research', icon: Users, description: 'Our team and research collaborations' },
-    { label: 'Gallery', href: '/research/gallery', icon: Image, description: 'Project photos and documentation' },
-    { label: 'Documentation', href: '/documentation', icon: FileText, description: 'Technical documentation and resources' }
+    { label: 'Gallery', href: '/research/gallery', icon: Image, description: 'Project photos and documentation' }
   ];
 
   const analyticsSubsections = [
