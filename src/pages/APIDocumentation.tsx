@@ -28,27 +28,35 @@ const APIDocumentation = () => {
   "databases": [
     {
       "key": "raw_data",
-      "name": "CRRELS2S_VTClimateRepository",
-      "display_name": "Raw Environmental Data",
-      "description": "Unprocessed environmental sensor data",
+      "name": "CRRELS2S_raw_data_ingestion",
+      "display_name": "Raw Data Ingestion",
+      "description": "Raw sensor data directly from field loggers, unprocessed",
       "category": "raw",
       "order": 1
     },
     {
-      "key": "final_clean_data",
-      "name": "CRRELS2S_ProcessedData",
-      "display_name": "Processed Environmental Data",
-      "description": "Quality-controlled and validated measurements",
-      "category": "processed",
+      "key": "stage_clean_data",
+      "name": "CRRELS2S_stage_clean_data",
+      "display_name": "Stage Clean Data",
+      "description": "Intermediate cleaned datasets using basic quality control (QC) filters",
+      "category": "cleaned",
       "order": 2
     },
     {
-      "key": "seasonal_clean_data",
-      "name": "CRRELS2S_cleaned_data_seasons",
-      "display_name": "Seasonal Environmental Data",
-      "description": "Seasonally aggregated climate data",
-      "category": "aggregated",
+      "key": "stage_qaqc_data",
+      "name": "CRRELS2S_stage_qaqc_data",
+      "display_name": "Stage QAQC Data",
+      "description": "Advanced QAQC with calibration, temporal checks, and derived values",
+      "category": "qaqc",
       "order": 3
+    },
+    {
+      "key": "seasonal_qaqc_data",
+      "name": "CRRELS2S_seasonal_qaqc_data",
+      "display_name": "Seasonal QAQC Data",
+      "description": "Seasonal datasets after QAQC, designed for time-bounded analysis",
+      "category": "seasonal",
+      "order": 4
     }
   ]
 }`
@@ -58,31 +66,38 @@ const APIDocumentation = () => {
       path: '/databases/:database/tables',
       description: 'Get all tables for a specific database with metadata',
       parameters: [
-        { name: 'database', description: 'Database key (e.g., raw_data, final_clean_data, seasonal_clean_data)' }
+        { name: 'database', description: 'Database key (e.g., raw_data, stage_clean_data, stage_qaqc_data, seasonal_qaqc_data)' }
       ],
       response: `{
-  "database": "CRRELS2S_ProcessedData",
+  "database": "CRRELS2S_raw_data_ingestion",
   "tables": [
     {
-      "name": "table1",
-      "display_name": "Primary Environmental Data",
-      "description": "Comprehensive environmental measurements from all monitoring stations",
+      "name": "raw_env_core_observations",
+      "display_name": "Core Environmental Observations",
+      "description": "Primary environmental measurements including temperature, humidity, radiation, and snow metrics",
       "row_count": 1247892,
-      "columns": ["TIMESTAMP", "Location", "AirTC_Avg", "RH", "SWE", "Soil_Temperature_C"]
+      "columns": ["timestamp", "location", "air_temperature_avg_c", "relative_humidity_percent", "snow_depth_cm", "snow_water_equivalent_mm"]
     },
     {
-      "name": "station_metadata",
-      "display_name": "Station Metadata",
-      "description": "Geographic and technical information for monitoring stations",
-      "row_count": 22,
-      "columns": ["Station_ID", "Name", "Latitude", "Longitude", "Elevation"]
+      "name": "raw_env_wind_observations",
+      "display_name": "Wind Observations",
+      "description": "Wind speed and direction measurements from weather stations",
+      "row_count": 1247892,
+      "columns": ["timestamp", "location", "wind_speed_avg_ms", "wind_direction_deg", "wind_speed_max_ms"]
     },
     {
-      "name": "calibration_data",
-      "display_name": "Sensor Calibration Records",
-      "description": "Calibration coefficients and validation data for sensors",
-      "row_count": 156,
-      "columns": ["Station_ID", "Sensor_Type", "Calibration_Date", "Coefficients"]
+      "name": "raw_env_precipitation_observations",
+      "display_name": "Precipitation Observations",
+      "description": "Precipitation intensity and accumulation measurements",
+      "row_count": 892415,
+      "columns": ["timestamp", "location", "precip_intensity_rt_mm_min", "precip_accum_rt_nrt_mm", "bucket_precip_rt_mm"]
+    },
+    {
+      "name": "raw_env_snowpack_temperature_profile",
+      "display_name": "Snowpack Temperature Profile",
+      "description": "Vertical temperature profile measurements through snowpack (0-290cm depths)",
+      "row_count": 1247892,
+      "columns": ["timestamp", "location", "snow_temp_0cm_avg", "snow_temp_10cm_avg", "snow_temp_290cm_avg"]
     }
   ]
 }`
@@ -96,27 +111,27 @@ const APIDocumentation = () => {
         { name: 'table', description: 'Table name' }
       ],
       response: `{
-  "database": "CRRELS2S_ProcessedData",
-  "table": "table1",
+  "database": "CRRELS2S_raw_data_ingestion",
+  "table": "raw_env_core_observations",
   "attributes": [
     {
-      "name": "TIMESTAMP",
+      "name": "timestamp",
       "type": "datetime",
       "category": "timestamp",
       "isPrimary": true,
       "nullable": false,
-      "comment": "Measurement timestamp in UTC"
+      "comment": "Date and time of observation (EST)"
     },
     {
-      "name": "Location",
+      "name": "location",
       "type": "varchar(50)",
       "category": "location",
       "isPrimary": true,
       "nullable": false,
-      "comment": "Monitoring station identifier"
+      "comment": "Logger site ID (e.g., RB01, SUMM)"
     },
     {
-      "name": "AirTC_Avg",
+      "name": "air_temperature_avg_c",
       "type": "float",
       "category": "temperature",
       "isPrimary": false,
@@ -439,10 +454,10 @@ const dbResponse = await fetch('${baseUrl}/databases');
 const { databases } = await dbResponse.json();
 console.log('Available databases:', databases);
 
-// Get tables and locations for processed data
+// Get tables and locations for raw data
 const [tablesResponse, locationsResponse] = await Promise.all([
-  fetch('${baseUrl}/databases/final_clean_data/tables'),
-  fetch('${baseUrl}/databases/final_clean_data/locations')
+  fetch('${baseUrl}/databases/raw_data/tables'),
+  fetch('${baseUrl}/databases/raw_data/locations')
 ]);
 
 const tables = await tablesResponse.json();
@@ -450,28 +465,28 @@ const locations = await locationsResponse.json();
 
 // Get table schema with attribute categories
 const attributesResponse = await fetch(
-  '${baseUrl}/databases/final_clean_data/tables/table1/attributes'
+  '${baseUrl}/databases/raw_data/tables/raw_env_core_observations/attributes'
 );
 const { attributes } = await attributesResponse.json();
 
 // Build comprehensive data query
 const params = new URLSearchParams({
-  location: 'Mansfield_Ridge,Shelburne_Farm', // Multiple locations
+  location: 'RB01,SUMM', // Multiple locations
   start_date: '2024-01-01T00:00:00Z',
   end_date: '2024-03-31T23:59:59Z',
-  attributes: 'TIMESTAMP,Location,AirTC_Avg,RH,SWE,Soil_Temperature_C',
+  attributes: 'timestamp,location,air_temperature_avg_c,relative_humidity_percent,snow_depth_cm',
   season: 'winter'
 });
 
 // Preview data first (recommended for large queries)
 const previewResponse = await fetch(
-  \`${baseUrl}/databases/final_clean_data/data/table1?\${params}&limit=10\`
+  \`${baseUrl}/databases/raw_data/data/raw_env_core_observations?\${params}&limit=10\`
 );
 const previewData = await previewResponse.json();
 console.log('Data preview:', previewData);
 
 // Download complete dataset as CSV
-const downloadUrl = \`${baseUrl}/databases/final_clean_data/download/table1?\${params}\`;
+const downloadUrl = \`${baseUrl}/databases/raw_data/download/raw_env_core_observations?\${params}\`;
 
 // Trigger download with proper error handling
 try {
@@ -504,37 +519,67 @@ try {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                      <h4 className="font-semibold text-green-800 mb-2">Open Access Policy</h4>
+                      <h4 className="font-semibold text-green-800 mb-2">Current Access Policy</h4>
                       <p className="text-green-700 text-sm">
                         The Summit-to-Shore API is currently open access for research and educational purposes. 
-                        No API keys or authentication tokens are required to access environmental datasets.
+                        Full authentication and access control systems are under development to support 
+                        secure data sharing with partner networks and research institutions.
                       </p>
                     </div>
                     <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                      <h4 className="font-semibold text-amber-800 mb-2">Fair Use Guidelines</h4>
+                      <h4 className="font-semibold text-amber-800 mb-2">Upcoming: Restricted Access & API Keys</h4>
                       <p className="text-amber-700 text-sm mb-2">
-                        To ensure data availability for all users, please follow these guidelines:
+                        Access control is being implemented to ensure data security and quality:
                       </p>
                       <ul className="text-amber-700 text-sm list-disc list-inside space-y-1">
-                        <li>Use the <code>/health</code> endpoint to verify server availability</li>
-                        <li>Implement appropriate request timeouts and error handling</li>
-                        <li>Cache responses when possible to reduce repeated queries</li>
-                        <li>Use data preview with <code>limit</code> parameter for exploration</li>
-                        <li>Contact us for bulk data needs or high-frequency access patterns</li>
+                        <li><strong>Authenticated API Access:</strong> API keys will be required for data access</li>
+                        <li><strong>Network Collaboration:</strong> Dedicated endpoints for partner networks (e.g., Whiteface Mountain, Mount Washington Observatory)</li>
+                        <li><strong>Role-Based Access:</strong> Different permission levels for public, researchers, and network partners</li>
+                        <li><strong>Data Quality Gates:</strong> QA/QC filtered data with documented quality assurance levels</li>
+                        <li><strong>Usage Monitoring:</strong> API usage tracking and rate limiting by user/organization</li>
                       </ul>
                     </div>
+                    <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+                      <h4 className="font-semibold text-indigo-800 mb-2">Network API Access</h4>
+                      <p className="text-indigo-700 text-sm mb-2">
+                        Collaborative networks will receive dedicated API access with:
+                      </p>
+                      <ul className="text-indigo-700 text-sm list-disc list-inside space-y-1">
+                        <li>Programmatic data pull capabilities for automated integration</li>
+                        <li>Access to all four database tiers (raw, clean, QAQC, seasonal)</li>
+                        <li>Real-time data streaming for operational monitoring</li>
+                        <li>Bidirectional data exchange protocols</li>
+                        <li>Cross-network data harmonization standards</li>
+                      </ul>
+                      <p className="text-indigo-700 text-sm mt-2">
+                        Contact <a href="mailto:summit2shore@uvm.edu" className="underline font-medium">summit2shore@uvm.edu</a> to request network partnership and API credentials.
+                      </p>
+                    </div>
                     <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                      <h4 className="font-semibold text-blue-800 mb-2">Future Enhancements</h4>
+                      <h4 className="font-semibold text-blue-800 mb-2">Database Architecture Overview</h4>
                       <p className="text-blue-700 text-sm mb-2">
-                        Planned API improvements include:
+                        Four-tier database architecture for comprehensive data management:
                       </p>
                       <ul className="text-blue-700 text-sm list-disc list-inside space-y-1">
-                        <li>API key authentication for enhanced rate limits</li>
+                        <li><strong>CRRELS2S_raw_data_ingestion:</strong> Unprocessed sensor data from 22+ field stations</li>
+                        <li><strong>CRRELS2S_stage_clean_data:</strong> Basic QC-filtered data with range checks and nullification</li>
+                        <li><strong>CRRELS2S_stage_qaqc_data:</strong> Advanced QA/QC with calibration and temporal validation</li>
+                        <li><strong>CRRELS2S_seasonal_qaqc_data:</strong> Season-bounded datasets optimized for analysis</li>
+                      </ul>
+                    </div>
+                    <div className="p-4 bg-cyan-50 border border-cyan-200 rounded-lg">
+                      <h4 className="font-semibold text-cyan-800 mb-2">Future API Enhancements</h4>
+                      <p className="text-cyan-700 text-sm mb-2">
+                        Planned improvements and expansions:
+                      </p>
+                      <ul className="text-cyan-700 text-sm list-disc list-inside space-y-1">
+                        <li>OAuth2 and JWT authentication for secure API access</li>
                         <li>WebSocket connections for real-time data streaming</li>
                         <li>GraphQL endpoint for flexible data queries</li>
-                        <li>Geospatial querying with bounding box filters</li>
-                        <li>Data export in multiple formats (NetCDF, Parquet, GeoJSON)</li>
-                        <li>Metadata catalog with DOI integration</li>
+                        <li>Geospatial querying with bounding box and region filters</li>
+                        <li>Multi-format export (NetCDF, Parquet, GeoJSON, HDF5)</li>
+                        <li>Metadata catalog with DOI integration and data versioning</li>
+                        <li>Cross-network data federation and harmonization</li>
                       </ul>
                     </div>
                     <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-lg">

@@ -77,8 +77,27 @@ Get all available databases
   "databases": [
     {
       "key": "raw_data",
-      "name": "CRRELS2S_VTClimateRepository", 
-      "displayName": "Raw Data"
+      "name": "CRRELS2S_raw_data_ingestion", 
+      "displayName": "Raw Data Ingestion",
+      "description": "Raw sensor data from field loggers"
+    },
+    {
+      "key": "stage_clean_data",
+      "name": "CRRELS2S_stage_clean_data",
+      "displayName": "Stage Clean Data",
+      "description": "Basic QC filtered data"
+    },
+    {
+      "key": "stage_qaqc_data",
+      "name": "CRRELS2S_stage_qaqc_data",
+      "displayName": "Stage QAQC Data",
+      "description": "Advanced QAQC processed data"
+    },
+    {
+      "key": "seasonal_qaqc_data",
+      "name": "CRRELS2S_seasonal_qaqc_data",
+      "displayName": "Seasonal QAQC Data",
+      "description": "Season-bounded datasets"
     }
   ]
 }
@@ -99,8 +118,11 @@ curl "https://your-domain.com/api/databases/raw_data/tables"
 #### `GET /api/databases/{database}/data/{table}`
 Get filtered environmental data
 ```bash
-# Get temperature data for specific station
-curl "https://your-domain.com/api/databases/raw_data/data/table1?location=Station_001&start_date=2024-01-01&attributes=TIMESTAMP,AirTC_Avg"
+# Get core observations for specific station
+curl "https://your-domain.com/api/databases/raw_data/data/raw_env_core_observations?location=RB01&start_date=2024-01-01&attributes=timestamp,air_temperature_avg_c,snow_depth_cm"
+
+# Get wind observations
+curl "https://your-domain.com/api/databases/raw_data/data/raw_env_wind_observations?location=SUMM&start_date=2024-01-01"
 ```
 
 Query parameters:
@@ -113,7 +135,11 @@ Query parameters:
 #### `GET /api/databases/{database}/download/{table}`
 Download CSV file
 ```bash
-curl -o data.csv "https://your-domain.com/api/databases/raw_data/download/table1?start_date=2024-01-01"
+# Download core observations
+curl -o core_data.csv "https://your-domain.com/api/databases/raw_data/download/raw_env_core_observations?start_date=2024-01-01"
+
+# Download wind observations
+curl -o wind_data.csv "https://your-domain.com/api/databases/raw_data/download/raw_env_wind_observations?location=RB01"
 ```
 
 ## JavaScript Usage Examples
@@ -123,18 +149,22 @@ curl -o data.csv "https://your-domain.com/api/databases/raw_data/download/table1
 const locations = await fetch('/api/databases/raw_data/locations')
   .then(r => r.json());
 
-// Get filtered temperature data
+// Get filtered core observations
 const params = new URLSearchParams({
-  location: 'Station_001',
+  location: 'RB01',
   start_date: '2024-01-01T00:00:00Z',
-  attributes: 'TIMESTAMP,AirTC_Avg,RH'
+  attributes: 'timestamp,air_temperature_avg_c,relative_humidity_percent,snow_depth_cm'
 });
 
-const data = await fetch(`/api/databases/raw_data/data/table1?${params}`)
+const data = await fetch(`/api/databases/raw_data/data/raw_env_core_observations?${params}`)
+  .then(r => r.json());
+
+// Get wind observations
+const windData = await fetch('/api/databases/raw_data/data/raw_env_wind_observations?location=SUMM')
   .then(r => r.json());
 
 // Download CSV
-const downloadUrl = `/api/databases/raw_data/download/table1?${params}`;
+const downloadUrl = `/api/databases/raw_data/download/raw_env_core_observations?${params}`;
 window.open(downloadUrl);
 ```
 

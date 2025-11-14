@@ -69,12 +69,12 @@ async function connectDB() {
 const DATABASES = {
   'raw_data': 'CRRELS2S_raw_data_ingestion',
   'Raw_Data': 'CRRELS2S_raw_data_ingestion', // Case variant
-  'initial_clean_data': 'CRRELS2S_VTClimateRepository_Processed', 
-  'Initial_Clean_Data': 'CRRELS2S_VTClimateRepository_Processed', // Case variant
-  'final_clean_data': 'CRRELS2S_ProcessedData',
-  'Final_Clean_Data': 'CRRELS2S_ProcessedData', // Case variant
-  'seasonal_clean_data': 'CRRELS2S_cleaned_data_seasons',
-  'Seasonal_Clean_Data': 'CRRELS2S_cleaned_data_seasons' // Case variant
+  'stage_clean_data': 'CRRELS2S_stage_clean_data', 
+  'Stage_Clean_Data': 'CRRELS2S_stage_clean_data', // Case variant
+  'stage_qaqc_data': 'CRRELS2S_stage_qaqc_data',
+  'Stage_Qaqc_Data': 'CRRELS2S_stage_qaqc_data', // Case variant
+  'seasonal_qaqc_data': 'CRRELS2S_seasonal_qaqc_data',
+  'Seasonal_Qaqc_Data': 'CRRELS2S_seasonal_qaqc_data' // Case variant
 };
 
 // Helper function to get connection with specific database
@@ -222,15 +222,33 @@ const TABLE_METADATA = {
 };
 
 
+// Database metadata configuration
+const DATABASE_METADATA = {
+  'raw_data': {
+    category: 'raw',
+    order: 1,
+    description: 'Raw sensor data directly from field loggers, unprocessed'
+  },
+  'stage_clean_data': {
+    category: 'cleaned',
+    order: 2,
+    description: 'Intermediate cleaned datasets using basic quality control (QC) filters'
+  },
+  'stage_qaqc_data': {
+    category: 'qaqc',
+    order: 3,
+    description: 'Advanced QAQC with calibration, temporal checks, and derived values'
+  },
+  'seasonal_qaqc_data': {
+    category: 'seasonal',
+    order: 4,
+    description: 'Seasonal datasets after QAQC is applied, designed for time-bounded analysis'
+  }
+};
+
 // Helper functions
 function getDatabaseDescription(key) {
-  const descriptions = {
-    'raw_data': 'Raw data',
-    'initial_clean_data': 'Initial clean data',
-    'final_clean_data': 'Final Clean Data',
-    'seasonal_clean_data': 'season wise final clean data'
-  };
-  return descriptions[key] || 'Environmental monitoring database';
+  return DATABASE_METADATA[key]?.description || 'Environmental monitoring database';
 }
 
 function getTableDisplayName(tableName) {
@@ -295,12 +313,20 @@ app.get('/api/health', async (req, res) => {
 // Get available databases
 app.get('/api/databases', async (req, res) => {
   try {
-    const databases = Object.entries(DATABASES).map(([key, name]) => ({
-      key,
-      name,
-      displayName: key.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
-      description: getDatabaseDescription(key)
-    }));
+    const databases = Object.entries(DATABASES)
+      .filter(([key]) => !key.includes('_')) // Remove case variants (those with uppercase)
+      .map(([key, name]) => {
+        const metadata = DATABASE_METADATA[key] || {};
+        return {
+          key,
+          name,
+          displayName: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+          description: metadata.description || getDatabaseDescription(key),
+          category: metadata.category || 'general',
+          order: metadata.order || 999
+        };
+      })
+      .sort((a, b) => a.order - b.order);
     
     res.json({ databases });
   } catch (error) {
