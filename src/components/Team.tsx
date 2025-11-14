@@ -9,24 +9,6 @@ const Team = () => {
 
   const teamMembers = [
     {
-      name: "Anna Grunes",
-      role: "Lead Researcher",
-      affiliation: "UVM Civil & Environmental Engineering",
-      expertise: "Snowpack Dynamics, Hydrologic Modeling",
-      image: "/lovable-uploads/250350aa-abaa-4e6e-b886-bae339af81b9.png",
-      email: "Anna.Grunes@uvm.edu",
-      linkedin: "https://www.linkedin.com/in/anna-grunes/"
-    },
-    {
-      name: "Vamsi Dondeti",
-      role: "Data Architect & Manager",
-      affiliation: "UVM Civil & Environmental Engineering",
-      expertise: "Data Management, System Architecture",
-      image: "/lovable-uploads/vamsi-dondeti.jpg",
-      email: "vdondeti@uvm.edu",
-      linkedin: "https://www.linkedin.com/in/vamsi-naidu-d/"
-    },
-    {
       name: "Dr. Arne Bomblies",
       role: "Principal Investigator", 
       affiliation: "UVM Civil & Environmental Engineering",
@@ -40,16 +22,34 @@ const Team = () => {
       role: "Co-Investigator",
       affiliation: "UVM Geography & Geosciences",
       expertise: "Geomorphology, Watershed Hydrology",
-      image: null, // photo needs to be updated - current one is Jacob's
+      image: "/lovable-uploads/beverley-wemple.jpg",
       email: "bwemple@uvm.edu",
       linkedin: "https://www.linkedin.com/in/beverley-wemple-94557721/"
+    },
+    {
+      name: "Vamsi Dondeti",
+      role: "Data Architect & Manager",
+      affiliation: "UVM Civil & Environmental Engineering",
+      expertise: "Data Management, System Architecture",
+      image: "/lovable-uploads/vamsi-dondeti.jpg",
+      email: "vdondeti@uvm.edu",
+      linkedin: "https://www.linkedin.com/in/vamsi-naidu-d/"
+    },
+    {
+      name: "Anna Grunes",
+      role: "Lead Researcher",
+      affiliation: "UVM Civil & Environmental Engineering",
+      expertise: "Snowpack Dynamics, Hydrologic Modeling",
+      image: "/lovable-uploads/250350aa-abaa-4e6e-b886-bae339af81b9.png",
+      email: "Anna.Grunes@uvm.edu",
+      linkedin: "https://www.linkedin.com/in/anna-grunes/"
     },
     {
       name: "Jacob LaDue",
       role: "Research Associate",
       affiliation: "UVM Civil & Environmental Engineering",
       expertise: "Field Research, Data Collection",
-      image: "/lovable-uploads/3953a891-e744-46ca-b6fa-0ebf0ce9835d.png", // this is actually Jacob's photo
+      image: "/lovable-uploads/3953a891-e744-46ca-b6fa-0ebf0ce9835d.png",
       email: "Jacob.Ladue@uvm.edu",
       linkedin: "https://www.linkedin.com/in/jacob-ladue-8aa992232/"
     }
