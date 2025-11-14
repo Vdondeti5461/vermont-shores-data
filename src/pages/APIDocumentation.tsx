@@ -255,48 +255,48 @@ Content-Disposition: attachment`
   const exampleRequests = [
     {
       title: 'Check API Health',
-      url: `${baseUrl}/health`,
+      url: `https://crrels2s.w3.uvm.edu/api/health`,
       description: 'Verify API server status and availability before making data requests'
     },
     {
       title: 'Get All Available Databases',
-      url: `${baseUrl}/databases`,
+      url: `https://crrels2s.w3.uvm.edu/api/databases`,
       description: 'Retrieve all environmental databases with metadata and processing levels'
     },
     {
-      title: 'Get Processed Data Tables',
-      url: `${baseUrl}/databases/final_clean_data/tables`,
-      description: 'List all data tables in the quality-controlled environmental dataset'
+      title: 'Get Raw Data Tables',
+      url: `https://crrels2s.w3.uvm.edu/api/databases/raw_data/tables`,
+      description: 'List all data tables in the raw environmental dataset'
     },
     {
       title: 'Get Monitoring Station Locations',
-      url: `${baseUrl}/databases/final_clean_data/locations`,
+      url: `https://crrels2s.w3.uvm.edu/api/databases/raw_data/locations`,
       description: 'Fetch all monitoring station locations with coordinates and elevation data'
     },
     {
       title: 'Get Detailed Table Schema',
-      url: `${baseUrl}/databases/final_clean_data/tables/table1/attributes`,
+      url: `https://crrels2s.w3.uvm.edu/api/databases/raw_data/tables/raw_env_core_observations/attributes`,
       description: 'Retrieve complete attribute information including data types and categories'
     },
     {
       title: 'Get Winter Temperature Data',
-      url: `${baseUrl}/databases/final_clean_data/data/table1?location=Mansfield_Ridge&season=winter&attributes=TIMESTAMP,Location,AirTC_Avg,Soil_Temperature_C`,
-      description: 'Retrieve winter temperature measurements from Mt. Mansfield monitoring station'
+      url: `https://crrels2s.w3.uvm.edu/api/databases/raw_data/data/raw_env_core_observations?location=RB01&season=winter&attributes=timestamp,location,air_temperature_avg_c,soil_temperature_c`,
+      description: 'Retrieve winter temperature measurements from RB01 monitoring station'
     },
     {
       title: 'Get Multi-Location Snow Data',
-      url: `${baseUrl}/databases/final_clean_data/data/table1?location=Mansfield_Ridge,Shelburne_Farm&attributes=TIMESTAMP,Location,SWE,Snow_Depth&start_date=2024-01-01&end_date=2024-03-31`,
-      description: 'Compare snow measurements between mountain and valley locations for winter season'
+      url: `https://crrels2s.w3.uvm.edu/api/databases/raw_data/data/raw_env_core_observations?location=RB01,SUMM&attributes=timestamp,location,snow_water_equivalent_mm,snow_depth_cm&start_date=2024-01-01&end_date=2024-03-31`,
+      description: 'Compare snow measurements between multiple monitoring locations for winter season'
     },
     {
       title: 'Download Complete Weather Dataset',
-      url: `${baseUrl}/databases/final_clean_data/download/table1?start_date=2024-01-01&end_date=2024-12-31&attributes=TIMESTAMP,Location,AirTC_Avg,RH,WS_ms_Avg,Rain_mm`,
-      description: 'Download full-year weather data including temperature, humidity, wind, and precipitation'
+      url: `https://crrels2s.w3.uvm.edu/api/databases/raw_data/download/raw_env_core_observations?start_date=2024-01-01&end_date=2024-12-31&attributes=timestamp,location,air_temperature_avg_c,relative_humidity_percent,wind_speed_avg_ms`,
+      description: 'Download full-year weather data including temperature, humidity, and wind'
     },
     {
-      title: 'Preview Soil Data Sample',
-      url: `${baseUrl}/databases/final_clean_data/data/table1?attributes=TIMESTAMP,Location,Soil_Temperature_C,Soil_Moisture&limit=100`,
-      description: 'Preview first 100 records of soil monitoring data for data exploration'
+      title: 'Preview Wind Data Sample',
+      url: `https://crrels2s.w3.uvm.edu/api/databases/raw_data/data/raw_env_wind_observations?attributes=timestamp,location,wind_speed_avg_ms,wind_direction_deg&limit=100`,
+      description: 'Preview first 100 records of wind monitoring data for data exploration'
     }
   ];
 
