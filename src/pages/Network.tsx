@@ -254,6 +254,43 @@ const Network = () => {
                   </Card>
                 </div>
 
+                {/* Station Visual Overview */}
+                <Card className="mb-6">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <MapPin className="h-5 w-5" />
+                      All Monitoring Stations
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Each station has a unique color identifier used across all views
+                    </p>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                      {locationData.map((station) => (
+                        <div 
+                          key={station.code}
+                          className="flex items-center gap-2 p-2 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                        >
+                          <div 
+                            className="w-4 h-4 rounded-full border-2 border-white shadow-sm flex-shrink-0"
+                            style={{ backgroundColor: getSiteColorByCode(station.code) }}
+                          />
+                          <div className="min-w-0 flex-1">
+                            <div className="font-mono text-xs font-semibold truncate">{station.code}</div>
+                            <div className="text-[10px] text-muted-foreground truncate">{station.elev}m</div>
+                          </div>
+                          {station.status === 'active' ? (
+                            <CheckCircle className="h-3 w-3 text-green-600 flex-shrink-0" />
+                          ) : (
+                            <AlertCircle className="h-3 w-3 text-yellow-600 flex-shrink-0" />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
                 <div className="grid md:grid-cols-2 gap-6">
                   <Card>
                     <CardHeader>
