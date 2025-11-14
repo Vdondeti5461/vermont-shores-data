@@ -1,5 +1,5 @@
 import { Badge } from '@/components/ui/badge';
-import MultiDatabaseDownload from './MultiDatabaseDownload';
+import EnhancedDataDownload from './EnhancedDataDownload';
 
 const DataDownload = () => {
   return (
@@ -18,7 +18,7 @@ const DataDownload = () => {
           </p>
         </div>
 
-        <MultiDatabaseDownload />
+        <EnhancedDataDownload />
       </div>
     </section>
   );
