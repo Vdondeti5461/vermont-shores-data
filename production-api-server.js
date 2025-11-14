@@ -67,8 +67,8 @@ async function connectDB() {
 
 // Known database configurations - support both cases for URL compatibility
 const DATABASES = {
-  'raw_data': 'CRRELS2S_VTClimateRepository',
-  'Raw_Data': 'CRRELS2S_VTClimateRepository', // Case variant
+  'raw_data': 'CRRELS2S_raw_data_ingestion',
+  'Raw_Data': 'CRRELS2S_raw_data_ingestion', // Case variant
   'initial_clean_data': 'CRRELS2S_VTClimateRepository_Processed', 
   'Initial_Clean_Data': 'CRRELS2S_VTClimateRepository_Processed', // Case variant
   'final_clean_data': 'CRRELS2S_ProcessedData',
@@ -117,81 +117,106 @@ const LOCATION_METADATA = {
 
 // Table metadata with detailed descriptions
 const TABLE_METADATA = {
-  'table1': {
-    displayName: 'Primary Environmental Data',
-    description: 'Comprehensive environmental measurements including temperature, humidity, soil conditions, and radiation',
+  'raw_env_core_observations': {
+    displayName: 'Core Environmental Observations',
+    description: 'Comprehensive environmental measurements including temperature, humidity, soil conditions, radiation, and snow properties',
     attributes: {
-      'TS_LOC_REC': { description: 'TimeStamp Location Record', unit: 'No_Unit', measurement_type: 'Identifier', category: 'System' },
-      'TIMESTAMP': { description: 'TimeStamp', unit: 'TS', measurement_type: 'No_Unit', category: 'Time' },
-      'LOCATION': { description: 'Location', unit: 'LOC', measurement_type: 'No_Unit', category: 'Location' },
-      'Record': { description: 'Record Number', unit: 'RN', measurement_type: 'No Unit', category: 'System' },
-      'Batt_Volt_Min': { description: 'Battery Voltage', unit: 'Volts', measurement_type: 'Min', category: 'System' },
-      'P_Temp': { description: 'Panel Temperature (Reference Temperature Measurement)', unit: 'Deg C', measurement_type: 'smp', category: 'Temperature' },
-      'AirTC_Avg': { description: 'Air Temperature Average in Celcius', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
-      'RH': { description: 'Relative Humidity', unit: '%', measurement_type: 'Smp', category: 'Humidity' },
-      'SHF': { description: 'Soil Heat Flux (radiation Parameter)', unit: 'W/m^2', measurement_type: 'smp', category: 'Radiation' },
-      'Soil_Moisture': { description: 'Soil Moisture', unit: 'wfv', measurement_type: 'smp', category: 'Soil' },
-      'Soil_Temperature_C': { description: 'Soil Temperature in Celcius', unit: 'Deg C', measurement_type: 'smp', category: 'Temperature' },
-      'SWE': { description: 'Snow water Equivalent', unit: 'mm of H20', measurement_type: 'smp', category: 'Snow' },
-      'Ice_content': { description: 'Ice content of SnowPack', unit: '%', measurement_type: 'smp', category: 'Snow' },
-      'Water_Content': { description: 'Water Content of SnowPack', unit: '%', measurement_type: 'smp', category: 'Snow' },
-      'Snowpack_Density': { description: 'Snowpack Density', unit: 'kg/m^3', measurement_type: 'smp', category: 'Snow' },
-      'SW_in': { description: 'Short wave radiation incoming', unit: 'W/m^2', measurement_type: 'smp', category: 'Radiation' },
-      'SW_out': { description: 'Short wave radiation outgoing', unit: 'W/m^2', measurement_type: 'smp', category: 'Radiation' },
-      'LW_in': { description: 'Longwave radation incoming', unit: 'W/m^2', measurement_type: 'smp', category: 'Radiation' },
-      'LW_out': { description: 'Longwave radiation outgoing', unit: 'W/m^2', measurement_type: 'smp', category: 'Radiation' },
-      'Target_Depth': { description: 'Target depth', unit: 'cm', measurement_type: 'smp', category: 'Snow' },
-      'Qual': { description: 'Quality numbers (snow sensor)', unit: 'No Unit', measurement_type: 'smp', category: 'Quality' },
-      'TCDT': { description: 'Temperature corrected distance value', unit: 'cm', measurement_type: 'smp', category: 'Snow' },
-      'DBTCDT': { description: 'Snow Depth', unit: 'cm', measurement_type: 'smp', category: 'Snow' },
-      'Target_Depth_Med': { description: 'Target depth - Median Data', unit: 'cm', measurement_type: 'Med', category: 'Snow' },
-      'Qual_Med': { description: 'Quality numbers (snow sensor) - Median Data', unit: 'No Unit', measurement_type: 'Med', category: 'Quality' },
-      'TCDT_Med': { description: 'Temperature corrected distance value - Median Data', unit: 'cm', measurement_type: 'Med', category: 'Snow' },
-      'DBTCDT_Med': { description: 'Snow Depth - Median Data', unit: 'cm', measurement_type: 'Med', category: 'Snow' },
-      'DataQualityFlag': { description: 'Data Quality Flag (1=Median Data, 0=Original Data)', unit: 'Flag', measurement_type: 'Flag', category: 'Quality' }
+      'id': { description: 'Auto-incremented primary key', unit: 'No Unit', measurement_type: 'Identifier', category: 'System' },
+      'timestamp': { description: 'Date and time of observation (EST)', unit: 'DateTime', measurement_type: 'No Unit', category: 'Time' },
+      'location': { description: 'Logger site ID (e.g., RB01, SUMM)', unit: 'LOC', measurement_type: 'No Unit', category: 'Location' },
+      'battery_voltage_min': { description: 'Minimum battery voltage recorded', unit: 'Volts', measurement_type: 'Min', category: 'System' },
+      'panel_temperature_c': { description: 'Panel (enclosure) temperature', unit: 'Deg C', measurement_type: 'Sample', category: 'Temperature' },
+      'air_temperature_avg_c': { description: 'Air temperature average', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
+      'relative_humidity_percent': { description: 'Relative humidity percentage', unit: '%', measurement_type: 'Sample', category: 'Humidity' },
+      'soil_heat_flux_w_m2': { description: 'Soil heat flux', unit: 'W/m²', measurement_type: 'Sample', category: 'Radiation' },
+      'soil_moisture_wfv': { description: 'Soil moisture in Water-Filled Pore Volume', unit: '%', measurement_type: 'Sample', category: 'Soil' },
+      'soil_temperature_c': { description: 'Soil temperature', unit: 'Deg C', measurement_type: 'Sample', category: 'Temperature' },
+      'snow_water_equivalent_mm': { description: 'Snow Water Equivalent', unit: 'mm H₂O', measurement_type: 'Sample', category: 'Snow' },
+      'ice_content_percent': { description: 'Ice content percentage in the snowpack', unit: '%', measurement_type: 'Sample', category: 'Snow' },
+      'water_content_percent': { description: 'Liquid water content percentage in the snowpack', unit: '%', measurement_type: 'Sample', category: 'Snow' },
+      'snowpack_density_kg_m3': { description: 'Snowpack density', unit: 'kg/m³', measurement_type: 'Sample', category: 'Snow' },
+      'shortwave_radiation_in_w_m2': { description: 'Incoming shortwave radiation', unit: 'W/m²', measurement_type: 'Sample', category: 'Radiation' },
+      'shortwave_radiation_out_w_m2': { description: 'Outgoing shortwave radiation', unit: 'W/m²', measurement_type: 'Sample', category: 'Radiation' },
+      'longwave_radiation_in_w_m2': { description: 'Incoming longwave radiation', unit: 'W/m²', measurement_type: 'Sample', category: 'Radiation' },
+      'longwave_radiation_out_w_m2': { description: 'Outgoing longwave radiation', unit: 'W/m²', measurement_type: 'Sample', category: 'Radiation' },
+      'target_depth_cm': { description: 'Target depth of snow/ice sensor', unit: 'cm', measurement_type: 'Sample', category: 'Snow' },
+      'tcdt': { description: 'Temp-Corrected Distance from depth sensor', unit: 'cm', measurement_type: 'Sample', category: 'Snow' },
+      'snow_depth_cm': { description: 'Calculated snow depth', unit: 'cm', measurement_type: 'Sample', category: 'Snow' },
+      'quality_number': { description: 'Quality number (typically 0–600 scale)', unit: 'No Unit', measurement_type: 'Sample', category: 'Quality' },
+      'data_quality_flag': { description: 'Data quality flag (0 = raw sample, 1 = median filtered)', unit: 'Flag', measurement_type: 'Flag', category: 'Quality' }
     }
   },
-  'Wind': {
-    displayName: 'Wind Measurements',
+  'raw_env_wind_observations': {
+    displayName: 'Wind Observations',
     description: 'Wind speed and direction measurements from meteorological stations',
     attributes: {
-      'TIMESTAMP': { description: 'TimeStamp', unit: 'TS', measurement_type: 'No_Unit', category: 'Time' },
-      'LOCATION': { description: 'Location', unit: 'LOC', measurement_type: 'No_Unit', category: 'Location' },
-      'Record': { description: 'Record Number', unit: 'RN', measurement_type: 'No Unit', category: 'System' },
-      'WindDir': { description: 'Wind Direction', unit: 'deg', measurement_type: 'smp', category: 'Wind' },
-      'WS_ms_Max': { description: 'Max wind speed', unit: 'meters/second', measurement_type: 'Max', category: 'Wind' },
-      'WS_ms_TMx': { description: 'Wind Speed Time of Max', unit: 'meters/second', measurement_type: 'TMx', category: 'Wind' },
-      'WS_ms': { description: 'Wind speed', unit: 'meters/second', measurement_type: 'smp', category: 'Wind' },
-      'WS_ms_S_WVT': { description: 'Wind Speed Standard Deviation', unit: 'meters/second', measurement_type: 'Wvc', category: 'Wind' },
-      'WindDir_D1_WVT': { description: 'Wind Direction Vector', unit: 'Deg', measurement_type: 'Wvc', category: 'Wind' },
-      'WindDir_SD1_WVT': { description: 'Wind Direction Standard Deviation', unit: 'Deg', measurement_type: 'Wvc', category: 'Wind' },
-      'WS_ms_Min': { description: 'Min wind speed', unit: 'meters/second', measurement_type: 'Min', category: 'Wind' },
-      'WS_ms_TMn': { description: 'Wind Speed Time of Min', unit: 'meters/second', measurement_type: 'TMn', category: 'Wind' }
+      'id': { description: 'Internal auto-increment ID', unit: 'No Unit', measurement_type: 'Identifier', category: 'System' },
+      'timestamp': { description: 'Timestamp of wind observation', unit: 'DateTime', measurement_type: 'No Unit', category: 'Time' },
+      'location': { description: 'Logger/station ID', unit: 'LOC', measurement_type: 'No Unit', category: 'Location' },
+      'wind_direction_deg': { description: 'Instantaneous wind direction', unit: 'degrees', measurement_type: 'Sample', category: 'Wind' },
+      'wind_speed_max_ms': { description: 'Maximum wind speed', unit: 'm/s', measurement_type: 'Max', category: 'Wind' },
+      'wind_speed_max_time': { description: 'Timestamp of maximum wind speed', unit: 'DateTime', measurement_type: 'Time', category: 'Wind' },
+      'wind_speed_avg_ms': { description: 'Instantaneous or average wind speed', unit: 'm/s', measurement_type: 'Avg', category: 'Wind' },
+      'wind_speed_scalar_avg_ms': { description: 'Scalar mean wind speed', unit: 'm/s', measurement_type: 'Avg', category: 'Wind' },
+      'wind_direction_vector_avg_deg': { description: 'Vector-averaged wind direction', unit: 'degrees', measurement_type: 'Avg', category: 'Wind' },
+      'wind_direction_sd_deg': { description: 'Standard deviation of wind direction', unit: 'degrees', measurement_type: 'StdDev', category: 'Wind' },
+      'wind_speed_min_ms': { description: 'Minimum wind speed', unit: 'm/s', measurement_type: 'Min', category: 'Wind' },
+      'wind_speed_min_time': { description: 'Timestamp of minimum wind speed', unit: 'DateTime', measurement_type: 'Time', category: 'Wind' }
     }
   },
-  'Precipitation': {
-    displayName: 'Precipitation Data',
-    description: 'Precipitation measurements including intensity, accumulation, and bucket data',
+  'raw_env_precipitation_observations': {
+    displayName: 'Precipitation Observations',
+    description: 'Precipitation measurements including intensity and accumulation',
     attributes: {
-      'TIMESTAMP': { description: 'TimeStamp', unit: 'TS', measurement_type: 'No_Unit', category: 'Time' },
-      'LOCATION': { description: 'Location', unit: 'LOC', measurement_type: 'No_Unit', category: 'Location' },
-      'Record': { description: 'Record Number', unit: 'RN', measurement_type: 'No Unit', category: 'System' },
-      'Intensity_RT': { description: 'Intensity Real time', unit: 'mm/min', measurement_type: 'smp', category: 'Precipitation' },
-      'Accu_NRT': { description: 'Accumulated Non real time Precipitation', unit: 'mm', measurement_type: 'smp', category: 'Precipitation' },
-      'Accu_RT_NRT': { description: 'Accumulated real time - Non Real time Precipitation', unit: 'mm', measurement_type: 'smp', category: 'Precipitation' },
-      'Accu_Total_NRT': { description: 'Accumulated Total Non real time Precipitation', unit: 'mm', measurement_type: 'smp', category: 'Precipitation' },
-      'Bucket_NRT': { description: 'Bucket Precipitation Non real time', unit: 'mm', measurement_type: 'smp', category: 'Precipitation' },
-      'Bucket_RT': { description: 'Bucket Precipitation real time', unit: 'mm', measurement_type: 'smp', category: 'Precipitation' },
-      'Load_Temp': { description: 'Load Temperature (Battery)', unit: 'Deg C', measurement_type: 'smp', category: 'Temperature' }
+      'id': { description: 'Unique row identifier', unit: 'No Unit', measurement_type: 'Identifier', category: 'System' },
+      'timestamp': { description: 'Observation time', unit: 'DateTime', measurement_type: 'No Unit', category: 'Time' },
+      'location': { description: 'Logger or site identifier', unit: 'LOC', measurement_type: 'No Unit', category: 'Location' },
+      'precip_intensity_rt_mm_min': { description: 'Real-time precipitation intensity', unit: 'mm/min', measurement_type: 'Sample', category: 'Precipitation' },
+      'precip_accum_rt_nrt_mm': { description: 'Real-time + NRT (near real-time) accumulation', unit: 'mm', measurement_type: 'Accum', category: 'Precipitation' },
+      'precip_accum_nrt_mm': { description: 'NRT-only accumulation', unit: 'mm', measurement_type: 'Accum', category: 'Precipitation' },
+      'precip_total_nrt_mm': { description: 'Total NRT accumulation', unit: 'mm', measurement_type: 'Total', category: 'Precipitation' },
+      'bucket_precip_rt_mm': { description: 'Real-time bucket precipitation measurement', unit: 'mm', measurement_type: 'Sample', category: 'Precipitation' },
+      'bucket_precip_nrt_mm': { description: 'NRT bucket precipitation measurement', unit: 'mm', measurement_type: 'Sample', category: 'Precipitation' },
+      'load_temperature_c': { description: 'Load sensor temperature', unit: 'Deg C', measurement_type: 'Sample', category: 'Temperature' }
     }
   },
-  'SnowPkTempProfile': {
-    displayName: 'Snow Pack Temperature Profile',
-    description: 'Snowpack temperature measurements at various depths from 0cm to 290cm',
+  'raw_env_snowpack_temperature_profile': {
+    displayName: 'Snowpack Temperature Profile',
+    description: 'Temperature measurements at multiple depths within snowpack from 0cm to 290cm',
     attributes: {
-      'TIMESTAMP': { description: 'TimeStamp', unit: 'TS', measurement_type: 'No_Unit', category: 'Time' },
-      'LOCATION': { description: 'Location', unit: 'LOC', measurement_type: 'No_Unit', category: 'Location' },
-      'Record': { description: 'Record Number', unit: 'RN', measurement_type: 'No Unit', category: 'System' }
+      'id': { description: 'Unique row identifier', unit: 'No Unit', measurement_type: 'Identifier', category: 'System' },
+      'timestamp': { description: 'Observation timestamp', unit: 'DateTime', measurement_type: 'No Unit', category: 'Time' },
+      'location': { description: 'Logger/site ID', unit: 'LOC', measurement_type: 'No Unit', category: 'Location' },
+      'snow_temp_0cm_avg': { description: 'Snow temperature at 0cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
+      'snow_temp_10cm_avg': { description: 'Snow temperature at 10cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
+      'snow_temp_20cm_avg': { description: 'Snow temperature at 20cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
+      'snow_temp_30cm_avg': { description: 'Snow temperature at 30cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
+      'snow_temp_40cm_avg': { description: 'Snow temperature at 40cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
+      'snow_temp_50cm_avg': { description: 'Snow temperature at 50cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
+      'snow_temp_60cm_avg': { description: 'Snow temperature at 60cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
+      'snow_temp_70cm_avg': { description: 'Snow temperature at 70cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
+      'snow_temp_80cm_avg': { description: 'Snow temperature at 80cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
+      'snow_temp_90cm_avg': { description: 'Snow temperature at 90cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
+      'snow_temp_100cm_avg': { description: 'Snow temperature at 100cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
+      'snow_temp_110cm_avg': { description: 'Snow temperature at 110cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
+      'snow_temp_120cm_avg': { description: 'Snow temperature at 120cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
+      'snow_temp_130cm_avg': { description: 'Snow temperature at 130cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
+      'snow_temp_140cm_avg': { description: 'Snow temperature at 140cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
+      'snow_temp_150cm_avg': { description: 'Snow temperature at 150cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
+      'snow_temp_160cm_avg': { description: 'Snow temperature at 160cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
+      'snow_temp_170cm_avg': { description: 'Snow temperature at 170cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
+      'snow_temp_180cm_avg': { description: 'Snow temperature at 180cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
+      'snow_temp_190cm_avg': { description: 'Snow temperature at 190cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
+      'snow_temp_200cm_avg': { description: 'Snow temperature at 200cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
+      'snow_temp_210cm_avg': { description: 'Snow temperature at 210cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
+      'snow_temp_220cm_avg': { description: 'Snow temperature at 220cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
+      'snow_temp_230cm_avg': { description: 'Snow temperature at 230cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
+      'snow_temp_240cm_avg': { description: 'Snow temperature at 240cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
+      'snow_temp_250cm_avg': { description: 'Snow temperature at 250cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
+      'snow_temp_260cm_avg': { description: 'Snow temperature at 260cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
+      'snow_temp_270cm_avg': { description: 'Snow temperature at 270cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
+      'snow_temp_280cm_avg': { description: 'Snow temperature at 280cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
+      'snow_temp_290cm_avg': { description: 'Snow temperature at 290cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' }
     }
   }
 };
