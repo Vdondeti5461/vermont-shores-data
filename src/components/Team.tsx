@@ -37,7 +37,7 @@ const Team = () => {
     },
     {
       name: "Anna Grunes",
-      role: "Lead Researcher",
+      role: "Environmental Researcher",
       affiliation: "UVM Civil & Environmental Engineering",
       expertise: "Snowpack Dynamics, Hydrologic Modeling",
       image: "/lovable-uploads/250350aa-abaa-4e6e-b886-bae339af81b9.png",
@@ -46,7 +46,7 @@ const Team = () => {
     },
     {
       name: "Jacob LaDue",
-      role: "Research Associate",
+      role: "Environmental Researcher",
       affiliation: "UVM Civil & Environmental Engineering",
       expertise: "Field Research, Data Collection",
       image: "/lovable-uploads/3953a891-e744-46ca-b6fa-0ebf0ce9835d.png",
