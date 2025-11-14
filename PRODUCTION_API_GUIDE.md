@@ -65,7 +65,7 @@ pm2 startup
 ## REST API Endpoints
 
 ### Base URL
-- Production: `https://your-silk-domain.com/api`
+- Production: `https://crrels2s.w3.uvm.edu/api`
 - All responses return JSON
 
 ### Core Endpoints
@@ -76,7 +76,7 @@ Get all available databases
 {
   "databases": [
     {
-      "key": "raw_data",
+      "key": "raw_data_ingestion",
       "name": "CRRELS2S_raw_data_ingestion", 
       "displayName": "Raw Data Ingestion",
       "description": "Raw sensor data from field loggers"
@@ -106,23 +106,23 @@ Get all available databases
 #### `GET /api/databases/{database}/locations`
 Get monitoring locations
 ```bash
-curl "https://your-domain.com/api/databases/raw_data/locations"
+curl "https://crrels2s.w3.uvm.edu/api/databases/raw_data_ingestion/locations"
 ```
 
 #### `GET /api/databases/{database}/tables`
 List tables in database
 ```bash
-curl "https://your-domain.com/api/databases/raw_data/tables"
+curl "https://crrels2s.w3.uvm.edu/api/databases/raw_data_ingestion/tables"
 ```
 
 #### `GET /api/databases/{database}/data/{table}`
 Get filtered environmental data
 ```bash
 # Get core observations for specific station
-curl "https://your-domain.com/api/databases/raw_data/data/raw_env_core_observations?location=RB01&start_date=2024-01-01&attributes=timestamp,air_temperature_avg_c,snow_depth_cm"
+curl "https://crrels2s.w3.uvm.edu/api/databases/raw_data_ingestion/data/raw_env_core_observations?location=RB01&start_date=2024-01-01&attributes=timestamp,air_temperature_avg_c,snow_depth_cm"
 
 # Get wind observations
-curl "https://your-domain.com/api/databases/raw_data/data/raw_env_wind_observations?location=SUMM&start_date=2024-01-01"
+curl "https://crrels2s.w3.uvm.edu/api/databases/raw_data_ingestion/data/raw_env_wind_observations?location=SUMM&start_date=2024-01-01"
 ```
 
 Query parameters:
@@ -136,17 +136,17 @@ Query parameters:
 Download CSV file
 ```bash
 # Download core observations
-curl -o core_data.csv "https://your-domain.com/api/databases/raw_data/download/raw_env_core_observations?start_date=2024-01-01"
+curl -o core_data.csv "https://crrels2s.w3.uvm.edu/api/databases/raw_data_ingestion/download/raw_env_core_observations?start_date=2024-01-01"
 
 # Download wind observations
-curl -o wind_data.csv "https://your-domain.com/api/databases/raw_data/download/raw_env_wind_observations?location=RB01"
+curl -o wind_data.csv "https://crrels2s.w3.uvm.edu/api/databases/raw_data_ingestion/download/raw_env_wind_observations?location=RB01"
 ```
 
 ## JavaScript Usage Examples
 
 ```javascript
 // Fetch all locations
-const locations = await fetch('/api/databases/raw_data/locations')
+const locations = await fetch('https://crrels2s.w3.uvm.edu/api/databases/raw_data_ingestion/locations')
   .then(r => r.json());
 
 // Get filtered core observations
@@ -156,15 +156,15 @@ const params = new URLSearchParams({
   attributes: 'timestamp,air_temperature_avg_c,relative_humidity_percent,snow_depth_cm'
 });
 
-const data = await fetch(`/api/databases/raw_data/data/raw_env_core_observations?${params}`)
+const data = await fetch(`https://crrels2s.w3.uvm.edu/api/databases/raw_data_ingestion/data/raw_env_core_observations?${params}`)
   .then(r => r.json());
 
 // Get wind observations
-const windData = await fetch('/api/databases/raw_data/data/raw_env_wind_observations?location=SUMM')
+const windData = await fetch('https://crrels2s.w3.uvm.edu/api/databases/raw_data_ingestion/data/raw_env_wind_observations?location=SUMM')
   .then(r => r.json());
 
 // Download CSV
-const downloadUrl = `/api/databases/raw_data/download/raw_env_core_observations?${params}`;
+const downloadUrl = `https://crrels2s.w3.uvm.edu/api/databases/raw_data_ingestion/download/raw_env_core_observations?${params}`;
 window.open(downloadUrl);
 ```
 
@@ -182,7 +182,7 @@ app.use('/api', rateLimit({
 ### CORS Configuration
 ```javascript
 app.use(cors({
-  origin: ['https://your-silk-domain.com'],
+  origin: ['https://crrels2s.w3.uvm.edu'],
   credentials: true
 }));
 ```
@@ -198,7 +198,7 @@ CREATE INDEX idx_location ON table1(Location);
 
 ### Health Check
 ```bash
-curl https://your-domain.com/health
+curl https://crrels2s.w3.uvm.edu/health
 # Returns: {"status": "ok", "timestamp": "2024-01-01T00:00:00Z"}
 ```
 
