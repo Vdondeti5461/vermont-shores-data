@@ -36,7 +36,9 @@ const Footer = () => {
           {/* Project Info */}
           <div className="lg:col-span-1">
             <div className="flex items-center space-x-3 mb-6">
-              <img src={uvmLogo} alt="University of Vermont" className="h-12 w-auto" />
+              <div className="bg-white p-2 rounded-lg">
+                <img src={uvmLogo} alt="University of Vermont" className="h-8 w-auto" />
+              </div>
               <div>
                 <h3 className="text-xl font-bold">Summit 2 Shore</h3>
                 <p className="text-sm text-primary-foreground/80">UVM Research Portal</p>
