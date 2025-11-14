@@ -47,13 +47,18 @@ const About = () => {
     },
     {
       year: '2025',
-      title: 'Strategic Partnerships',
-      description: 'Collaboration expansion with White Face Mountain Observatory, Mount Washington Observatory, and Vermont Mesonet integration'
+      title: 'Vermont Mesonet Integration',
+      description: 'Collaboration with UVM Water Resources Institute to integrate Summit-to-Shore with statewide Vermont Mesonet (30 stations planned)'
     },
     {
-      year: 'Future',
-      title: 'Network Growth',
-      description: 'Planned expansion across New England with advanced sensor technologies and real-time data streaming'
+      year: '2025-2026',
+      title: 'Regional Observatory Network',
+      description: 'Active data sharing with Whiteface Mountain Observatory and Mount Washington Observatory for cross-elevation climate analysis'
+    },
+    {
+      year: 'Ongoing',
+      title: 'NESS Development',
+      description: 'Contributing to Northeast Snow Study feasibility assessment for regional snow monitoring network across northeast Appalachians'
     }
   ];
 
@@ -238,37 +243,111 @@ const About = () => {
               </h2>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-8">
+            <div className="grid md:grid-cols-3 gap-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Network Expansion</CardTitle>
+                  <CardTitle>Vermont Mesonet Integration</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground mb-4">
-                    Strategic expansion through partnerships with White Face Mountain Observatory, 
-                    Mount Washington Observatory, and Vermont Mesonet integration in 2025.
+                    Expanding collaboration with UVM Water Resources Institute to integrate Summit-to-Shore 
+                    elevational gradient data with the planned statewide Vermont Mesonet network.
                   </p>
                   <ul className="text-sm text-muted-foreground space-y-1">
-                    <li>• Regional network integration</li>
-                    <li>• Enhanced data quality and coverage</li>
-                    <li>• Cross-platform data sharing</li>
+                    <li>• 30 statewide monitoring stations planned</li>
+                    <li>• Complementary high-elevation coverage</li>
+                    <li>• Enhanced weather prediction for communities</li>
+                    <li>• Emergency preparedness support</li>
                   </ul>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Technology Integration</CardTitle>
+                  <CardTitle>Northeast Snow Study (NESS)</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground mb-4">
-                    Integration of advanced technologies including satellite data, 
-                    AI-powered analytics, and IoT sensor networks.
+                    Contributing to USDA NRCS-funded feasibility study for a regional snow monitoring 
+                    network across the northeast Appalachian Mountains.
                   </p>
                   <ul className="text-sm text-muted-foreground space-y-1">
-                    <li>• Satellite data integration</li>
-                    <li>• Machine learning models</li>
-                    <li>• Real-time alert systems</li>
+                    <li>• Regional snow monitoring coordination</li>
+                    <li>• Multi-state data harmonization</li>
+                    <li>• Water resource management support</li>
+                    <li>• Agricultural and ecosystem applications</li>
+                  </ul>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>CIROH Hydrological Research</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground mb-4">
+                    Leveraging NOAA CIROH partnership to advance water prediction science and 
+                    operational hydrological forecasting applications.
+                  </p>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Streamflow prediction improvement</li>
+                    <li>• Flood and drought forecasting</li>
+                    <li>• Snowmelt runoff modeling</li>
+                    <li>• Community resilience applications</li>
+                  </ul>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Regional Observatory Integration</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground mb-4">
+                    Establishing data exchange protocols with Whiteface Mountain (NY) and Mount Washington 
+                    Observatory (NH) for comprehensive regional climate monitoring.
+                  </p>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Cross-state data sharing agreements</li>
+                    <li>• Extreme weather event coordination</li>
+                    <li>• High-elevation network standardization</li>
+                    <li>• Joint research initiatives</li>
+                  </ul>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Data Accessibility & API Development</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground mb-4">
+                    Enhancing public data access through improved API infrastructure, authentication 
+                    systems, and real-time data streaming capabilities.
+                  </p>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Secure API authentication (OAuth2/JWT)</li>
+                    <li>• Real-time WebSocket data streams</li>
+                    <li>• Multi-format data export (NetCDF, HDF5)</li>
+                    <li>• Network partner API credentials</li>
+                  </ul>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Education & Community Outreach</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground mb-4">
+                    Developing educational programs and community engagement initiatives to make 
+                    climate data accessible to students, educators, and the public.
+                  </p>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• K-12 educational curriculum modules</li>
+                    <li>• Public workshops and data literacy training</li>
+                    <li>• Citizen science participation opportunities</li>
+                    <li>• Climate adaptation planning resources</li>
                   </ul>
                 </CardContent>
               </Card>
