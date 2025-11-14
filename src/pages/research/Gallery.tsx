@@ -39,20 +39,6 @@ const Gallery = () => {
       category: 'Partners'
     },
     {
-      src: '/lovable-uploads/250350aa-abaa-4e6e-b886-bae339af81b9.png',
-      title: 'Research Team',
-      description: 'Field work and data collection activities',
-      location: 'Various Sites',
-      category: 'Team'
-    },
-    {
-      src: '/lovable-uploads/f0e8b972-8f4c-4294-98e6-d3ae431cbd24.png',
-      title: 'Field Operations',
-      description: 'Monitoring equipment and sensor installations',
-      location: 'Field Stations',
-      category: 'Equipment'
-    },
-    {
       src: '/lovable-uploads/d237cd6e-cadf-4b6d-9006-bd432196c042.png',
       title: 'Data Collection',
       description: 'Real-time environmental monitoring systems',
