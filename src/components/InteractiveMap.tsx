@@ -23,37 +23,11 @@ interface InteractiveMapProps {
   onSiteClick?: (site: NetworkSite) => void;
 }
 
+import { getSiteColor } from '@/lib/siteColors';
+
 // Normalize a code from shortName or name (e.g., "RB-01" -> "RB01", "SUMM" stays "SUMM")
 const normalizeCode = (shortName?: string, name?: string) => {
   return ((shortName || name || '').replace(/[^A-Za-z0-9]/g, '')).toUpperCase();
-};
-
-// Standardized color palette - 18 distinct, highly visible colors
-const locationColors = [
-  '#e11d48', // Rose - ID 1
-  '#dc2626', // Red - ID 2
-  '#ea580c', // Orange-red - ID 3
-  '#d97706', // Amber - ID 4
-  '#ca8a04', // Yellow - ID 5
-  '#65a30d', // Lime - ID 6
-  '#16a34a', // Green - ID 7
-  '#059669', // Emerald - ID 8
-  '#0d9488', // Teal - ID 9
-  '#0891b2', // Cyan - ID 10
-  '#0284c7', // Sky - ID 11
-  '#2563eb', // Blue - ID 12
-  '#4f46e5', // Indigo - ID 13
-  '#7c3aed', // Violet - ID 14
-  '#9333ea', // Purple - ID 15
-  '#c026d3', // Fuchsia - ID 16
-  '#db2777', // Pink - ID 17
-  '#f43f5e', // Rose-red - ID 18
-];
-
-// Get color for a site ID
-const getSiteColor = (siteId: number) => {
-  const colorIndex = (siteId - 1) % locationColors.length;
-  return locationColors[colorIndex];
 };
 
 const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
@@ -258,10 +232,8 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
           const id = parseInt(siteId, 10);
           const site = siteMapRef.current.byId[id] || mapSites.find(s => s.id === id);
           if (site) {
-            let color = '#3b82f6';
-            if (site.elevation >= 800) color = '#dc2626';
-            else if (site.elevation >= 400) color = '#f59e0b';
-            else color = '#16a34a';
+            // Use consistent ID-based color
+            const color = getSiteColor(site.id);
             
             const isSelected = selectedSiteId === id;
             const newIcon = createIconForUpdate(color, site.status || 'active', isSelected);
