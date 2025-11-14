@@ -2,10 +2,21 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import { Image as ImageIcon, MapPin, Camera } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Image as ImageIcon, MapPin, Camera, Maximize2 } from 'lucide-react';
+import { useState } from 'react';
 
 const Gallery = () => {
+  const [selectedImage, setSelectedImage] = useState<typeof projectImages[0] | null>(null);
+
   const projectImages = [
+    {
+      src: '/gallery/observatory-collaboration.jpg',
+      title: 'Observatory Collaboration',
+      description: 'Whiteface Mountain Observatory and Mount Washington Observatory teams visiting Jericho Forest, one of the Summit-to-Shore observatory stations',
+      location: 'Jericho Forest, VT',
+      category: 'Collaboration'
+    },
     {
       src: '/gallery/field-research-team.jpg',
       title: 'Field Research Team',
@@ -57,7 +68,7 @@ const Gallery = () => {
     }
   ];
 
-  const categories = ['All', 'Field Sites', 'Team', 'Equipment', 'Technology', 'Partners'];
+  const categories = ['All', 'Field Sites', 'Team', 'Equipment', 'Technology', 'Partners', 'Collaboration'];
 
   return (
     <div className="min-h-screen">
@@ -103,33 +114,48 @@ const Gallery = () => {
         {/* Gallery Grid */}
         <section className="py-16">
           <div className="container mx-auto px-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {projectImages.map((image, index) => (
-                <Card key={index} className="overflow-hidden hover:shadow-xl transition-all duration-300 group">
-                  <div className="relative aspect-video overflow-hidden">
+                <Card 
+                  key={index} 
+                  className="overflow-hidden hover:shadow-2xl transition-all duration-500 group cursor-pointer border-2 hover:border-primary/50"
+                  onClick={() => setSelectedImage(image)}
+                >
+                  <div className="relative aspect-[4/3] overflow-hidden bg-muted">
                     <img 
                       src={image.src} 
                       alt={image.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-                        <Badge variant="secondary" className="mb-2">
-                          {image.category}
-                        </Badge>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-300" />
+                    
+                    {/* Category Badge */}
+                    <Badge 
+                      variant="secondary" 
+                      className="absolute top-4 right-4 backdrop-blur-sm bg-background/80 shadow-lg"
+                    >
+                      {image.category}
+                    </Badge>
+
+                    {/* Expand Icon */}
+                    <div className="absolute top-4 left-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="bg-background/80 backdrop-blur-sm rounded-full p-2 shadow-lg">
+                        <Maximize2 className="w-4 h-4" />
                       </div>
                     </div>
-                  </div>
-                  <div className="p-4">
-                    <h3 className="font-semibold text-lg mb-2 group-hover:text-primary transition-colors">
-                      {image.title}
-                    </h3>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      {image.description}
-                    </p>
-                    <div className="flex items-center text-xs text-muted-foreground">
-                      <MapPin className="w-3 h-3 mr-1" />
-                      {image.location}
+                    
+                    {/* Content Overlay */}
+                    <div className="absolute bottom-0 left-0 right-0 p-6 text-white transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+                      <h3 className="font-bold text-2xl mb-3 drop-shadow-lg">
+                        {image.title}
+                      </h3>
+                      <p className="text-sm leading-relaxed mb-3 drop-shadow-md line-clamp-2 group-hover:line-clamp-none transition-all duration-300">
+                        {image.description}
+                      </p>
+                      <div className="flex items-center text-sm opacity-90">
+                        <MapPin className="w-4 h-4 mr-2 flex-shrink-0" />
+                        <span className="drop-shadow-md">{image.location}</span>
+                      </div>
                     </div>
                   </div>
                 </Card>
@@ -137,6 +163,36 @@ const Gallery = () => {
             </div>
           </div>
         </section>
+
+        {/* Image Modal */}
+        <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
+          <DialogContent className="max-w-5xl max-h-[90vh] overflow-auto">
+            {selectedImage && (
+              <>
+                <DialogHeader>
+                  <div className="flex items-center justify-between mb-2">
+                    <DialogTitle className="text-2xl">{selectedImage.title}</DialogTitle>
+                    <Badge variant="secondary">{selectedImage.category}</Badge>
+                  </div>
+                  <DialogDescription className="text-base">
+                    {selectedImage.description}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="mt-4">
+                  <img 
+                    src={selectedImage.src} 
+                    alt={selectedImage.title}
+                    className="w-full rounded-lg"
+                  />
+                  <div className="flex items-center text-sm text-muted-foreground mt-4">
+                    <MapPin className="w-4 h-4 mr-2" />
+                    {selectedImage.location}
+                  </div>
+                </div>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
 
         {/* Coming Soon Section */}
         <section className="py-16 bg-muted/30">
