@@ -7,6 +7,13 @@ import { Image as ImageIcon, MapPin, Camera } from 'lucide-react';
 const Gallery = () => {
   const projectImages = [
     {
+      src: '/gallery/field-research-team.jpg',
+      title: 'Field Research Team',
+      description: 'Team members conducting snow monitoring research with solar-powered equipment on Vermont mountain summit',
+      location: 'Vermont Mountains',
+      category: 'Field Sites'
+    },
+    {
       src: '/lovable-uploads/9d5d35d8-43d8-4c2d-a89e-7522213fc836.png',
       title: 'Vermont Mountain Summit',
       description: 'High-elevation monitoring station capturing snow and weather data',

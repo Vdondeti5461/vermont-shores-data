@@ -275,6 +275,111 @@ const About = () => {
             </div>
           </div>
         </section>
+
+        {/* Press Coverage */}
+        <section className="py-16 bg-gradient-to-br from-primary/5 to-secondary/5">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-12">
+              <Badge variant="outline" className="mb-4">
+                <Info className="w-4 h-4 mr-2" />
+                In the News
+              </Badge>
+              <h2 className="scientific-heading text-3xl md:text-4xl mb-6">
+                Press <span className="text-primary">Coverage</span>
+              </h2>
+              <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+                Recent media coverage and news about the Summit-to-Shore Environmental Monitoring Network
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+              <Card className="hover:shadow-xl transition-all duration-300">
+                <CardHeader>
+                  <Badge variant="secondary" className="w-fit mb-2">Vermont Public</Badge>
+                  <CardTitle className="text-xl">UVM wants to build a statewide weather monitoring network</CardTitle>
+                  <p className="text-sm text-muted-foreground">November 13, 2025</p>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground mb-4">
+                    UVM Water Resources Institute is developing Vermont Mesonet, a comprehensive statewide 
+                    weather monitoring network with 30 stations to help communities prepare for extreme weather events.
+                  </p>
+                  <a 
+                    href="https://www.vermontpublic.org/local-news/2025-11-13/uvm-wants-build-statewide-weather-monitoring-network"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline text-sm font-medium"
+                  >
+                    Read full article →
+                  </a>
+                </CardContent>
+              </Card>
+
+              <Card className="hover:shadow-xl transition-all duration-300">
+                <CardHeader>
+                  <Badge variant="secondary" className="w-fit mb-2">WCAX News</Badge>
+                  <CardTitle className="text-xl">Weather station network protects rural VT communities</CardTitle>
+                  <p className="text-sm text-muted-foreground">March 11, 2025</p>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground mb-4">
+                    Coverage of how the Summit-to-Shore network provides critical weather data to help 
+                    protect Vermont's rural communities from severe weather events and climate impacts.
+                  </p>
+                  <a 
+                    href="https://www.wcax.com/video/2025/03/11/weather-station-network-protects-rural-vt-communities/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline text-sm font-medium"
+                  >
+                    Watch video →
+                  </a>
+                </CardContent>
+              </Card>
+
+              <Card className="hover:shadow-xl transition-all duration-300">
+                <CardHeader>
+                  <Badge variant="secondary" className="w-fit mb-2">UVM News</Badge>
+                  <CardTitle className="text-xl">Water Resources Institute Welcomes Senior Mesonet Technician</CardTitle>
+                  <p className="text-sm text-muted-foreground">June 23, 2025</p>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground mb-4">
+                    Samantha Koehler joins UVM's Water Resources Institute as Senior Mesonet Technician 
+                    to lead the development of Vermont's statewide mesonet network complementing Summit-to-Shore.
+                  </p>
+                  <a 
+                    href="https://www.uvm.edu/water/news/water-resources-institute-welcomes-samantha-koehler-senior-mesonet-technician"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline text-sm font-medium"
+                  >
+                    Read more →
+                  </a>
+                </CardContent>
+              </Card>
+
+              <Card className="hover:shadow-xl transition-all duration-300 border-dashed">
+                <CardHeader>
+                  <Badge variant="outline" className="w-fit mb-2">Media Inquiries</Badge>
+                  <CardTitle className="text-xl">Contact Us</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground mb-4">
+                    For press inquiries, interviews, or more information about the Summit-to-Shore project, 
+                    please contact our communications team.
+                  </p>
+                  <a 
+                    href="mailto:s2s@uvm.edu"
+                    className="text-primary hover:underline text-sm font-medium"
+                  >
+                    s2s@uvm.edu
+                  </a>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
       </main>
       <Footer />
     </div>
