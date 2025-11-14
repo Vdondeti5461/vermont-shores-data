@@ -568,18 +568,18 @@ try {
                       </ul>
                     </div>
                     <div className="p-4 bg-cyan-50 border border-cyan-200 rounded-lg">
-                      <h4 className="font-semibold text-cyan-800 mb-2">Future API Enhancements</h4>
+                      <h4 className="font-semibold text-cyan-800 mb-2">Planned API Enhancements</h4>
                       <p className="text-cyan-700 text-sm mb-2">
-                        Planned improvements and expansions:
+                        Improvements and expansions currently in development:
                       </p>
                       <ul className="text-cyan-700 text-sm list-disc list-inside space-y-1">
-                        <li>OAuth2 and JWT authentication for secure API access</li>
-                        <li>WebSocket connections for real-time data streaming</li>
-                        <li>GraphQL endpoint for flexible data queries</li>
-                        <li>Geospatial querying with bounding box and region filters</li>
-                        <li>Multi-format export (NetCDF, Parquet, GeoJSON, HDF5)</li>
-                        <li>Metadata catalog with DOI integration and data versioning</li>
-                        <li>Cross-network data federation and harmonization</li>
+                        <li><strong>Authentication & Security:</strong> OAuth2 and JWT authentication for network partners</li>
+                        <li><strong>Real-time Streaming:</strong> WebSocket endpoints for live data feeds</li>
+                        <li><strong>Advanced Formats:</strong> NetCDF, Parquet, and HDF5 export for research applications</li>
+                        <li><strong>Geospatial Queries:</strong> Bounding box and region-based filtering</li>
+                        <li><strong>Cross-Network Integration:</strong> Data federation with Whiteface, Mt. Washington, and Vermont Mesonet</li>
+                        <li><strong>Metadata Standards:</strong> CF-compliant metadata and DOI integration for datasets</li>
+                        <li><strong>Rate Limiting:</strong> Fair-use policies with tiered access for partners vs. public</li>
                       </ul>
                     </div>
                     <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
