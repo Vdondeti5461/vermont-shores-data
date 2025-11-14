@@ -164,538 +164,147 @@ const Research = () => {
               </TabsList>
 
               <TabsContent value="publications" className="mt-4 sm:mt-6 lg:mt-8">
-                <div className="space-y-4 sm:space-y-6">
-                  <Card className="overflow-hidden">
-                    <CardHeader className="pb-3 sm:pb-4 px-3 sm:px-6">
-                      <CardTitle className="flex items-center gap-2 text-base sm:text-lg lg:text-xl">
-                        <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                        <span>Recent Publications</span>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="px-3 sm:px-6">
-                      {/* Mobile Optimized Publication List */}
-                      <div className="space-y-3 sm:space-y-4">
-                        {[
-                          {
-                            title: "Climate-driven changes in montane forest ecosystems",
-                            journal: "Journal of Environmental Change",
-                            year: "2024",
-                            authors: "Smith, J., Johnson, M., et al.",
-                            tags: ["Climate Change", "Forest Ecology"],
-                            color: "primary"
-                          },
-                          {
-                            title: "Snow water equivalent trends in Vermont mountains", 
-                            journal: "Hydrological Processes",
-                            year: "2023",
-                            authors: "Davis, K., Wilson, R., et al.",
-                            tags: ["Snow Hydrology", "Mountain Ecosystems"],
-                            color: "primary"
-                          },
-                          {
-                            title: "Automated environmental monitoring networks",
-                            journal: "Environmental Monitoring and Assessment", 
-                            year: "2023",
-                            authors: "Brown, L., Anderson, T., et al.",
-                            tags: ["Monitoring Systems", "Data Science"],
-                            color: "primary"
-                          },
-                          {
-                            title: "Real-time data quality assessment in environmental sensors",
-                            journal: "Sensors and Actuators",
-                            year: "2024", 
-                            authors: "Martinez, A., Thompson, C., et al.",
-                            tags: ["Sensor Networks", "Quality Control"],
-                            color: "secondary"
-                          },
-                          {
-                            title: "Machine learning approaches for environmental data validation",
-                            journal: "Environmental Informatics",
-                            year: "2023",
-                            authors: "Lee, S., Rodriguez, M., et al.", 
-                            tags: ["Machine Learning", "Data Validation"],
-                            color: "secondary"
-                          }
-                        ].map((pub, index) => (
-                          <div 
-                            key={index}
-                            className={`border-l-3 sm:border-l-4 border-${pub.color} pl-3 sm:pl-4 py-3 sm:py-4 bg-gradient-to-r from-${pub.color}/5 to-transparent rounded-r-lg touch:active:scale-[0.98] transition-transform cursor-pointer hover:shadow-sm`}
-                          >
-                            <h4 className="font-semibold text-sm sm:text-base lg:text-lg mb-2 leading-tight pr-2">
-                              {pub.title}
-                            </h4>
-                            
-                            <div className="space-y-1 sm:space-y-2">
-                              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-xs sm:text-sm text-muted-foreground">
-                                <span className="font-medium text-foreground/80 break-words">{pub.journal}</span>
-                                <span className="hidden sm:inline text-muted-foreground/50">•</span>
-                                <span className="text-primary font-medium">{pub.year}</span>
-                              </div>
-                              
-                              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                                <span className="font-medium text-foreground/70">Authors:</span> {pub.authors}
-                              </p>
-                              
-                              <div className="flex flex-wrap gap-1 sm:gap-2 pt-1">
-                                {pub.tags.map((tag, tagIndex) => (
-                                  <Badge key={tagIndex} variant="outline" className="text-[10px] sm:text-xs px-2 py-1 h-auto">
-                                    {tag}
-                                  </Badge>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      
-                      {/* Enhanced Mobile-Friendly Stats */}
-                      <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-border/60">
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6">
-                          {[
-                            { value: "68", label: "Total Publications", color: "text-primary" },
-                            { value: "12", label: "This Year", color: "text-green-600" },
-                            { value: "2.4", label: "Avg Impact Factor", color: "text-blue-600" },
-                            { value: "156", label: "Total Citations", color: "text-orange-600" }
-                          ].map((stat, index) => (
-                            <div key={index} className="text-center p-2 sm:p-3 bg-muted/30 hover:bg-muted/50 rounded-lg border transition-colors">
-                              <div className={`text-lg sm:text-xl lg:text-2xl font-bold ${stat.color}`}>
-                                {stat.value}
-                              </div>
-                              <div className="text-[10px] sm:text-xs lg:text-sm text-muted-foreground leading-tight mt-1">
-                                {stat.label}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                        
-                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
-                          <Button variant="outline" className="w-full sm:w-auto touch:active:scale-95 transition-transform hover:shadow-sm">
-                            <BookOpen className="h-4 w-4 mr-2" />
-                            View All Publications
-                          </Button>
-                          <Button variant="ghost" className="w-full sm:w-auto touch:active:scale-95 transition-transform">
-                            <Download className="h-4 w-4 mr-2" />
-                            Export List
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
+                <Card className="border-dashed">
+                  <CardHeader className="text-center pb-8">
+                    <BookOpen className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
+                    <CardTitle className="text-2xl">Publications Coming Soon</CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-center pb-8">
+                    <p className="text-muted-foreground max-w-2xl mx-auto mb-6">
+                      Research publications from the Summit-to-Shore Snow Monitoring Network are currently in preparation. 
+                      This section will feature peer-reviewed articles, technical reports, and conference proceedings 
+                      as they become available.
+                    </p>
+                    <div className="bg-primary/5 rounded-lg p-6 max-w-2xl mx-auto">
+                      <p className="text-sm text-muted-foreground mb-2">
+                        <strong>Recent Presentation:</strong>
+                      </p>
+                      <p className="text-sm">
+                        Summit-to-Shore Snow Monitoring Network in Vermont (2023)<br />
+                        <span className="text-muted-foreground">Student Research Conference, UVM ScholarWorks</span>
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
               </TabsContent>
 
-              <TabsContent value="projects" className="mt-6 xs:mt-8">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 xs:gap-6">
-                  <Card className="hover:shadow-lg transition-shadow touch:active:scale-98">
-                    <CardHeader className="pb-3 xs:pb-4">
-                      <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-2 xs:gap-4">
-                        <CardTitle className="text-base xs:text-lg leading-tight">NSF Climate Impacts Study</CardTitle>
-                        <Badge variant="secondary" className="w-fit text-xs">2022-2025</Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-xs xs:text-sm text-muted-foreground mb-3 xs:mb-4 leading-relaxed">
-                        Multi-year study of climate change impacts on high-elevation ecosystems across Vermont's mountain regions.
-                      </p>
-                      <div className="grid grid-cols-2 gap-3 xs:gap-4 mb-3 xs:mb-4">
-                        <div className="text-center p-2 xs:p-3 bg-green-50 dark:bg-green-950/20 rounded-lg">
-                          <div className="text-sm xs:text-base font-bold text-green-600">$1.2M</div>
-                          <div className="text-xs text-muted-foreground">Funding</div>
-                        </div>
-                        <div className="text-center p-2 xs:p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
-                          <div className="text-sm xs:text-base font-bold text-blue-600">45%</div>
-                          <div className="text-xs text-muted-foreground">Complete</div>
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap gap-1 xs:gap-2">
-                        <Badge variant="outline" className="text-2xs xs:text-xs">Climate Research</Badge>
-                        <Badge variant="outline" className="text-2xs xs:text-xs">Ecosystem Monitoring</Badge>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="hover:shadow-lg transition-shadow touch:active:scale-98">
-                    <CardHeader className="pb-3 xs:pb-4">
-                      <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-2 xs:gap-4">
-                        <CardTitle className="text-base xs:text-lg leading-tight">USDA Forest Health Initiative</CardTitle>
-                        <Badge variant="secondary" className="w-fit text-xs">2023-2026</Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-xs xs:text-sm text-muted-foreground mb-3 xs:mb-4 leading-relaxed">
-                        Forest ecosystem monitoring and health assessment across Vermont with real-time data collection.
-                      </p>
-                      <div className="grid grid-cols-2 gap-3 xs:gap-4 mb-3 xs:mb-4">
-                        <div className="text-center p-2 xs:p-3 bg-green-50 dark:bg-green-950/20 rounded-lg">
-                          <div className="text-sm xs:text-base font-bold text-green-600">$850K</div>
-                          <div className="text-xs text-muted-foreground">Funding</div>
-                        </div>
-                        <div className="text-center p-2 xs:p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
-                          <div className="text-sm xs:text-base font-bold text-blue-600">62%</div>
-                          <div className="text-xs text-muted-foreground">Complete</div>
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap gap-1 xs:gap-2">
-                        <Badge variant="outline" className="text-2xs xs:text-xs">Forest Health</Badge>
-                        <Badge variant="outline" className="text-2xs xs:text-xs">Environmental Monitoring</Badge>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="hover:shadow-lg transition-shadow touch:active:scale-98">
-                    <CardHeader className="pb-3 xs:pb-4">
-                      <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-2 xs:gap-4">
-                        <CardTitle className="text-base xs:text-lg leading-tight">EPA Water Quality Monitoring</CardTitle>
-                        <Badge variant="secondary" className="w-fit text-xs">2021-2024</Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-xs xs:text-sm text-muted-foreground mb-3 xs:mb-4 leading-relaxed">
-                        Comprehensive water quality assessment in Vermont watersheds using automated sensor networks.
-                      </p>
-                      <div className="grid grid-cols-2 gap-3 xs:gap-4 mb-3 xs:mb-4">
-                        <div className="text-center p-2 xs:p-3 bg-green-50 dark:bg-green-950/20 rounded-lg">
-                          <div className="text-sm xs:text-base font-bold text-green-600">$650K</div>
-                          <div className="text-xs text-muted-foreground">Funding</div>
-                        </div>
-                        <div className="text-center p-2 xs:p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg">
-                          <div className="text-sm xs:text-base font-bold text-orange-600">88%</div>
-                          <div className="text-xs text-muted-foreground">Complete</div>
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap gap-1 xs:gap-2">
-                        <Badge variant="outline" className="text-2xs xs:text-xs">Water Quality</Badge>
-                        <Badge variant="outline" className="text-2xs xs:text-xs">Watershed Analysis</Badge>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="hover:shadow-lg transition-shadow touch:active:scale-98">
-                    <CardHeader className="pb-3 xs:pb-4">
-                      <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-2 xs:gap-4">
-                        <CardTitle className="text-base xs:text-lg leading-tight">NOAA Climate Adaptation</CardTitle>
-                        <Badge variant="secondary" className="w-fit text-xs">2024-2027</Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-xs xs:text-sm text-muted-foreground mb-3 xs:mb-4 leading-relaxed">
-                        Climate adaptation strategies for Vermont communities based on environmental monitoring data.
-                      </p>
-                      <div className="grid grid-cols-2 gap-3 xs:gap-4 mb-3 xs:mb-4">
-                        <div className="text-center p-2 xs:p-3 bg-green-50 dark:bg-green-950/20 rounded-lg">
-                          <div className="text-sm xs:text-base font-bold text-green-600">$950K</div>
-                          <div className="text-xs text-muted-foreground">Funding</div>
-                        </div>
-                        <div className="text-center p-2 xs:p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
-                          <div className="text-sm xs:text-base font-bold text-blue-600">15%</div>
-                          <div className="text-xs text-muted-foreground">Complete</div>
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap gap-1 xs:gap-2">
-                        <Badge variant="outline" className="text-2xs xs:text-xs">Climate Adaptation</Badge>
-                        <Badge variant="outline" className="text-2xs xs:text-xs">Community Planning</Badge>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-                
-                {/* Project Summary */}
-                <div className="mt-6 xs:mt-8">
+              <TabsContent value="projects" className="mt-4 sm:mt-6 lg:mt-8">
+                <div className="grid gap-6">
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-lg">Project Portfolio Summary</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 xs:gap-4">
-                        <div className="text-center p-3 xs:p-4 bg-primary/5 rounded-lg">
-                          <div className="text-xl xs:text-2xl font-bold text-primary">$3.65M</div>
-                          <div className="text-xs xs:text-sm text-muted-foreground">Total Funding</div>
-                        </div>
-                        <div className="text-center p-3 xs:p-4 bg-green-50 dark:bg-green-950/20 rounded-lg">
-                          <div className="text-xl xs:text-2xl font-bold text-green-600">14</div>
-                          <div className="text-xs xs:text-sm text-muted-foreground">Active Projects</div>
-                        </div>
-                        <div className="text-center p-3 xs:p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
-                          <div className="text-xl xs:text-2xl font-bold text-blue-600">52%</div>
-                          <div className="text-xs xs:text-sm text-muted-foreground">Avg Completion</div>
-                        </div>
-                        <div className="text-center p-3 xs:p-4 bg-orange-50 dark:bg-orange-950/20 rounded-lg">
-                          <div className="text-xl xs:text-2xl font-bold text-orange-600">8</div>
-                          <div className="text-xs xs:text-sm text-muted-foreground">Partner Orgs</div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="awards" className="mt-6 xs:mt-8">
-                <div className="grid gap-4 xs:gap-6">
-                  <Card>
-                    <CardHeader className="pb-3 xs:pb-4">
-                      <CardTitle className="flex items-center gap-2 text-base xs:text-lg">
-                        <Award className="h-4 w-4 xs:h-5 xs:w-5 text-yellow-500" />
-                        Recognition & Awards
+                      <CardTitle className="flex items-center gap-2">
+                        <Badge variant="default">Active</Badge>
+                        Summit-to-Shore Snow Monitoring Network
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-4 xs:space-y-6">
-                        <div className="flex flex-col xs:flex-row xs:items-start gap-3 xs:gap-4 p-3 xs:p-4 bg-gradient-to-r from-yellow-50 to-transparent dark:from-yellow-950/20 rounded-lg">
-                          <div className="flex-shrink-0">
-                            <div className="w-12 h-12 xs:w-16 xs:h-16 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center">
-                              <Award className="h-6 w-6 xs:h-8 xs:w-8 text-yellow-600" />
-                            </div>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-sm xs:text-base mb-1 xs:mb-2">Excellence in Environmental Monitoring</h4>
-                            <div className="flex flex-col xs:flex-row xs:items-center gap-1 xs:gap-2 text-xs xs:text-sm text-muted-foreground mb-2">
-                              <span className="font-medium">American Geophysical Union</span>
-                              <span className="hidden xs:inline">•</span>
-                              <span>2023</span>
-                            </div>
-                            <p className="text-xs xs:text-sm text-muted-foreground leading-relaxed">
-                              Recognized for innovative approaches to automated environmental data collection and quality assurance in challenging mountain environments.
-                            </p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex flex-col xs:flex-row xs:items-start gap-3 xs:gap-4 p-3 xs:p-4 bg-gradient-to-r from-blue-50 to-transparent dark:from-blue-950/20 rounded-lg">
-                          <div className="flex-shrink-0">
-                            <div className="w-12 h-12 xs:w-16 xs:h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
-                              <Award className="h-6 w-6 xs:h-8 xs:w-8 text-blue-600" />
-                            </div>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-sm xs:text-base mb-1 xs:mb-2">Outstanding Research Collaboration</h4>
-                            <div className="flex flex-col xs:flex-row xs:items-center gap-1 xs:gap-2 text-xs xs:text-sm text-muted-foreground mb-2">
-                              <span className="font-medium">Vermont Science Foundation</span>
-                              <span className="hidden xs:inline">•</span>
-                              <span>2022</span>
-                            </div>
-                            <p className="text-xs xs:text-sm text-muted-foreground leading-relaxed">
-                              Honored for fostering interdisciplinary partnerships and advancing collaborative environmental research across multiple institutions.
-                            </p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex flex-col xs:flex-row xs:items-start gap-3 xs:gap-4 p-3 xs:p-4 bg-gradient-to-r from-green-50 to-transparent dark:from-green-950/20 rounded-lg">
-                          <div className="flex-shrink-0">
-                            <div className="w-12 h-12 xs:w-16 xs:h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
-                              <Award className="h-6 w-6 xs:h-8 xs:w-8 text-green-600" />
-                            </div>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-sm xs:text-base mb-1 xs:mb-2">Best Scientific Data Platform</h4>
-                            <div className="flex flex-col xs:flex-row xs:items-center gap-1 xs:gap-2 text-xs xs:text-sm text-muted-foreground mb-2">
-                              <span className="font-medium">Environmental Data Initiative</span>
-                              <span className="hidden xs:inline">•</span>
-                              <span>2023</span>
-                            </div>
-                            <p className="text-xs xs:text-sm text-muted-foreground leading-relaxed">
-                              Awarded for developing an innovative, user-friendly platform that makes environmental data accessible to researchers and the public.
-                            </p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex flex-col xs:flex-row xs:items-start gap-3 xs:gap-4 p-3 xs:p-4 bg-gradient-to-r from-purple-50 to-transparent dark:from-purple-950/20 rounded-lg">
-                          <div className="flex-shrink-0">
-                            <div className="w-12 h-12 xs:w-16 xs:h-16 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
-                              <Award className="h-6 w-6 xs:h-8 xs:w-8 text-purple-600" />
-                            </div>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-sm xs:text-base mb-1 xs:mb-2">Innovation in Data Quality Control</h4>
-                            <div className="flex flex-col xs:flex-row xs:items-center gap-1 xs:gap-2 text-xs xs:text-sm text-muted-foreground mb-2">
-                              <span className="font-medium">International Association of Environmental Sciences</span>
-                              <span className="hidden xs:inline">•</span>
-                              <span>2024</span>
-                            </div>
-                            <p className="text-xs xs:text-sm text-muted-foreground leading-relaxed">
-                              Recognized for developing advanced algorithms and techniques for automated quality control in environmental sensor networks.
-                            </p>
-                          </div>
-                        </div>
+                      <p className="text-muted-foreground mb-4">
+                        A comprehensive environmental monitoring network spanning Vermont's elevation gradient, 
+                        from mountain summits to lake shores. The network collects real-time data on snow depth, 
+                        temperature, wind, precipitation, and radiation to better understand climate impacts on 
+                        Vermont's snow-dependent ecosystems and communities.
+                      </p>
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        <Badge variant="secondary">Snow Hydrology</Badge>
+                        <Badge variant="secondary">Climate Monitoring</Badge>
+                        <Badge variant="secondary">Environmental Data</Badge>
+                        <Badge variant="secondary">Real-time Sensors</Badge>
                       </div>
-                      
-                      <div className="mt-6 xs:mt-8 pt-4 xs:pt-6 border-t">
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 xs:gap-4">
-                          <div className="text-center p-3 xs:p-4 bg-muted/50 rounded-lg">
-                            <div className="text-lg xs:text-xl font-bold text-yellow-600">12</div>
-                            <div className="text-xs xs:text-sm text-muted-foreground">Total Awards</div>
-                          </div>
-                          <div className="text-center p-3 xs:p-4 bg-muted/50 rounded-lg">
-                            <div className="text-lg xs:text-xl font-bold text-blue-600">4</div>
-                            <div className="text-xs xs:text-sm text-muted-foreground">This Year</div>
-                          </div>
-                          <div className="text-center p-3 xs:p-4 bg-muted/50 rounded-lg sm:col-span-1 col-span-2">
-                            <div className="text-lg xs:text-xl font-bold text-green-600">8</div>
-                            <div className="text-xs xs:text-sm text-muted-foreground">International</div>
-                          </div>
-                        </div>
+                      <p className="text-sm text-muted-foreground">
+                        <strong>Partners:</strong> U.S. Army Cold Regions Research and Engineering Laboratory (CRREL), 
+                        University of Vermont
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Badge variant="default">Active</Badge>
+                        Rural Climate Resiliency Research
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-muted-foreground mb-4">
+                        UVM received $2.7 million in funding to advance rural climate resiliency research, 
+                        focusing on understanding and preparing for climate change impacts in Vermont and 
+                        the broader Northeast region.
+                      </p>
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        <Badge variant="secondary">Climate Adaptation</Badge>
+                        <Badge variant="secondary">Community Resilience</Badge>
+                        <Badge variant="secondary">Impact Assessment</Badge>
                       </div>
+                      <p className="text-sm text-muted-foreground">
+                        <strong>Funding:</strong> $2.7M Federal Grant (2023)
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-dashed">
+                    <CardContent className="pt-6 text-center">
+                      <p className="text-muted-foreground">
+                        Additional project details and outcomes will be published as research progresses.
+                      </p>
                     </CardContent>
                   </Card>
                 </div>
               </TabsContent>
 
-              <TabsContent value="outreach" className="mt-6 xs:mt-8">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 xs:gap-6">
-                  <Card className="hover:shadow-lg transition-shadow">
-                    <CardHeader className="pb-3 xs:pb-4">
-                      <CardTitle className="text-base xs:text-lg">Educational Programs</CardTitle>
-                      <p className="text-xs xs:text-sm text-muted-foreground">Engaging students and educators at all levels</p>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3 xs:space-y-4">
-                        <div className="flex items-start gap-3 p-2 xs:p-3 bg-muted/50 rounded-lg">
-                          <div className="w-2 h-2 rounded-full bg-primary mt-2"></div>
-                          <div>
-                            <h5 className="font-medium text-sm xs:text-base">K-12 School Visits & Workshops</h5>
-                            <p className="text-xs xs:text-sm text-muted-foreground">Interactive sessions on environmental monitoring</p>
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-3 p-2 xs:p-3 bg-muted/50 rounded-lg">
-                          <div className="w-2 h-2 rounded-full bg-primary mt-2"></div>
-                          <div>
-                            <h5 className="font-medium text-sm xs:text-base">Undergraduate Research Opportunities</h5>
-                            <p className="text-xs xs:text-sm text-muted-foreground">Hands-on research experience programs</p>
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-3 p-2 xs:p-3 bg-muted/50 rounded-lg">
-                          <div className="w-2 h-2 rounded-full bg-primary mt-2"></div>
-                          <div>
-                            <h5 className="font-medium text-sm xs:text-base">Graduate Student Training Programs</h5>
-                            <p className="text-xs xs:text-sm text-muted-foreground">Advanced environmental data science training</p>
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-3 p-2 xs:p-3 bg-muted/50 rounded-lg">
-                          <div className="w-2 h-2 rounded-full bg-primary mt-2"></div>
-                          <div>
-                            <h5 className="font-medium text-sm xs:text-base">Public Lectures & Seminars</h5>
-                            <p className="text-xs xs:text-sm text-muted-foreground">Monthly community education events</p>
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-3 p-2 xs:p-3 bg-muted/50 rounded-lg">
-                          <div className="w-2 h-2 rounded-full bg-primary mt-2"></div>
-                          <div>
-                            <h5 className="font-medium text-sm xs:text-base">Citizen Science Initiatives</h5>
-                            <p className="text-xs xs:text-sm text-muted-foreground">Community-based monitoring programs</p>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="mt-4 xs:mt-6 pt-3 xs:pt-4 border-t">
-                        <div className="grid grid-cols-3 gap-2 xs:gap-3">
-                          <div className="text-center p-2 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
-                            <div className="text-sm xs:text-base font-bold text-blue-600">127</div>
-                            <div className="text-xs text-muted-foreground">Students</div>
-                          </div>
-                          <div className="text-center p-2 bg-green-50 dark:bg-green-950/20 rounded-lg">
-                            <div className="text-sm xs:text-base font-bold text-green-600">24</div>
-                            <div className="text-xs text-muted-foreground">Schools</div>
-                          </div>
-                          <div className="text-center p-2 bg-orange-50 dark:bg-orange-950/20 rounded-lg">
-                            <div className="text-sm xs:text-base font-bold text-orange-600">18</div>
-                            <div className="text-xs text-muted-foreground">Events</div>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+              <TabsContent value="awards" className="mt-4 sm:mt-6 lg:mt-8">
+                <Card className="border-dashed">
+                  <CardHeader className="text-center pb-8">
+                    <Award className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
+                    <CardTitle className="text-2xl">Awards & Recognition</CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-center pb-8">
+                    <p className="text-muted-foreground max-w-2xl mx-auto mb-6">
+                      Awards and recognition for the Summit-to-Shore project will be documented here as they 
+                      are received. This includes research grants, academic honors, and institutional recognition.
+                    </p>
+                    <div className="bg-primary/5 rounded-lg p-6 max-w-2xl mx-auto">
+                      <p className="text-sm text-muted-foreground mb-2">
+                        <strong>Recent Funding:</strong>
+                      </p>
+                      <p className="text-sm">
+                        UVM Water Resources Institute - Inaugural WRI Collaborative Research Grant<br />
+                        <span className="text-muted-foreground">Supporting interdisciplinary water and climate research</span>
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-                  <Card className="hover:shadow-lg transition-shadow">
-                    <CardHeader className="pb-3 xs:pb-4">
-                      <CardTitle className="text-base xs:text-lg">Community Engagement</CardTitle>
-                      <p className="text-xs xs:text-sm text-muted-foreground">Building bridges with local communities</p>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3 xs:space-y-4">
-                        <div className="flex items-start gap-3 p-2 xs:p-3 bg-muted/50 rounded-lg">
-                          <div className="w-2 h-2 rounded-full bg-secondary mt-2"></div>
-                          <div>
-                            <h5 className="font-medium text-sm xs:text-base">Town Hall Meetings</h5>
-                            <p className="text-xs xs:text-sm text-muted-foreground">Quarterly community updates and feedback sessions</p>
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-3 p-2 xs:p-3 bg-muted/50 rounded-lg">
-                          <div className="w-2 h-2 rounded-full bg-secondary mt-2"></div>
-                          <div>
-                            <h5 className="font-medium text-sm xs:text-base">Policy Briefings</h5>
-                            <p className="text-xs xs:text-sm text-muted-foreground">Data-driven insights for local government</p>
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-3 p-2 xs:p-3 bg-muted/50 rounded-lg">
-                          <div className="w-2 h-2 rounded-full bg-secondary mt-2"></div>
-                          <div>
-                            <h5 className="font-medium text-sm xs:text-base">Media Interviews</h5>
-                            <p className="text-xs xs:text-sm text-muted-foreground">Regular coverage of research findings</p>
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-3 p-2 xs:p-3 bg-muted/50 rounded-lg">
-                          <div className="w-2 h-2 rounded-full bg-secondary mt-2"></div>
-                          <div>
-                            <h5 className="font-medium text-sm xs:text-base">Public Data Access Portal</h5>
-                            <p className="text-xs xs:text-sm text-muted-foreground">Open access to environmental data</p>
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-3 p-2 xs:p-3 bg-muted/50 rounded-lg">
-                          <div className="w-2 h-2 rounded-full bg-secondary mt-2"></div>
-                          <div>
-                            <h5 className="font-medium text-sm xs:text-base">Stakeholder Workshops</h5>
-                            <p className="text-xs xs:text-sm text-muted-foreground">Collaborative planning and feedback sessions</p>
-                          </div>
-                        </div>
+              <TabsContent value="outreach" className="mt-4 sm:mt-6 lg:mt-8">
+                <Card className="border-dashed">
+                  <CardHeader className="text-center pb-8">
+                    <Users className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
+                    <CardTitle className="text-2xl">Community Outreach & Education</CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-center pb-8">
+                    <p className="text-muted-foreground max-w-2xl mx-auto mb-6">
+                      The Summit-to-Shore project is committed to sharing research findings with communities, 
+                      stakeholders, and the public. Outreach activities, workshops, and educational materials 
+                      will be documented here as they become available.
+                    </p>
+                    <div className="space-y-4 max-w-2xl mx-auto">
+                      <div className="bg-primary/5 rounded-lg p-6 text-left">
+                        <p className="font-medium mb-2">Data Accessibility</p>
+                        <p className="text-sm text-muted-foreground">
+                          Real-time environmental data is made freely available through this platform to support 
+                          researchers, educators, policy makers, and the public in understanding Vermont's changing climate.
+                        </p>
                       </div>
-                      
-                      <div className="mt-4 xs:mt-6 pt-3 xs:pt-4 border-t">
-                        <div className="grid grid-cols-3 gap-2 xs:gap-3">
-                          <div className="text-center p-2 bg-purple-50 dark:bg-purple-950/20 rounded-lg">
-                            <div className="text-sm xs:text-base font-bold text-purple-600">45</div>
-                            <div className="text-xs text-muted-foreground">Events</div>
-                          </div>
-                          <div className="text-center p-2 bg-red-50 dark:bg-red-950/20 rounded-lg">
-                            <div className="text-sm xs:text-base font-bold text-red-600">89</div>
-                            <div className="text-xs text-muted-foreground">Partners</div>
-                          </div>
-                          <div className="text-center p-2 bg-indigo-50 dark:bg-indigo-950/20 rounded-lg">
-                            <div className="text-sm xs:text-base font-bold text-indigo-600">1.2K</div>
-                            <div className="text-xs text-muted-foreground">Reached</div>
-                          </div>
-                        </div>
+                      <div className="bg-primary/5 rounded-lg p-6 text-left">
+                        <p className="font-medium mb-2">Collaborative Research</p>
+                        <p className="text-sm text-muted-foreground">
+                          The project welcomes collaboration with other institutions and networks. API access and 
+                          data sharing protocols enable integration with broader research initiatives.
+                        </p>
                       </div>
-                    </CardContent>
-                  </Card>
-                  
-                  {/* Impact Metrics */}
-                  <div className="lg:col-span-2">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-lg">Outreach Impact Summary</CardTitle>
-                        <p className="text-sm text-muted-foreground">Annual engagement metrics and community reach</p>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 xs:gap-4">
-                          <div className="text-center p-3 xs:p-4 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg">
-                            <div className="text-xl xs:text-2xl font-bold text-primary">2,340</div>
-                            <div className="text-xs xs:text-sm text-muted-foreground">People Reached</div>
-                          </div>
-                          <div className="text-center p-3 xs:p-4 bg-gradient-to-br from-green-100 to-green-50 dark:from-green-950/30 dark:to-green-950/10 rounded-lg">
-                            <div className="text-xl xs:text-2xl font-bold text-green-600">156</div>
-                            <div className="text-xs xs:text-sm text-muted-foreground">Students Trained</div>
-                          </div>
-                          <div className="text-center p-3 xs:p-4 bg-gradient-to-br from-blue-100 to-blue-50 dark:from-blue-950/30 dark:to-blue-950/10 rounded-lg">
-                            <div className="text-xl xs:text-2xl font-bold text-blue-600">67</div>
-                            <div className="text-xs xs:text-sm text-muted-foreground">Events Hosted</div>
-                          </div>
-                          <div className="text-center p-3 xs:p-4 bg-gradient-to-br from-orange-100 to-orange-50 dark:from-orange-950/30 dark:to-orange-950/10 rounded-lg">
-                            <div className="text-xl xs:text-2xl font-bold text-orange-600">34</div>
-                            <div className="text-xs xs:text-sm text-muted-foreground">Organizations</div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </TabsContent>
             </Tabs>
           </div>
