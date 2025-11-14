@@ -30,7 +30,7 @@ export const getApiBaseUrl = (): string => {
   }
 
   // 6) Ultimate fallback to production server
-  return 'https://vdondeti.w3.uvm.edu';
+  return 'https://crrels2s.w3.uvm.edu';
 };
 
 export const API_BASE_URL = getApiBaseUrl();

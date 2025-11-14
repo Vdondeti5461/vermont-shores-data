@@ -552,7 +552,7 @@ try {
                         <li>Cross-network data harmonization standards</li>
                       </ul>
                       <p className="text-indigo-700 text-sm mt-2">
-                        Contact <a href="mailto:summit2shore@uvm.edu" className="underline font-medium">summit2shore@uvm.edu</a> to request network partnership and API credentials.
+                        Contact <a href="mailto:s2s@uvm.edu" className="underline font-medium">s2s@uvm.edu</a> to request network partnership and API credentials.
                       </p>
                     </div>
                     <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
@@ -599,7 +599,7 @@ try {
                         Get help or discuss collaboration opportunities:
                       </p>
                       <ul className="text-purple-700 text-sm list-disc list-inside space-y-1">
-                        <li>Technical Support: <a href="mailto:summit2shore@uvm.edu" className="underline font-medium">summit2shore@uvm.edu</a></li>
+                        <li>Technical Support: <a href="mailto:s2s@uvm.edu" className="underline font-medium">s2s@uvm.edu</a></li>
                         <li>Research Collaboration: <a href="/about" className="underline font-medium">Meet Our Team</a></li>
                         <li>Documentation: <a href="/documentation" className="underline font-medium">Complete Project Docs</a></li>
                         <li>Data Portal: <a href="/download" className="underline font-medium">Interactive Data Browser</a></li>
@@ -621,7 +621,7 @@ try {
                       </ul>
                       <div className="mt-3 p-2 bg-yellow-100 rounded">
                         <p className="text-yellow-800 text-sm font-medium">
-                          🌐 Production API Base: <code className="bg-yellow-200 px-1 rounded">https://vdondeti.w3.uvm.edu/api</code>
+                          🌐 Production API Base: <code className="bg-yellow-200 px-1 rounded">https://crrels2s.w3.uvm.edu/api</code>
                         </p>
                       </div>
                     </div>
