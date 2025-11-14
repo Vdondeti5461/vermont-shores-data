@@ -10,6 +10,7 @@ import Network from "./pages/Network";
 import Analytics from "./pages/Analytics";
 import DataDownload from "./pages/DataDownload";
 import Research from "./pages/Research";
+import Gallery from "./pages/research/Gallery";
 import AdvancedAnalytics from "./pages/AdvancedAnalytics";
 import SnowAnalytics from "./pages/SnowAnalytics";
 import Documentation from "./pages/Documentation";
@@ -47,6 +48,7 @@ const App = () => (
           <Route path="/download/bulk-request" element={<BulkRequest />} />
           <Route path="/download/feeds" element={<DataDownload />} />
           <Route path="/research" element={<Research />} />
+          <Route path="/research/gallery" element={<Gallery />} />
           <Route path="/documentation" element={<APIDocumentation />} />
           <Route path="/documentation/api" element={<APIDocumentation />} />
           <Route path="/documentation/feeds" element={<Documentation />} />
