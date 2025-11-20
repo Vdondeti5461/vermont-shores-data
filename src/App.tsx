@@ -35,8 +35,9 @@ const App = () => (
           <Route path="/network" element={<Network />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/analytics/realtime" element={<Analytics />} />
-          <Route path="/analytics/historical" element={<Analytics />} />
+          <Route path="/analytics/seasonal" element={<SnowAnalytics />} />
           <Route path="/analytics/advanced" element={<AdvancedAnalytics />} />
+          <Route path="/analytics/historical" element={<Analytics />} />
           <Route path="/analytics/snow-depth" element={<SnowAnalytics />} />
           <Route path="/analytics/quality" element={<Analytics />} />
           <Route path="/analytics/climate/*" element={<Analytics />} />

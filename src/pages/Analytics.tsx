@@ -6,40 +6,34 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart3, TrendingUp, Clock, Database, Map, LineChart, Layers } from 'lucide-react';
+import { Brain, TrendingUp, Clock, Database, Map, LineChart, Layers } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const AnalyticsPage = () => {
   const analyticsFeatures = [
     {
-      title: 'Snow Depth Analysis',
-      description: 'Time series comparison of raw vs cleaned DBTCDT measurements',
-      icon: BarChart3,
-      href: '/analytics/snow-depth'
+      title: 'Time Series Plots',
+      description: 'Raw, Clean, and QAQC data visualization',
+      icon: LineChart,
+      href: '#plots'
+    },
+    {
+      title: 'Seasonal QAQC Analytics',
+      description: 'Quality-controlled seasonal environmental data (2022-2025)',
+      icon: Database,
+      href: '/analytics/seasonal'
     },
     {
       title: 'Real-time Dashboard',
-      description: 'Live environmental data visualization',
+      description: 'Live environmental data monitoring',
       icon: Clock,
       href: '/analytics/realtime'
     },
     {
-      title: 'Historical Analysis',
-      description: 'Long-term trends and patterns',
-      icon: TrendingUp,
-      href: '/analytics/historical'
-    },
-    {
-      title: 'Advanced Analytics',
-      description: 'Machine learning and forecasting',
-      icon: BarChart3,
+      title: 'Machine Learning',
+      description: 'Predictive models and advanced analytics',
+      icon: Brain,
       href: '/analytics/advanced'
-    },
-    {
-      title: 'Data Quality',
-      description: 'Quality assurance metrics',
-      icon: Database,
-      href: '/analytics/quality'
     }
   ];
 
@@ -52,7 +46,7 @@ const AnalyticsPage = () => {
           <div className="container mx-auto px-4">
             <div className="text-center mb-16">
               <Badge variant="outline" className="mb-4">
-                <BarChart3 className="w-4 h-4 mr-2" />
+                <LineChart className="w-4 h-4 mr-2" />
                 Data Analytics
               </Badge>
               <h1 className="scientific-heading text-4xl md:text-6xl mb-6">
@@ -65,7 +59,7 @@ const AnalyticsPage = () => {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
               {analyticsFeatures.map((feature) => {
                 const Icon = feature.icon;
                 return (
@@ -76,9 +70,15 @@ const AnalyticsPage = () => {
                     </CardHeader>
                     <CardContent className="text-center">
                       <p className="text-sm text-muted-foreground mb-4">{feature.description}</p>
-                      <Button asChild variant="outline" size="sm">
-                        <Link to={feature.href}>Explore</Link>
-                      </Button>
+                      {feature.href.startsWith('#') ? (
+                        <Button asChild variant="outline" size="sm">
+                          <a href={feature.href}>Explore</a>
+                        </Button>
+                      ) : (
+                        <Button asChild variant="outline" size="sm">
+                          <Link to={feature.href}>Explore</Link>
+                        </Button>
+                      )}
                     </CardContent>
                   </Card>
                 );
@@ -183,24 +183,10 @@ const AnalyticsPage = () => {
                     Time Series Analysis
                   </Badge>
                   <h2 className="scientific-heading text-3xl md:text-4xl mb-6">
-                    Data <span className="text-primary">Comparison</span>
+                    Environmental Data <span className="text-primary">Quality Comparison</span>
                   </h2>
                   <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                    Compare raw and cleaned environmental data across different attributes and locations
-                  </p>
-                </div>
-
-                <TimeSeriesComparison />
-
-                <div className="text-center mb-8 mt-16">
-                  <Badge variant="outline" className="mb-4">
-                    Live Dashboard
-                  </Badge>
-                  <h2 className="scientific-heading text-3xl md:text-4xl mb-6">
-                    Current <span className="text-primary">Conditions</span>
-                  </h2>
-                  <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                    Real-time environmental data visualization
+                    Explore raw, clean, and QAQC time series data from Vermont's monitoring network
                   </p>
                 </div>
 
@@ -337,42 +323,28 @@ const AnalyticsPage = () => {
                 <div className="grid md:grid-cols-2 gap-8">
                   <Card>
                     <CardHeader>
-                      <CardTitle>Data Quality Metrics</CardTitle>
+                      <CardTitle>Seasonal QAQC Data</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <p className="text-muted-foreground mb-4">
-                        Quality assurance reports, completeness metrics, and validation status.
+                        Quality-controlled seasonal environmental data from 2022-2025.
                       </p>
                       <Button asChild variant="outline">
-                        <Link to="/analytics/quality">View Metrics</Link>
+                        <Link to="/analytics/seasonal">View Analysis</Link>
                       </Button>
                     </CardContent>
                   </Card>
 
                   <Card>
                     <CardHeader>
-                      <CardTitle>Advanced Analytics</CardTitle>
+                      <CardTitle>Machine Learning Models</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <p className="text-muted-foreground mb-4">
-                        Machine learning models, forecasting, and predictive analysis.
+                        Predictive analytics, forecasting, and pattern recognition.
                       </p>
                       <Button asChild variant="outline">
-                        <Link to="/analytics/advanced">Explore</Link>
-                      </Button>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Historical Trends</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-muted-foreground mb-4">
-                        Long-term climate patterns and multi-year trend analysis.
-                      </p>
-                      <Button asChild variant="outline">
-                        <Link to="/analytics/historical">View Trends</Link>
+                        <Link to="/analytics/advanced">Explore Models</Link>
                       </Button>
                     </CardContent>
                   </Card>
