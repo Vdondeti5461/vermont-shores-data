@@ -44,30 +44,30 @@ const Network = () => {
     }
   ];
 
-  // Survey-verified location data - exact 22 locations from spreadsheet
+  // Survey-verified location data - exact 22 locations from spreadsheet with accurate coordinates
   const locationData = [
-    { code: 'SUMMIT', name: 'Mansfield Summit', lat: 44.5284, lng: -72.8147, elev: 1163, region: 'Alpine', status: 'active' },
-    { code: 'RB-01', name: 'Site #1', lat: 44.5232, lng: -72.8087, elev: 1072, region: 'Ranch Brook', status: 'active' },
-    { code: 'RB-02', name: 'Site #2', lat: 44.5178, lng: -72.8104, elev: 911, region: 'Ranch Brook', status: 'active' },
-    { code: 'FEMC', name: 'FEMC', lat: 44.5189, lng: -72.7979, elev: 872, region: 'Distributed', status: 'active' },
-    { code: 'RB-09', name: 'Site #9', lat: 44.4891, lng: -72.7928, elev: 846, region: 'Ranch Brook', status: 'active' },
-    { code: 'RB-03', name: 'Site #3', lat: 44.5148, lng: -72.8091, elev: 795, region: 'Ranch Brook', status: 'active' },
-    { code: 'RB-14', name: 'West SCAN', lat: 44.535, lng: -72.8346, elev: 705, region: 'Ranch Brook', status: 'active' },
-    { code: 'RB-04', name: 'Site #4', lat: 44.511, lng: -72.8028, elev: 639, region: 'Ranch Brook', status: 'active' },
-    { code: 'RB-07', name: 'Site #7', lat: 44.515, lng: -72.7854, elev: 613, region: 'Ranch Brook', status: 'active' },
-    { code: 'SLP-R3', name: 'Sleepers R3/Main', lat: 44.483, lng: -72.1647, elev: 553, region: 'Distributed', status: 'active' },
-    { code: 'RB-05', name: 'Site #5', lat: 44.5045, lng: -72.7994, elev: 507, region: 'Ranch Brook', status: 'active' },
-    { code: 'RB-08', name: 'Site #8', lat: 44.5096, lng: -72.7824, elev: 472, region: 'Ranch Brook', status: 'active' },
-    { code: 'PROC', name: 'Proctor Maple', lat: 44.5285, lng: -72.8667, elev: 422, region: 'Distributed', status: 'active' },
-    { code: 'RB-06', name: 'Site #6', lat: 44.5037, lng: -72.7836, elev: 412, region: 'Ranch Brook', status: 'active' },
-    { code: 'RB-11', name: 'Site #11', lat: 44.5055, lng: -72.7714, elev: 380, region: 'Ranch Brook', status: 'active' },
-    { code: 'SLP-R25', name: 'Sleepers R25', lat: 44.4767, lng: -72.126, elev: 360, region: 'Distributed', status: 'active' },
-    { code: 'RB-10', name: 'Site #10', lat: 44.495, lng: -72.7864, elev: 324, region: 'Ranch Brook', status: 'active' },
-    { code: 'SLP-W1', name: 'Sleepers W1/R11', lat: 44.4999, lng: -72.0671, elev: 226, region: 'Distributed', status: 'active' },
-    { code: 'JER-C', name: 'Jericho (Clearing)', lat: 44.4477, lng: -73.0025, elev: 198, region: 'Distributed', status: 'active' },
-    { code: 'JER-F', name: 'Jericho (Forested)', lat: 44.4478, lng: -73.0027, elev: 196, region: 'Distributed', status: 'active' },
-    { code: 'SPEAR', name: 'Spear St', lat: 44.4526, lng: -73.1919, elev: 86, region: 'Distributed', status: 'active' },
-    { code: 'POTASH', name: 'Potash Brook', lat: 44.4448, lng: -73.2143, elev: 47, region: 'Distributed', status: 'active' }
+    { code: 'SUMM', name: 'Mansfield Summit', lat: 44.52796261, lng: -72.81496117, elev: 1168.568, region: 'Alpine', status: 'active' },
+    { code: 'RB01', name: 'Ranch Brook #1', lat: 44.52322238, lng: -72.80863215, elev: 1075.002, region: 'Ranch Brook', status: 'active' },
+    { code: 'RB02', name: 'Ranch Brook #2', lat: 44.51775982, lng: -72.81039188, elev: 910.188, region: 'Ranch Brook', status: 'active' },
+    { code: 'RB12', name: 'Ranch Brook #12', lat: 44.51880228, lng: -72.79785548, elev: 884.151, region: 'Ranch Brook', status: 'active' },
+    { code: 'RB09', name: 'Ranch Brook #9', lat: 44.48905, lng: -72.79285, elev: 847, region: 'Ranch Brook', status: 'active' },
+    { code: 'RB03', name: 'Ranch Brook #3', lat: 44.51481829, lng: -72.80905263, elev: 794.901, region: 'Ranch Brook', status: 'active' },
+    { code: 'UNDR', name: 'Mansfield West SCAN', lat: 44.53511455, lng: -72.83462236, elev: 698.292, region: 'Mansfield West', status: 'active' },
+    { code: 'RB04', name: 'Ranch Brook #4', lat: 44.51097861, lng: -72.80281519, elev: 639.716, region: 'Ranch Brook', status: 'active' },
+    { code: 'RB10', name: 'Ranch Brook #10', lat: 44.49505, lng: -72.78639, elev: 624, region: 'Ranch Brook', status: 'active' },
+    { code: 'RB07', name: 'Ranch Brook #7', lat: 44.51528492, lng: -72.78513705, elev: 613.31, region: 'Ranch Brook', status: 'active' },
+    { code: 'SR01', name: 'Sleepers R3/Main', lat: 44.48296257, lng: -72.16464901, elev: 552.866, region: 'Sleepers', status: 'active' },
+    { code: 'RB05', name: 'Ranch Brook #5', lat: 44.5044967, lng: -72.79947434, elev: 505.38, region: 'Ranch Brook', status: 'active' },
+    { code: 'RB08', name: 'Ranch Brook #8', lat: 44.50953955, lng: -72.78220384, elev: 471.51, region: 'Ranch Brook', status: 'active' },
+    { code: 'PROC', name: 'Mansfield West Proctor', lat: 44.5285819, lng: -72.866737, elev: 418.212, region: 'Mansfield West', status: 'active' },
+    { code: 'RB06', name: 'Ranch Brook #6', lat: 44.50370289, lng: -72.78352521, elev: 414.489, region: 'Ranch Brook', status: 'active' },
+    { code: 'RB11', name: 'Ranch Brook #11', lat: 44.50545202, lng: -72.7713791, elev: 388.039, region: 'Ranch Brook', status: 'active' },
+    { code: 'SR25', name: 'Sleepers R25', lat: 44.47682346, lng: -72.12589909, elev: 356.653, region: 'Sleepers', status: 'active' },
+    { code: 'SI11', name: 'Sleepers W1/R11', lat: 44.45002119, lng: -72.06714939, elev: 225.481, region: 'Sleepers', status: 'active' },
+    { code: 'JRCL', name: 'Jericho Clearing', lat: 44.447694, lng: -73.00228357, elev: 199, region: 'Jericho', status: 'active' },
+    { code: 'JRFO', name: 'Jericho Forest', lat: 44.44780437, lng: -73.00270872, elev: 196, region: 'Jericho', status: 'active' },
+    { code: 'SPST', name: 'Spear St', lat: 44.45258109, lng: -73.19181715, elev: 87.108, region: 'Urban', status: 'active' },
+    { code: 'PTSH', name: 'Potash Brook', lat: 44.44489861, lng: -73.21425398, elev: 44.711, region: 'Urban', status: 'active' }
   ];
 
   const activeStations = locationData.filter(station => station.status === 'active').length;

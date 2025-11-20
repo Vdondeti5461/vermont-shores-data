@@ -39,30 +39,30 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
   const [selectedSiteCode, setSelectedSiteCode] = useState<string | null>(null);
   const [selectedSite, setSelectedSite] = useState<NetworkSite | null>(null);
 
-  // Vermont S2S Network Sites - Exact 22 locations from spreadsheet
+  // Vermont S2S Network Sites - Survey-verified with accurate coordinates from spreadsheet
   const defaultSites: NetworkSite[] = [
-    { id: 1, name: "Mansfield Summit", shortName: "SUMMIT", latitude: 44.5284, longitude: -72.8147, elevation: 1163, type: "distributed", status: "active", region: "Alpine" },
-    { id: 2, name: "Site #1", shortName: "RB-01", latitude: 44.5232, longitude: -72.8087, elevation: 1072, type: "ranch_brook", status: "active", region: "Alpine" },
-    { id: 3, name: "Site #2", shortName: "RB-02", latitude: 44.5178, longitude: -72.8104, elevation: 911, type: "ranch_brook", status: "active", region: "Alpine" },
-    { id: 4, name: "FEMC", shortName: "FEMC", latitude: 44.5189, longitude: -72.7979, elevation: 872, type: "distributed", status: "active", region: "Alpine" },
-    { id: 5, name: "Site #9", shortName: "RB-09", latitude: 44.4891, longitude: -72.7928, elevation: 846, type: "ranch_brook", status: "active", region: "Alpine" },
-    { id: 6, name: "Site #3", shortName: "RB-03", latitude: 44.5148, longitude: -72.8091, elevation: 795, type: "ranch_brook", status: "active", region: "Montane" },
-    { id: 7, name: "West SCAN", shortName: "RB-14", latitude: 44.535, longitude: -72.8346, elevation: 705, type: "ranch_brook", status: "active", region: "Montane" },
-    { id: 8, name: "Site #4", shortName: "RB-04", latitude: 44.511, longitude: -72.8028, elevation: 639, type: "ranch_brook", status: "active", region: "Montane" },
-    { id: 9, name: "Site #7", shortName: "RB-07", latitude: 44.515, longitude: -72.7854, elevation: 613, type: "ranch_brook", status: "active", region: "Montane" },
-    { id: 10, name: "Sleepers R3/Main", shortName: "SLP-R3", latitude: 44.483, longitude: -72.1647, elevation: 553, type: "distributed", status: "active", region: "Montane" },
-    { id: 11, name: "Site #5", shortName: "RB-05", latitude: 44.5045, longitude: -72.7994, elevation: 507, type: "ranch_brook", status: "active", region: "Montane" },
-    { id: 12, name: "Site #8", shortName: "RB-08", latitude: 44.5096, longitude: -72.7824, elevation: 472, type: "ranch_brook", status: "active", region: "Valley" },
-    { id: 13, name: "Proctor Maple", shortName: "PROC", latitude: 44.5285, longitude: -72.8667, elevation: 422, type: "distributed", status: "active", region: "Valley" },
-    { id: 14, name: "Site #6", shortName: "RB-06", latitude: 44.5037, longitude: -72.7836, elevation: 412, type: "ranch_brook", status: "active", region: "Valley" },
-    { id: 15, name: "Site #11", shortName: "RB-11", latitude: 44.5055, longitude: -72.7714, elevation: 380, type: "ranch_brook", status: "active", region: "Valley" },
-    { id: 16, name: "Sleepers R25", shortName: "SLP-R25", latitude: 44.4767, longitude: -72.126, elevation: 360, type: "distributed", status: "active", region: "Valley" },
-    { id: 17, name: "Site #10", shortName: "RB-10", latitude: 44.495, longitude: -72.7864, elevation: 324, type: "ranch_brook", status: "active", region: "Valley" },
-    { id: 18, name: "Sleepers W1/R11", shortName: "SLP-W1", latitude: 44.4999, longitude: -72.0671, elevation: 226, type: "distributed", status: "active", region: "Valley" },
-    { id: 19, name: "Jericho (Clearing)", shortName: "JER-C", latitude: 44.4477, longitude: -73.0025, elevation: 198, type: "distributed", status: "active", region: "Valley" },
-    { id: 20, name: "Jericho (Forested)", shortName: "JER-F", latitude: 44.4478, longitude: -73.0027, elevation: 196, type: "distributed", status: "active", region: "Valley" },
-    { id: 21, name: "Spear St", shortName: "SPEAR", latitude: 44.4526, longitude: -73.1919, elevation: 86, type: "distributed", status: "active", region: "Valley" },
-    { id: 22, name: "Potash Brook", shortName: "POTASH", latitude: 44.4448, longitude: -73.2143, elevation: 47, type: "distributed", status: "active", region: "Valley" }
+    { id: 1, name: "Mansfield Summit", shortName: "SUMM", latitude: 44.52796261, longitude: -72.81496117, elevation: 1168.568, type: "distributed", status: "active", region: "Alpine" },
+    { id: 2, name: "Ranch Brook #1", shortName: "RB01", latitude: 44.52322238, longitude: -72.80863215, elevation: 1075.002, type: "ranch_brook", status: "active", region: "Alpine" },
+    { id: 3, name: "Ranch Brook #2", shortName: "RB02", latitude: 44.51775982, longitude: -72.81039188, elevation: 910.188, type: "ranch_brook", status: "active", region: "Alpine" },
+    { id: 4, name: "Ranch Brook #12", shortName: "RB12", latitude: 44.51880228, longitude: -72.79785548, elevation: 884.151, type: "ranch_brook", status: "active", region: "Alpine" },
+    { id: 5, name: "Ranch Brook #9", shortName: "RB09", latitude: 44.48905, longitude: -72.79285, elevation: 847, type: "ranch_brook", status: "active", region: "Alpine" },
+    { id: 6, name: "Ranch Brook #3", shortName: "RB03", latitude: 44.51481829, longitude: -72.80905263, elevation: 794.901, type: "ranch_brook", status: "active", region: "Montane" },
+    { id: 7, name: "Mansfield West SCAN", shortName: "UNDR", latitude: 44.53511455, longitude: -72.83462236, elevation: 698.292, type: "distributed", status: "active", region: "Montane" },
+    { id: 8, name: "Ranch Brook #4", shortName: "RB04", latitude: 44.51097861, longitude: -72.80281519, elevation: 639.716, type: "ranch_brook", status: "active", region: "Montane" },
+    { id: 9, name: "Ranch Brook #10", shortName: "RB10", latitude: 44.49505, longitude: -72.78639, elevation: 624, type: "ranch_brook", status: "active", region: "Montane" },
+    { id: 10, name: "Ranch Brook #7", shortName: "RB07", latitude: 44.51528492, longitude: -72.78513705, elevation: 613.31, type: "ranch_brook", status: "active", region: "Montane" },
+    { id: 11, name: "Sleepers R3/Main", shortName: "SR01", latitude: 44.48296257, longitude: -72.16464901, elevation: 552.866, type: "distributed", status: "active", region: "Montane" },
+    { id: 12, name: "Ranch Brook #5", shortName: "RB05", latitude: 44.5044967, longitude: -72.79947434, elevation: 505.38, type: "ranch_brook", status: "active", region: "Montane" },
+    { id: 13, name: "Ranch Brook #8", shortName: "RB08", latitude: 44.50953955, longitude: -72.78220384, elevation: 471.51, type: "ranch_brook", status: "active", region: "Valley" },
+    { id: 14, name: "Mansfield West Proctor", shortName: "PROC", latitude: 44.5285819, longitude: -72.866737, elevation: 418.212, type: "distributed", status: "active", region: "Valley" },
+    { id: 15, name: "Ranch Brook #6", shortName: "RB06", latitude: 44.50370289, longitude: -72.78352521, elevation: 414.489, type: "ranch_brook", status: "active", region: "Valley" },
+    { id: 16, name: "Ranch Brook #11", shortName: "RB11", latitude: 44.50545202, longitude: -72.7713791, elevation: 388.039, type: "ranch_brook", status: "active", region: "Valley" },
+    { id: 17, name: "Sleepers R25", shortName: "SR25", latitude: 44.47682346, longitude: -72.12589909, elevation: 356.653, type: "distributed", status: "active", region: "Valley" },
+    { id: 18, name: "Sleepers W1/R11", shortName: "SI11", latitude: 44.45002119, longitude: -72.06714939, elevation: 225.481, type: "distributed", status: "active", region: "Valley" },
+    { id: 19, name: "Jericho Clearing", shortName: "JRCL", latitude: 44.447694, longitude: -73.00228357, elevation: 199, type: "distributed", status: "active", region: "Valley" },
+    { id: 20, name: "Jericho Forest", shortName: "JRFO", latitude: 44.44780437, longitude: -73.00270872, elevation: 196, type: "distributed", status: "active", region: "Valley" },
+    { id: 21, name: "Spear St", shortName: "SPST", latitude: 44.45258109, longitude: -73.19181715, elevation: 87.108, type: "distributed", status: "active", region: "Valley" },
+    { id: 22, name: "Potash Brook", shortName: "PTSH", latitude: 44.44489861, longitude: -73.21425398, elevation: 44.711, type: "distributed", status: "active", region: "Valley" }
   ];
 
   const mapSites = sites.length > 0 ? sites : defaultSites;
