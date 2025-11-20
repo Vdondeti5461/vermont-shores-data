@@ -67,6 +67,16 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
+## Quick Links
+
+📚 **[DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)** - Complete documentation navigation
+
+🚀 **[GETTING_STARTED.md](GETTING_STARTED.md)** - New developer setup guide
+
+⚡ **[DEPLOYMENT_QUICK_REFERENCE.md](DEPLOYMENT_QUICK_REFERENCE.md)** - Deploy commands
+
+📋 **[TODO.md](TODO.md)** - Future tasks and roadmap
+
 ## Deployment to UVM Servers
 
 This project uses a dual-server deployment strategy:
@@ -82,13 +92,6 @@ This project uses a dual-server deployment strategy:
 # Deploy to production only
 ./deploy-dual.sh production
 ```
-
-### Documentation
-- **[PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)** - Complete project organization
-- **[DEPLOYMENT_QUICK_REFERENCE.md](DEPLOYMENT_QUICK_REFERENCE.md)** - Quick deployment commands
-- **[DUAL_DEPLOYMENT_GUIDE.md](DUAL_DEPLOYMENT_GUIDE.md)** - Detailed dual-server deployment
-- **[SERVER_VERIFICATION_CHECKLIST.md](SERVER_VERIFICATION_CHECKLIST.md)** - Verify server setup
-- **[CLEANUP_CHECKLIST.md](CLEANUP_CHECKLIST.md)** - Repository cleanup guide
 
 ### Architecture
 
@@ -107,6 +110,8 @@ This project uses a dual-server deployment strategy:
 ~/api/          # Backend API deployment
 ~/www-root/     # Frontend build (Apache serves from here)
 ```
+
+📖 **See [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) for complete details**
 
 ## Development
 
@@ -132,8 +137,12 @@ The backend API provides endpoints for:
 
 See [BACKEND_API_ENDPOINTS.md](BACKEND_API_ENDPOINTS.md) for API documentation.
 
-## Need Help?
+## Documentation
 
-- View [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) for complete organization
-- See [DEPLOYMENT_QUICK_REFERENCE.md](DEPLOYMENT_QUICK_REFERENCE.md) for commands
-- Check [SERVER_VERIFICATION_CHECKLIST.md](SERVER_VERIFICATION_CHECKLIST.md) for troubleshooting
+All documentation is organized in **[DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)**
+
+### Quick Links
+- 🚀 New here? Start with [GETTING_STARTED.md](GETTING_STARTED.md)
+- 🔧 Deployment help? See [DEPLOYMENT_QUICK_REFERENCE.md](DEPLOYMENT_QUICK_REFERENCE.md)
+- 🐛 Issues? Check [SERVER_VERIFICATION_CHECKLIST.md](SERVER_VERIFICATION_CHECKLIST.md)
+- 📋 What's next? View [TODO.md](TODO.md)
