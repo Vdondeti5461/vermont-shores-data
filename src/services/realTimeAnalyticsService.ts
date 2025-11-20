@@ -17,6 +17,7 @@ export type TableType =
 export interface Database {
   id: DatabaseType;
   name: string;
+  displayName?: string;
   description: string;
   tables: TableType[];
 }
@@ -52,11 +53,29 @@ export interface TimeSeriesDataPoint {
 
 // Fetch available databases - returns your 4 databases
 export const fetchDatabases = async (): Promise<Database[]> => {
-  const response = await fetch(`${API_BASE_URL}/api/databases`);
-  if (!response.ok) throw new Error('Failed to fetch databases');
-  const data = await response.json();
-  // Handle both array response and object with databases array
-  return Array.isArray(data) ? data : (data.databases || []);
+  try {
+    console.log('Fetching databases from:', `${API_BASE_URL}/api/databases`);
+    const response = await fetch(`${API_BASE_URL}/api/databases`);
+    console.log('Database fetch response status:', response.status);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Database fetch failed:', errorText);
+      throw new Error(`Failed to fetch databases: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log('Fetched databases:', data);
+    
+    // Handle both array response and object with databases array
+    const databases = Array.isArray(data) ? data : (data.databases || []);
+    console.log('Processed databases:', databases);
+    
+    return databases;
+  } catch (error) {
+    console.error('Error fetching databases:', error);
+    throw error;
+  }
 };
 
 // Fetch available seasons
