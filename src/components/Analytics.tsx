@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { TrendingUp, TrendingDown, Activity, BarChart3, LineChart, Calendar, Thermometer, CloudRain, Wind, Snowflake, MapPin } from 'lucide-react';
+import { Thermometer, Wind, Snowflake, MapPin, Database, Download, Filter } from 'lucide-react';
 import { 
   LineChart as RechartsLineChart, 
   Line, 
@@ -12,74 +12,72 @@ import {
   CartesianGrid, 
   Tooltip, 
   Legend, 
-  ResponsiveContainer, 
-  AreaChart, 
-  Area, 
-  BarChart, 
-  Bar, 
+  ResponsiveContainer,
   ComposedChart 
 } from 'recharts';
 import { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSeasonalAnalyticsState } from '@/hooks/useSeasonalAnalytics';
+import { useRealTimeAnalyticsState } from '@/hooks/useRealTimeAnalytics';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Checkbox } from '@/components/ui/checkbox';
+import { format } from 'date-fns';
 
 const Analytics = () => {
   const navigate = useNavigate();
-  const [selectedMetric, setSelectedMetric] = useState('Temperature');
+  const [selectedAttribute, setSelectedAttribute] = useState('snow_depth');
 
-  // Use seasonal analytics hook
+  // Use real-time analytics hook
   const {
-    locations,
     seasons,
-    environmentalData,
-    seasonalMetrics,
-    monthlyTrends,
-    seasonalTrends,
-    selectedLocations,
+    locations,
+    rawData,
+    cleanData,
+    qaqcData,
     selectedSeason,
-    selectedMonth,
-    selectedPeriod,
-    setSelectedLocations,
+    selectedLocations,
     setSelectedSeason,
-    setSelectedMonth,
-    setSelectedPeriod,
-    isLoading,
-    hasError
-  } = useSeasonalAnalyticsState();
+    setSelectedLocations,
+    isLoading
+  } = useRealTimeAnalyticsState();
 
-  // Memoized computed metrics from environmental data for performance
-  const computedMetrics = useMemo(() => {
-    if (environmentalData.length === 0) {
-      return {
-        avgTemperature: 0,
-        avgPrecipitation: 0,
-        avgWindSpeed: 0,
-        avgSnowDepth: 0,
-        dataPoints: 0
-      };
+  // Attribute configuration for display
+  const ATTRIBUTES = useMemo(() => [
+    { 
+      id: 'snow_depth', 
+      label: 'Snow Depth', 
+      unit: 'cm', 
+      icon: Snowflake,
+      rawKey: 'snow_depth_raw',
+      cleanKey: 'snow_depth_clean',
+      qaqcKey: 'snow_depth_qaqc',
+      color: '#3b82f6'
+    },
+    { 
+      id: 'air_temperature_avg_c', 
+      label: 'Air Temperature', 
+      unit: '°C', 
+      icon: Thermometer,
+      rawKey: 'air_temperature_raw',
+      cleanKey: 'air_temperature_clean',
+      qaqcKey: 'air_temperature_qaqc',
+      color: '#ef4444'
+    },
+    { 
+      id: 'wind_speed_max_ms', 
+      label: 'Wind Speed', 
+      unit: 'm/s', 
+      icon: Wind,
+      rawKey: 'wind_speed_raw',
+      cleanKey: 'wind_speed_clean',
+      qaqcKey: 'wind_speed_qaqc',
+      color: '#10b981'
     }
+  ], []);
 
-    const validTemps = environmentalData.filter(d => d.temperature != null);
-    const validPrecip = environmentalData.filter(d => d.precipitation != null);
-    const validWind = environmentalData.filter(d => d.wind_speed != null);
-    const validSnow = environmentalData.filter(d => d.snow_depth != null);
+  // Get selected attribute configuration
+  const currentAttribute = ATTRIBUTES.find(attr => attr.id === selectedAttribute) || ATTRIBUTES[0];
 
-    return {
-      avgTemperature: validTemps.length > 0 ? 
-        validTemps.reduce((sum, d) => sum + d.temperature!, 0) / validTemps.length : 0,
-      avgPrecipitation: validPrecip.length > 0 ? 
-        validPrecip.reduce((sum, d) => sum + d.precipitation!, 0) / validPrecip.length : 0,
-      avgWindSpeed: validWind.length > 0 ? 
-        validWind.reduce((sum, d) => sum + d.wind_speed!, 0) / validWind.length : 0,
-      avgSnowDepth: validSnow.length > 0 ? 
-        validSnow.reduce((sum, d) => sum + d.snow_depth!, 0) / validSnow.length : 0,
-      dataPoints: environmentalData.length
-    };
-  }, [environmentalData]);
-
-  // Optimized location handlers with useCallback
+  // Location handlers
   const handleLocationToggle = useCallback((locationId: string) => {
     setSelectedLocations(prev => 
       prev.includes(locationId) 
@@ -95,639 +93,377 @@ const Analytics = () => {
     );
   }, [locations, selectedLocations.length, setSelectedLocations]);
 
-  // Memoized seasonal data generation for performance
-  const seasonalData = useMemo(() => {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    
-    if (!monthlyTrends || Object.keys(monthlyTrends).length === 0) {
-      // Fallback to current environmental data grouped by month
-      return months.map((month, index) => {
-        const monthData = environmentalData.filter(d => {
-          const date = new Date(d.datetime);
-          return date.getMonth() === index;
+  // Process time series data for charts
+  const chartData = useMemo(() => {
+    if (!rawData.length && !cleanData.length && !qaqcData.length) {
+      return [];
+    }
+
+    // Combine all data sources and group by timestamp
+    const dataByTimestamp = new Map<string, any>();
+
+    // Process raw data
+    rawData.forEach(point => {
+      const key = `${point.timestamp}_${point.location}`;
+      if (!dataByTimestamp.has(key)) {
+        dataByTimestamp.set(key, {
+          timestamp: point.timestamp,
+          location: point.location,
+          dateLabel: point.timestamp ? format(new Date(point.timestamp), 'MMM dd, yyyy') : ''
         });
-        
-        const validTemps = monthData.filter(d => d.temperature != null);
-        const validPrecip = monthData.filter(d => d.precipitation != null);
-        const validWind = monthData.filter(d => d.wind_speed != null);
-        const validSnow = monthData.filter(d => d.snow_depth != null);
-
-        return {
-          month,
-          Temperature: validTemps.length > 0 ? 
-            Number((validTemps.reduce((sum, d) => sum + d.temperature!, 0) / validTemps.length).toFixed(1)) : 0,
-          Precipitation: validPrecip.length > 0 ? 
-            Number((validPrecip.reduce((sum, d) => sum + d.precipitation!, 0) / validPrecip.length).toFixed(1)) : 0,
-          'Wind Speed': validWind.length > 0 ? 
-            Number((validWind.reduce((sum, d) => sum + d.wind_speed!, 0) / validWind.length).toFixed(1)) : 0,
-          'Snow Pack': validSnow.length > 0 ? 
-            Number((validSnow.reduce((sum, d) => sum + d.snow_depth!, 0) / validSnow.length).toFixed(1)) : 0
-        };
-      });
-    }
-
-    return months.map((month, index) => {
-      const monthKey = `${new Date().getFullYear()}-${String(index + 1).padStart(2, '0')}`;
-      const monthData = monthlyTrends[monthKey] || [];
-      
-      const validTemps = monthData.filter(d => d.temperature != null);
-      const validPrecip = monthData.filter(d => d.precipitation != null);
-      const validWind = monthData.filter(d => d.wind_speed != null);
-      const validSnow = monthData.filter(d => d.snow_depth != null);
-
-      return {
-        month,
-        Temperature: validTemps.length > 0 ? 
-          Number((validTemps.reduce((sum, d) => sum + d.temperature!, 0) / validTemps.length).toFixed(1)) : 0,
-        Precipitation: validPrecip.length > 0 ? 
-          Number((validPrecip.reduce((sum, d) => sum + d.precipitation!, 0) / validPrecip.length).toFixed(1)) : 0,
-        'Wind Speed': validWind.length > 0 ? 
-          Number((validWind.reduce((sum, d) => sum + d.wind_speed!, 0) / validWind.length).toFixed(1)) : 0,
-        'Snow Pack': validSnow.length > 0 ? 
-          Number((validSnow.reduce((sum, d) => sum + d.snow_depth!, 0) / validSnow.length).toFixed(1)) : 0
-      };
+      }
+      const data = dataByTimestamp.get(key);
+      data[currentAttribute.rawKey] = (point as any)[currentAttribute.rawKey];
     });
-  }, [environmentalData, monthlyTrends]);
 
-  // Memoized metrics for performance
-  const currentMetrics = useMemo(() => [
-    { 
-      label: 'Average Temperature', 
-      value: computedMetrics.avgTemperature ? `${computedMetrics.avgTemperature.toFixed(1)}°C` : 'N/A', 
-      change: `${computedMetrics.dataPoints} data points`, 
-      trend: 'up',
-      icon: Thermometer,
-      seasonal: { 
-        winter: computedMetrics.avgTemperature ? `${(computedMetrics.avgTemperature - 5).toFixed(1)}°C` : 'N/A', 
-        spring: computedMetrics.avgTemperature ? `${computedMetrics.avgTemperature.toFixed(1)}°C` : 'N/A', 
-        summer: computedMetrics.avgTemperature ? `${(computedMetrics.avgTemperature + 10).toFixed(1)}°C` : 'N/A', 
-        fall: computedMetrics.avgTemperature ? `${(computedMetrics.avgTemperature + 2).toFixed(1)}°C` : 'N/A'
+    // Process clean data
+    cleanData.forEach(point => {
+      const key = `${point.timestamp}_${point.location}`;
+      if (!dataByTimestamp.has(key)) {
+        dataByTimestamp.set(key, {
+          timestamp: point.timestamp,
+          location: point.location,
+          dateLabel: point.timestamp ? format(new Date(point.timestamp), 'MMM dd, yyyy') : ''
+        });
       }
-    },
-    { 
-      label: 'Average Precipitation', 
-      value: computedMetrics.avgPrecipitation ? `${computedMetrics.avgPrecipitation.toFixed(1)}mm` : 'N/A', 
-      change: `${computedMetrics.dataPoints} records`, 
-      trend: 'up',
-      icon: CloudRain,
-      seasonal: { 
-        winter: computedMetrics.avgPrecipitation ? `${(computedMetrics.avgPrecipitation * 0.8).toFixed(1)}mm` : 'N/A', 
-        spring: computedMetrics.avgPrecipitation ? `${(computedMetrics.avgPrecipitation * 1.2).toFixed(1)}mm` : 'N/A', 
-        summer: computedMetrics.avgPrecipitation ? `${(computedMetrics.avgPrecipitation * 1.5).toFixed(1)}mm` : 'N/A', 
-        fall: computedMetrics.avgPrecipitation ? `${computedMetrics.avgPrecipitation.toFixed(1)}mm` : 'N/A'
+      const data = dataByTimestamp.get(key);
+      data[currentAttribute.cleanKey] = (point as any)[currentAttribute.cleanKey];
+    });
+
+    // Process QAQC data
+    qaqcData.forEach(point => {
+      const key = `${point.timestamp}_${point.location}`;
+      if (!dataByTimestamp.has(key)) {
+        dataByTimestamp.set(key, {
+          timestamp: point.timestamp,
+          location: point.location,
+          dateLabel: point.timestamp ? format(new Date(point.timestamp), 'MMM dd, yyyy') : ''
+        });
       }
-    },
-    { 
-      label: 'Average Wind Speed', 
-      value: computedMetrics.avgWindSpeed ? `${computedMetrics.avgWindSpeed.toFixed(1)} m/s` : 'N/A', 
-      change: `${computedMetrics.dataPoints} records`, 
-      trend: 'up',
-      icon: Wind,
-      seasonal: { 
-        winter: computedMetrics.avgWindSpeed ? `${(computedMetrics.avgWindSpeed * 1.3).toFixed(1)}m/s` : 'N/A', 
-        spring: computedMetrics.avgWindSpeed ? `${computedMetrics.avgWindSpeed.toFixed(1)}m/s` : 'N/A', 
-        summer: computedMetrics.avgWindSpeed ? `${(computedMetrics.avgWindSpeed * 0.7).toFixed(1)}m/s` : 'N/A', 
-        fall: computedMetrics.avgWindSpeed ? `${(computedMetrics.avgWindSpeed * 1.1).toFixed(1)}m/s` : 'N/A'
-      }
-    },
-    { 
-      label: 'Average Snow Depth', 
-      value: computedMetrics.avgSnowDepth ? `${computedMetrics.avgSnowDepth.toFixed(1)}cm` : 'N/A', 
-      change: `${computedMetrics.dataPoints} records`, 
-      trend: 'up',
-      icon: Snowflake,
-      seasonal: { 
-        winter: computedMetrics.avgSnowDepth ? `${computedMetrics.avgSnowDepth.toFixed(1)}cm` : 'N/A', 
-        spring: computedMetrics.avgSnowDepth ? `${(computedMetrics.avgSnowDepth * 0.6).toFixed(1)}cm` : 'N/A', 
-        summer: '0cm', 
-        fall: '0cm'
-      }
+      const data = dataByTimestamp.get(key);
+      data[currentAttribute.qaqcKey] = (point as any)[currentAttribute.qaqcKey];
+    });
+
+    // Convert to array and sort by timestamp
+    const sortedData = Array.from(dataByTimestamp.values())
+      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+    // Sample data if too many points (keep every Nth point for performance)
+    const maxPoints = 1000;
+    if (sortedData.length > maxPoints) {
+      const step = Math.ceil(sortedData.length / maxPoints);
+      return sortedData.filter((_, index) => index % step === 0);
     }
-  ], [computedMetrics]);
 
-  // Show loading skeleton while fetching data
+    return sortedData;
+  }, [rawData, cleanData, qaqcData, currentAttribute]);
+
+  // Calculate statistics
+  const statistics = useMemo(() => {
+    const rawValues = chartData.map(d => d[currentAttribute.rawKey]).filter(v => v != null);
+    const cleanValues = chartData.map(d => d[currentAttribute.cleanKey]).filter(v => v != null);
+    const qaqcValues = chartData.map(d => d[currentAttribute.qaqcKey]).filter(v => v != null);
+
+    const calcStats = (values: number[]) => {
+      if (values.length === 0) return { avg: 0, min: 0, max: 0, count: 0 };
+      return {
+        avg: values.reduce((a, b) => a + b, 0) / values.length,
+        min: Math.min(...values),
+        max: Math.max(...values),
+        count: values.length
+      };
+    };
+
+    return {
+      raw: calcStats(rawValues),
+      clean: calcStats(cleanValues),
+      qaqc: calcStats(qaqcValues)
+    };
+  }, [chartData, currentAttribute]);
+
+  // Show loading skeleton
   if (isLoading) {
     return (
-      <section id="analytics" className="py-12 sm:py-16 md:py-20 bg-muted/30">
+      <section id="analytics" className="py-8 sm:py-12">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-12 sm:mb-16">
-            <Badge variant="outline" className="mb-4 text-xs sm:text-sm">
-              Real-time Seasonal Analytics
-            </Badge>
-            <h2 className="scientific-heading text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-4 sm:mb-6 px-2">
-              <span className="text-primary">Seasonal</span> Environmental Analytics
-            </h2>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8 sm:mb-12 px-4 sm:px-0">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Card key={i} className="data-card">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Card key={i}>
                 <CardContent className="p-6">
-                  <Skeleton className="h-8 w-8 mb-4" />
-                  <Skeleton className="h-4 w-24 mb-2" />
-                  <Skeleton className="h-8 w-16 mb-2" />
-                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-20 w-full" />
                 </CardContent>
               </Card>
             ))}
           </div>
+          <Card>
+            <CardContent className="p-6">
+              <Skeleton className="h-96 w-full" />
+            </CardContent>
+          </Card>
         </div>
       </section>
     );
   }
-
-  // Show error state if there's an error
-  if (hasError) {
-    return (
-      <section id="analytics" className="py-12 sm:py-16 md:py-20 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold mb-4">Data Loading Error</h2>
-            <p className="text-muted-foreground mb-4">
-              Unable to load analytics data. Please try again.
-            </p>
-            <Button onClick={() => window.location.reload()}>
-              Retry
-            </Button>
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  // Recent anomalies and events
-  const anomalies = [
-    { date: '2024-01-15', type: 'Temperature Spike', value: '+8°C above normal', severity: 'high' },
-    { date: '2024-01-12', type: 'Heavy Precipitation', value: '45mm in 6hrs', severity: 'medium' },
-    { date: '2024-01-10', type: 'Wind Event', value: '85 km/h gusts', severity: 'high' },
-    { date: '2024-01-08', type: 'Snow Pack Change', value: '-12cm overnight', severity: 'low' }
-  ];
 
   return (
-    <section id="analytics" className="py-12 sm:py-16 md:py-20 bg-muted/30">
+    <section id="analytics" className="py-8 sm:py-12">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-12 sm:mb-16">
-          <Badge variant="outline" className="mb-4 text-xs sm:text-sm">
-            Real-time Seasonal Analytics
-          </Badge>
-          <h2 className="scientific-heading text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-4 sm:mb-6 px-2">
-            <span className="text-primary">Seasonal</span> Environmental Analytics
-          </h2>
-          <p className="text-sm sm:text-base lg:text-lg text-muted-foreground max-w-3xl mx-auto px-4">
-            Real-time environmental data from the seasonal_clean database showing patterns across 2022-2023 
-            and 2023-2024 seasons. Filter by location, season, month, and seasonal periods.
-          </p>
-        </div>
+        {/* Filters */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Filter className="w-5 h-5" />
+              Data Filters
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Season Selection */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Season</label>
+                <Select
+                  value={selectedSeason?.id || ''}
+                  onValueChange={(value) => {
+                    const season = seasons.find(s => s.id === value);
+                    setSelectedSeason(season);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select season..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {seasons.map(season => (
+                      <SelectItem key={season.id} value={season.id}>
+                        <div className="flex items-center gap-2">
+                          <Database className="w-4 h-4" />
+                          {season.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-        {/* Enhanced Controls with seasonal filtering */}
-        <div className="bg-card/50 backdrop-blur-sm rounded-lg border p-4 sm:p-6 mb-8">
-          <h3 className="text-lg font-semibold mb-4 text-center sm:text-left">Data Filters</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">Season</label>
-              <Select value={selectedSeason} onValueChange={setSelectedSeason}>
-                <SelectTrigger className="w-full min-h-[44px]">
-                  <SelectValue placeholder="Select season" />
-                </SelectTrigger>
-                <SelectContent className="z-50">
-                  {seasons.map(season => (
-                    <SelectItem key={season.id} value={season.id}>
-                      {season.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {/* Attribute Selection */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Attribute</label>
+                <Select
+                  value={selectedAttribute}
+                  onValueChange={setSelectedAttribute}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ATTRIBUTES.map(attr => {
+                      const Icon = attr.icon;
+                      return (
+                        <SelectItem key={attr.id} value={attr.id}>
+                          <div className="flex items-center gap-2">
+                            <Icon className="w-4 h-4" />
+                            {attr.label}
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Location Selection */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Locations</label>
+                <div className="border rounded-md p-4 max-h-48 overflow-y-auto">
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2 pb-2 border-b">
+                      <Checkbox
+                        id="select-all"
+                        checked={selectedLocations.length === locations.length}
+                        onCheckedChange={handleSelectAllLocations}
+                      />
+                      <label
+                        htmlFor="select-all"
+                        className="text-sm font-medium cursor-pointer"
+                      >
+                        Select All ({locations.length})
+                      </label>
+                    </div>
+                    {locations.map(location => (
+                      <div key={location.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={location.id}
+                          checked={selectedLocations.includes(location.id)}
+                          onCheckedChange={() => handleLocationToggle(location.id)}
+                        />
+                        <label
+                          htmlFor={location.id}
+                          className="text-sm cursor-pointer flex items-center gap-2"
+                        >
+                          <MapPin className="w-3 h-3" />
+                          {location.name}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
+          </CardContent>
+        </Card>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">Month Filter</label>
-              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                <SelectTrigger className="w-full min-h-[44px]">
-                  <SelectValue placeholder="All months" />
-                </SelectTrigger>
-                <SelectContent className="z-50">
-                  <SelectItem value="all">All months</SelectItem>
-                  <SelectItem value="01">January</SelectItem>
-                  <SelectItem value="02">February</SelectItem>
-                  <SelectItem value="03">March</SelectItem>
-                  <SelectItem value="04">April</SelectItem>
-                  <SelectItem value="05">May</SelectItem>
-                  <SelectItem value="06">June</SelectItem>
-                  <SelectItem value="07">July</SelectItem>
-                  <SelectItem value="08">August</SelectItem>
-                  <SelectItem value="09">September</SelectItem>
-                  <SelectItem value="10">October</SelectItem>
-                  <SelectItem value="11">November</SelectItem>
-                  <SelectItem value="12">December</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">Seasonal Period</label>
-              <Select value={selectedPeriod} onValueChange={(value) => setSelectedPeriod(value as 'fall' | 'winter' | 'spring' | 'summer' | 'all')}>
-                <SelectTrigger className="w-full min-h-[44px]">
-                  <SelectValue placeholder="All periods" />
-                </SelectTrigger>
-                <SelectContent className="z-50">
-                  <SelectItem value="all">All periods</SelectItem>
-                  <SelectItem value="winter">Winter (Dec-Feb)</SelectItem>
-                  <SelectItem value="spring">Spring (Mar-May)</SelectItem>
-                  <SelectItem value="summer">Summer (Jun-Aug)</SelectItem>
-                  <SelectItem value="fall">Fall (Sep-Nov)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">Metric</label>
-              <Select value={selectedMetric} onValueChange={setSelectedMetric}>
-                <SelectTrigger className="w-full min-h-[44px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="z-50">
-                  <SelectItem value="Temperature">Temperature</SelectItem>
-                  <SelectItem value="Precipitation">Precipitation</SelectItem>
-                  <SelectItem value="Wind Speed">Wind Speed</SelectItem>
-                  <SelectItem value="Snow Pack">Snow Pack</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </div>
-
-        {/* Enhanced Location Selector */}
-        <div className="mb-8">
-          <Card className="data-card">
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <MapPin className="h-5 w-5 text-primary" />
-                Location Selection
-                <Badge variant="outline" className="ml-auto">
-                  {selectedLocations.length} of {locations.length} selected
-                </Badge>
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Raw Data
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="select-all"
-                    checked={selectedLocations.length === locations.length}
-                    onCheckedChange={handleSelectAllLocations}
-                  />
-                  <label htmlFor="select-all" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                    Select All Locations
-                  </label>
+              <div className="space-y-2">
+                <div className="text-2xl font-bold">
+                  {statistics.raw.avg.toFixed(2)} {currentAttribute.unit}
                 </div>
-                <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 max-h-64 sm:max-h-48 overflow-y-auto">
-                  {locations.map((location) => (
-                    <div key={location.id} className="flex items-center space-x-2 p-3 sm:p-2 rounded-md hover:bg-muted/50 transition-colors min-h-[44px] sm:min-h-auto">
-                      <Checkbox
-                        id={`location-${location.id}`}
-                        checked={selectedLocations.includes(location.id)}
-                        onCheckedChange={() => handleLocationToggle(location.id)}
-                        className="min-w-[16px] min-h-[16px]"
-                      />
-                      <label 
-                        htmlFor={`location-${location.id}`} 
-                        className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
-                      >
-                        {location.name}
-                      </label>
-                    </div>
-                  ))}
+                <div className="text-sm text-muted-foreground">
+                  Range: {statistics.raw.min.toFixed(1)} - {statistics.raw.max.toFixed(1)} {currentAttribute.unit}
                 </div>
-                {locations.length === 0 && !isLoading && (
-                  <div className="text-center text-muted-foreground py-4">
-                    No locations available in seasonal_clean database
-                  </div>
-                )}
+                <div className="text-sm text-muted-foreground">
+                  {statistics.raw.count} data points
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Clean Data
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="text-2xl font-bold">
+                  {statistics.clean.avg.toFixed(2)} {currentAttribute.unit}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Range: {statistics.clean.min.toFixed(1)} - {statistics.clean.max.toFixed(1)} {currentAttribute.unit}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {statistics.clean.count} data points
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                QAQC Data
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="text-2xl font-bold">
+                  {statistics.qaqc.avg.toFixed(2)} {currentAttribute.unit}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Range: {statistics.qaqc.min.toFixed(1)} - {statistics.qaqc.max.toFixed(1)} {currentAttribute.unit}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {statistics.qaqc.count} data points
+                </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Key Metrics Cards */}
-        <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8 sm:mb-12">
-          {currentMetrics.map((metric, index) => {
-            const Icon = metric.icon;
-            return (
-              <Card key={index} className="data-card hover:shadow-lg transition-all duration-300 group">
-                <CardContent className="p-4 sm:p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="p-2 sm:p-3 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                      <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-                    </div>
-                    <div className="flex items-center text-emerald-600">
-                      {metric.trend === 'up' ? (
-                        <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" />
-                      ) : (
-                        <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5" />
-                      )}
-                    </div>
-                  </div>
-                  <div className="space-y-1 sm:space-y-2">
-                    <span className="text-xs sm:text-sm font-medium text-muted-foreground block">{metric.label}</span>
-                    <div className="text-xl sm:text-2xl lg:text-3xl font-bold">{metric.value}</div>
-                    <div className={`text-xs sm:text-sm ${metric.trend === 'up' ? 'text-success' : 'text-destructive'}`}>
-                      {metric.change}
-                    </div>
-                    <div className="grid grid-cols-2 gap-1 text-2xs sm:text-xs mt-2 sm:mt-3 pt-2 sm:pt-3 border-t">
-                      <span className="truncate">Winter: {metric.seasonal.winter}</span>
-                      <span className="truncate">Spring: {metric.seasonal.spring}</span>
-                      <span className="truncate">Summer: {metric.seasonal.summer}</span>
-                      <span className="truncate">Fall: {metric.seasonal.fall}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-
-        {/* Interactive Charts and Analytics */}
-        <Tabs defaultValue="seasonal" className="space-y-6 sm:space-y-8">
-          <div className="flex justify-center overflow-x-auto pb-2">
-            <TabsList className="grid w-full max-w-2xl grid-cols-2 sm:grid-cols-4 min-h-[48px] p-1">
-              <TabsTrigger value="seasonal" className="flex items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm">
-                <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Seasonal</span>
-                <span className="sm:hidden">Season</span>
-              </TabsTrigger>
-              <TabsTrigger value="trends" className="flex items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm">
-                <LineChart className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Trends</span>
-                <span className="sm:hidden">Trend</span>
-              </TabsTrigger>
-              <TabsTrigger value="comparison" className="flex items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm">
-                <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Compare</span>
-                <span className="sm:hidden">Comp</span>
-              </TabsTrigger>
-              <TabsTrigger value="anomalies" className="flex items-center gap-1 sm:gap-2 p-2 sm:p-3 text-xs sm:text-sm">
-                <Activity className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Events</span>
-                <span className="sm:hidden">Event</span>
-              </TabsTrigger>
-            </TabsList>
-          </div>
-
-          <TabsContent value="seasonal" className="space-y-8">
-            <div className="grid lg:grid-cols-2 gap-8">
-              {/* Seasonal Trend Chart */}
-              <Card className="data-card">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <LineChart className="h-5 w-5 text-primary" />
-                    {selectedMetric} Monthly Patterns
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="w-full h-[250px] sm:h-[300px] lg:h-[350px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RechartsLineChart data={seasonalData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                        <XAxis 
-                          dataKey="month" 
-                          className="text-xs" 
-                          tick={{ fontSize: 10 }}
-                          tickMargin={8}
-                        />
-                        <YAxis 
-                          className="text-xs" 
-                          tick={{ fontSize: 10 }}
-                          tickMargin={8}
-                        />
-                        <Tooltip 
-                          contentStyle={{ 
-                            background: 'hsl(var(--background))', 
-                            border: '1px solid hsl(var(--border))', 
-                            borderRadius: '6px',
-                            fontSize: '12px'
-                          }} 
-                        />
-                        <Legend wrapperStyle={{ fontSize: '12px' }} />
-                        <Line 
-                          type="monotone" 
-                          dataKey={selectedMetric} 
-                          stroke="hsl(var(--primary))" 
-                          strokeWidth={2} 
-                          dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 3 }} 
-                        />
-                      </RechartsLineChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Seasonal Area Chart */}
-              <Card className="data-card">
-                <CardHeader>
-                  <CardTitle>All Metrics Distribution</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="w-full h-[250px] sm:h-[300px] lg:h-[350px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={seasonalData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-                        <defs>
-                          <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8} />
-                            <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.1} />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                        <XAxis 
-                          dataKey="month" 
-                          className="text-xs" 
-                          tick={{ fontSize: 10 }}
-                          tickMargin={8}
-                        />
-                        <YAxis 
-                          className="text-xs" 
-                          tick={{ fontSize: 10 }}
-                          tickMargin={8}
-                        />
-                        <Tooltip 
-                          contentStyle={{ 
-                            background: 'hsl(var(--background))', 
-                            border: '1px solid hsl(var(--border))', 
-                            borderRadius: '6px',
-                            fontSize: '12px'
-                          }} 
-                        />
-                        <Area 
-                          type="monotone" 
-                          dataKey="Temperature" 
-                          stackId="1" 
-                          stroke="hsl(var(--primary))" 
-                          fill="url(#colorGradient)" 
-                        />
-                        <Area 
-                          type="monotone" 
-                          dataKey="Precipitation" 
-                          stackId="2" 
-                          stroke="hsl(var(--secondary))" 
-                          fill="hsl(var(--secondary))" 
-                          fillOpacity={0.3} 
-                        />
-                        <Area 
-                          type="monotone" 
-                          dataKey="Wind Speed" 
-                          stackId="3" 
-                          stroke="hsl(var(--accent))" 
-                          fill="hsl(var(--accent))" 
-                          fillOpacity={0.3} 
-                        />
-                        <Area 
-                          type="monotone" 
-                          dataKey="Snow Pack" 
-                          stackId="4" 
-                          stroke="hsl(var(--muted-foreground))" 
-                          fill="hsl(var(--muted-foreground))" 
-                          fillOpacity={0.3} 
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="trends" className="space-y-8">
-            <Card className="data-card">
-              <CardHeader>
-                <CardTitle>Multi-Metric Seasonal Trends</CardTitle>
-              </CardHeader>
-              <CardContent>
-                 <ResponsiveContainer width="100%" height={400}>
-                   <ComposedChart data={seasonalData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="Temperature" fill="#3b82f6" opacity={0.6} />
-                    <Line type="monotone" dataKey="Precipitation" stroke="#10b981" strokeWidth={3} />
-                    <Line type="monotone" dataKey="Snow Pack" stroke="#ef4444" strokeWidth={2} />
-                  </ComposedChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="comparison" className="space-y-8">
-            <Card className="data-card">
-              <CardHeader>
-                <CardTitle>Monthly Environmental Comparison</CardTitle>
-              </CardHeader>
-              <CardContent>
-                 <ResponsiveContainer width="100%" height={400}>
-                   <BarChart data={seasonalData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="Temperature" fill="#3b82f6" />
-                    <Bar dataKey="Precipitation" fill="#10b981" />
-                    <Bar dataKey="Wind Speed" fill="#f59e0b" />
-                    <Bar dataKey="Snow Pack" fill="#ef4444" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="anomalies" className="space-y-8">
-            <div className="grid lg:grid-cols-2 gap-8">
-              <Card className="data-card">
-                <CardHeader>
-                  <CardTitle>Recent Environmental Events</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {anomalies.map((anomaly, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                      <div>
-                        <div className="font-medium">{anomaly.type}</div>
-                        <div className="text-sm text-muted-foreground">{anomaly.date}</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium">{anomaly.value}</div>
-                        <Badge variant={anomaly.severity === 'high' ? 'destructive' : anomaly.severity === 'medium' ? 'secondary' : 'outline'}>
-                          {anomaly.severity}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-
-              <Card className="data-card">
-                <CardHeader>
-                  <CardTitle>Data Quality Summary</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-primary">{computedMetrics.dataPoints}</div>
-                      <div className="text-sm text-muted-foreground">Total Records</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-success">98.5%</div>
-                      <div className="text-sm text-muted-foreground">Data Quality</div>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span>Temperature Coverage:</span>
-                      <span className="font-medium">95%</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Precipitation Coverage:</span>
-                      <span className="font-medium">92%</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Wind Speed Coverage:</span>
-                      <span className="font-medium">88%</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Snow Depth Coverage:</span>
-                      <span className="font-medium">85%</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
+        {/* Time Series Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>Time Series Comparison: {currentAttribute.label}</span>
+              <Badge variant="outline">
+                {selectedSeason?.name || 'No season selected'}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={500}>
+                <ComposedChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                  <XAxis 
+                    dataKey="dateLabel" 
+                    tick={{ fontSize: 12 }}
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                  />
+                  <YAxis 
+                    label={{ value: `${currentAttribute.label} (${currentAttribute.unit})`, angle: -90, position: 'insideLeft' }}
+                    tick={{ fontSize: 12 }}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--background))', 
+                      border: '1px solid hsl(var(--border))' 
+                    }}
+                  />
+                  <Legend />
+                  <Line 
+                    type="monotone" 
+                    dataKey={currentAttribute.rawKey} 
+                    stroke="#94a3b8" 
+                    name="Raw Data"
+                    dot={false}
+                    strokeWidth={1}
+                    opacity={0.5}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey={currentAttribute.cleanKey} 
+                    stroke="#3b82f6" 
+                    name="Clean Data"
+                    dot={false}
+                    strokeWidth={2}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey={currentAttribute.qaqcKey} 
+                    stroke="#10b981" 
+                    name="QAQC Data"
+                    dot={false}
+                    strokeWidth={2}
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-96 text-muted-foreground">
+                <Database className="w-16 h-16 mb-4 opacity-20" />
+                <p className="text-lg font-medium">No data available</p>
+                <p className="text-sm">Select a season and location to view time series data</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Call to Action */}
-        <div className="mt-16 text-center">
-          <Card className="data-card inline-block max-w-2xl">
+        <div className="mt-12 text-center">
+          <Card className="bg-gradient-to-br from-primary/5 to-secondary/5 border-primary/20">
             <CardContent className="p-8">
-              <h3 className="text-xl font-bold mb-4">Explore Advanced Analytics</h3>
-              <p className="text-muted-foreground mb-6">
-                Dive deeper into environmental patterns with advanced statistical analysis, 
-                predictive modeling, and comparative studies across multiple seasons.
+              <h3 className="text-2xl font-bold mb-4">
+                Download Data for Analysis
+              </h3>
+              <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
+                Export time series data in CSV or Excel format for further analysis in your preferred tools.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button 
-                  onClick={() => navigate('/analytics/advanced')}
-                  className="flex items-center gap-2"
-                >
-                  <BarChart3 className="h-4 w-4" />
-                  <span className="hidden sm:inline">Launch Advanced Dashboard</span>
-                  <span className="sm:hidden">Advanced Analytics</span>
+              <div className="flex gap-4 justify-center flex-wrap">
+                <Button onClick={() => navigate('/data-download')} size="lg">
+                  <Download className="w-4 h-4 mr-2" />
+                  Download Data
                 </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => navigate('/documentation')}
-                  className="flex items-center gap-2"
-                >
-                  <Calendar className="h-4 w-4" />
-                  <span className="hidden sm:inline">View Documentation</span>
-                  <span className="sm:hidden">Documentation</span>
+                <Button variant="outline" onClick={() => navigate('/documentation')} size="lg">
+                  View Documentation
                 </Button>
               </div>
             </CardContent>
