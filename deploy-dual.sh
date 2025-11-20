@@ -1,12 +1,19 @@
 #!/bin/bash
 set -e
 
+# Summit2Shore Dual Deployment Script
+# Deploys FRONTEND ONLY to UVM servers: vdondeti.w3.uvm.edu (testing) and crrels2s.w3.uvm.edu (production)
+# 
+# Usage:
+#   ./deploy-dual.sh           # Deploy to both servers
+#   ./deploy-dual.sh testing   # Deploy to testing only
+#   ./deploy-dual.sh production # Deploy to production only
+#
+# Note: This script deploys the frontend only (React build to ~/www-root/)
+# For backend API deployment, see DEPLOYMENT_QUICK_REFERENCE.md
+
 # Make the script executable on first run
 chmod +x "$0" 2>/dev/null || true
-
-# Dual deployment script for UVM servers
-# Usage: ./deploy-dual.sh [testing|production|both]
-# Default: both
 
 DEPLOYMENT_TYPE=${1:-both}
 

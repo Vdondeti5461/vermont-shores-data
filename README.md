@@ -1,8 +1,15 @@
-# Welcome to your Lovable project
+# Summit2Shore Environmental Data Platform
 
-## Project info
+## Project Overview
 
-**URL**: https://lovable.dev/projects/5d5ff90d-8cee-4075-81bd-555a25d8e14f
+The Summit2Shore platform provides access to environmental monitoring data from Vermont watersheds, enabling researchers and stakeholders to download and analyze water quality, temperature, and other environmental parameters.
+
+**Lovable Project**: https://lovable.dev/projects/5d5ff90d-8cee-4075-81bd-555a25d8e14f
+
+## Live Deployments
+
+- **Testing Environment**: https://vdondeti.w3.uvm.edu
+- **Production Environment**: https://crrels2s.w3.uvm.edu
 
 ## How can I edit this code?
 
@@ -60,14 +67,73 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
-## How can I deploy this project?
+## Deployment to UVM Servers
 
-Simply open [Lovable](https://lovable.dev/projects/5d5ff90d-8cee-4075-81bd-555a25d8e14f) and click on Share -> Publish.
+This project uses a dual-server deployment strategy:
 
-## Can I connect a custom domain to my Lovable project?
+### Quick Deploy
+```bash
+# Deploy to both testing and production
+./deploy-dual.sh
 
-Yes, you can!
+# Deploy to testing only
+./deploy-dual.sh testing
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+# Deploy to production only
+./deploy-dual.sh production
+```
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+### Documentation
+- **[PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)** - Complete project organization
+- **[DEPLOYMENT_QUICK_REFERENCE.md](DEPLOYMENT_QUICK_REFERENCE.md)** - Quick deployment commands
+- **[DUAL_DEPLOYMENT_GUIDE.md](DUAL_DEPLOYMENT_GUIDE.md)** - Detailed dual-server deployment
+- **[SERVER_VERIFICATION_CHECKLIST.md](SERVER_VERIFICATION_CHECKLIST.md)** - Verify server setup
+- **[CLEANUP_CHECKLIST.md](CLEANUP_CHECKLIST.md)** - Repository cleanup guide
+
+### Architecture
+
+**Frontend**: React + TypeScript + Vite + Tailwind CSS
+- Source: `src/`
+- Build output: `dist/` (deployed to `~/www-root/` on servers)
+
+**Backend**: Node.js + Express + MySQL
+- Source: `production-api-server.js`
+- Deployed: `~/api/` on servers
+- Database: MySQL on `webdb5.uvm.edu`
+
+### Server Structure
+```
+~/site-src/     # Source code from GitHub
+~/api/          # Backend API deployment
+~/www-root/     # Frontend build (Apache serves from here)
+```
+
+## Development
+
+```bash
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+```
+
+## Backend API
+
+The backend API provides endpoints for:
+- Database listing
+- Table metadata
+- Location data
+- Data downloads (CSV)
+- Analytics
+
+See [BACKEND_API_ENDPOINTS.md](BACKEND_API_ENDPOINTS.md) for API documentation.
+
+## Need Help?
+
+- View [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) for complete organization
+- See [DEPLOYMENT_QUICK_REFERENCE.md](DEPLOYMENT_QUICK_REFERENCE.md) for commands
+- Check [SERVER_VERIFICATION_CHECKLIST.md](SERVER_VERIFICATION_CHECKLIST.md) for troubleshooting
