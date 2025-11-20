@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -29,6 +29,7 @@ interface APIKey {
 
 export default function APIKeys() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [apiKeys, setApiKeys] = useState<APIKey[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showNewKey, setShowNewKey] = useState(false);
@@ -38,7 +39,7 @@ export default function APIKeys() {
   useEffect(() => {
     const token = localStorage.getItem('auth_token');
     if (!token) {
-      navigate('/auth');
+      navigate('/auth', { state: { from: location } });
       return;
     }
     fetchAPIKeys();

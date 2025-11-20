@@ -26,10 +26,9 @@ const Header = () => {
   ];
 
   const analyticsSubsections = [
-    { label: 'Maps/Analysis', href: '/analytics', icon: Map, description: 'Spatial analysis and geographic visualization' },
-    { label: 'Plots', href: '/analytics/plots', icon: LineChart, description: 'Time series and data plots' },
-    { label: 'Snow Analytics', href: '/analytics/snow-depth', icon: BarChart3, description: 'Snow depth analysis' },
-    { label: 'Others', href: '/analytics/advanced', icon: Layers, description: 'Additional analytics tools' }
+    { label: 'Real-Time Analysis', href: '/analytics', icon: LineChart, description: 'Compare data quality levels across observation tables' },
+    { label: 'Seasonal Analysis', href: '/analytics/seasonal', icon: Layers, description: 'Three seasons of quality-controlled data (2022-2025)' },
+    { label: 'Advanced Analytics', href: '/analytics/advanced', icon: BarChart3, description: 'ML models and predictive analytics (coming soon)' }
   ];
 
   const dataDownloadSubsections = [
