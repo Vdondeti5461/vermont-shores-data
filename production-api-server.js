@@ -311,23 +311,29 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// Get available databases - RESTRICTED to seasonal_qaqc_data only
+// Get available databases - Return all for analytics, but downloads are restricted by table filter
 app.get('/api/databases', async (req, res) => {
   try {
-    // Only return the seasonal QAQC database for downloads
-    const allowedDatabase = 'seasonal_qaqc_data';
-    const metadata = DATABASE_METADATA[allowedDatabase] || {};
+    // Return all databases sorted by order
+    const databases = Object.keys(DATABASE_METADATA)
+      .map(key => {
+        const metadata = DATABASE_METADATA[key];
+        return {
+          id: DATABASES[key] || key, // Use actual database name
+          key: key,
+          name: DATABASES[key],
+          displayName: key.split('_').map(word => 
+            word.charAt(0).toUpperCase() + word.slice(1)
+          ).join(' '),
+          description: metadata.description || 'Environmental monitoring database',
+          category: metadata.category || 'general',
+          order: metadata.order || 99,
+          tables: [] // Will be fetched separately
+        };
+      })
+      .sort((a, b) => a.order - b.order);
     
-    const databases = [{
-      key: allowedDatabase,
-      name: DATABASES[allowedDatabase],
-      displayName: 'Seasonal QAQC Data',
-      description: metadata.description || 'Quality-assured and quality-controlled seasonal environmental data',
-      category: metadata.category || 'seasonal',
-      order: 1
-    }];
-    
-    res.json({ databases });
+    res.json(databases);
   } catch (error) {
     console.error('Error fetching databases:', error);
     res.status(500).json({ error: 'Failed to fetch databases' });
