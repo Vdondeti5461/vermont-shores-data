@@ -137,35 +137,39 @@ export class LocalDatabaseService {
     PRECIPITATION: 'Precipitation'
   } as const;
 
-  // Database mapping - expose 4 categories used earlier
+  // Database mapping - updated schema names
   static readonly DATABASE_MAPPING = {
     raw_data: {
       id: 'raw_data',
-      name: 'Raw Data',
+      name: 'CRRELS2S_raw_data_ingestion',
       displayName: 'Raw Environmental Data',
       category: 'raw',
-      order: 1
+      order: 1,
+      downloadable: false
     },
-    initial_clean_data: {
-      id: 'initial_clean_data',
-      name: 'Initial Clean Data',
-      displayName: 'Initial Clean Data',
-      category: 'processed',
-      order: 2
+    stage_clean_data: {
+      id: 'stage_clean_data',
+      name: 'CRRELS2S_stage_clean_data',
+      displayName: 'Stage Clean Data',
+      category: 'cleaned',
+      order: 2,
+      downloadable: false
     },
-    final_clean_data: {
-      id: 'final_clean_data',
-      name: 'Final Clean Data',
-      displayName: 'Final Clean Data',
-      category: 'processed',
-      order: 3
+    stage_qaqc_data: {
+      id: 'stage_qaqc_data',
+      name: 'CRRELS2S_stage_qaqc_data',
+      displayName: 'Stage QAQC Data',
+      category: 'qaqc',
+      order: 3,
+      downloadable: false
     },
-    seasonal_clean_data: {
-      id: 'seasonal_clean_data',
-      name: 'Seasonal Clean Data',
-      displayName: 'Seasonal Clean Data',
+    seasonal_qaqc_data: {
+      id: 'seasonal_qaqc_data',
+      name: 'CRRELS2S_seasonal_qaqc_data',
+      displayName: 'Seasonal QAQC Data',
       category: 'seasonal',
-      order: 4
+      order: 4,
+      downloadable: true
     }
   } as const;
 
