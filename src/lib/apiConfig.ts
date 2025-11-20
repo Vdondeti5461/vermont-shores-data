@@ -6,35 +6,49 @@ export const getApiBaseUrl = (): string => {
 
   // 1) Optional runtime override via global config injected by server
   const cfg = w?.__APP_CONFIG__?.API_BASE_URL as string | undefined;
-  if (cfg) return cfg.replace(/\/$/, '');
+  if (cfg) {
+    console.log('🔧 API Config: Using runtime override:', cfg);
+    return cfg.replace(/\/$/, '');
+  }
 
-  // 2) Production server for UVM deployment - backend runs on port 3001
+  // 2) Production server for UVM deployment - use same origin (Apache proxies /api)
   if (w && w.location.hostname.includes('uvm.edu')) {
-    // Backend API is on port 3001
-    return `https://${w.location.hostname}:3001`;
+    const baseUrl = `${w.location.protocol}//${w.location.hostname}`;
+    console.log('🔧 API Config: UVM deployment detected, using:', baseUrl);
+    return baseUrl;
   }
 
   // 3) Production server for any non-localhost deployment
   if (w && w.location.hostname !== 'localhost' && w.location.hostname !== '127.0.0.1') {
-    return `https://${w.location.hostname}`;
+    const baseUrl = `${w.location.protocol}//${w.location.hostname}`;
+    console.log('🔧 API Config: Production deployment, using:', baseUrl);
+    return baseUrl;
   }
 
   // 4) Optional Vite env for local builds only
   const envUrl = (import.meta as any)?.env?.VITE_API_URL as string | undefined;
   if (envUrl && w && (w.location.hostname === 'localhost' || w.location.hostname === '127.0.0.1')) {
+    console.log('🔧 API Config: Using Vite env variable:', envUrl);
     return envUrl.replace(/\/$/, '');
   }
 
   // 5) Local dev fallback
   if (w && (w.location.hostname === 'localhost' || w.location.hostname === '127.0.0.1')) {
-    return 'http://localhost:3001';
+    const localUrl = 'http://localhost:3001';
+    console.log('🔧 API Config: Local development, using:', localUrl);
+    return localUrl;
   }
 
   // 6) Ultimate fallback to production server
-  return 'https://crrels2s.w3.uvm.edu';
+  const fallbackUrl = 'https://crrels2s.w3.uvm.edu';
+  console.log('🔧 API Config: Using fallback:', fallbackUrl);
+  return fallbackUrl;
 };
 
 export const API_BASE_URL = getApiBaseUrl();
+
+// Log the computed API base URL on startup
+console.log('📡 API Base URL configured:', API_BASE_URL);
 
 // Database configuration - only seasonal QAQC data is available for direct download
 export const DOWNLOADABLE_DATABASE = 'seasonal_qaqc_data';
