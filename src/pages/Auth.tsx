@@ -14,16 +14,13 @@ export default function Auth() {
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   
-  // Get the page user was on before login
-  const from = (location.state as any)?.from?.pathname || '/';
-
   useEffect(() => {
     // Check if already logged in
     const token = localStorage.getItem('auth_token');
     if (token) {
-      navigate(from, { replace: true });
+      navigate('/', { replace: true });
     }
-  }, [from, navigate]);
+  }, [navigate]);
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -46,8 +43,7 @@ export default function Auth() {
         localStorage.setItem('auth_token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
         toast.success('Welcome back!');
-        // Redirect to the page they were on, or home
-        navigate(from, { replace: true });
+        navigate('/', { replace: true });
       } else {
         toast.error(data.message || 'Invalid email or password');
       }
