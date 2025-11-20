@@ -117,12 +117,14 @@ const DynamicDataBrowser = () => {
     setLoading(true);
     try {
       const data = await apiCall('/api/databases', 'Load databases');
-      setDatabases(data.databases || []);
+      // Handle both array response and object with databases array
+      const dbList = Array.isArray(data) ? data : (data.databases || []);
+      setDatabases(dbList);
       
-      if (data.databases && data.databases.length > 0) {
+      if (dbList.length > 0) {
         toast({
           title: "Databases Loaded",
-          description: `Found ${data.databases.length} databases`,
+          description: `Found ${dbList.length} databases`,
         });
       }
     } catch (error) {

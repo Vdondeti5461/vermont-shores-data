@@ -53,26 +53,37 @@ export class DataDownloadService {
   // Get all available databases
   static async getDatabases(): Promise<DatabaseInfo[]> {
     try {
+      console.log('📊 Fetching databases from:', `${this.baseUrl}/api/databases`);
       const response = await fetch(`${this.baseUrl}/api/databases`);
+      console.log('📊 Database response status:', response.status);
+      
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('📊 Database fetch error:', errorText);
         throw new Error(`Failed to fetch databases: ${response.statusText}`);
       }
       
       const data = await response.json();
+      console.log('📊 Raw database response:', data);
+      
+      // Handle both array response and object with databases array
+      const rawDatabases = Array.isArray(data) ? data : (data.databases || []);
+      console.log('📊 Processed databases:', rawDatabases);
       
       // Transform the response to match our interface
-      const databases: DatabaseInfo[] = (data.databases || []).map((db: any, index: number) => ({
+      const databases: DatabaseInfo[] = rawDatabases.map((db: any, index: number) => ({
         id: db.key || db.id || `db_${index}`,
-        name: db.display_name || db.name || db.key || `Database ${index + 1}`,
+        name: db.displayName || db.display_name || db.name || db.key || `Database ${index + 1}`,
         database_name: db.name || db.database_name || db.key,
         description: db.description,
         category: db.category,
         order: db.order || index
       }));
 
+      console.log('📊 Transformed databases:', databases);
       return databases.sort((a, b) => (a.order || 0) - (b.order || 0));
     } catch (error) {
-      console.error('Error fetching databases:', error);
+      console.error('📊 Error fetching databases:', error);
       throw new Error('Failed to load available databases');
     }
   }
