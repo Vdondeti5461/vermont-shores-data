@@ -89,30 +89,30 @@ async function getConnectionWithDB(databaseKey = 'raw_data') {
   return { connection, databaseName };
 }
 
-// Location metadata with complete information
+// Location metadata with complete information (survey-accurate coordinates)
 const LOCATION_METADATA = {
-  'RB01': { name: 'Mansfield East Ranch Brook 1', latitude: 44.2619, longitude: -72.8081, elevation: 1200 },
-  'RB02': { name: 'Mansfield East Ranch Brook 2', latitude: 44.2625, longitude: -72.8075, elevation: 1180 },
-  'RB03': { name: 'Mansfield East Ranch Brook 3', latitude: 44.2631, longitude: -72.8069, elevation: 1160 },
-  'RB04': { name: 'Mansfield East Ranch Brook 4', latitude: 44.2637, longitude: -72.8063, elevation: 1140 },
-  'RB05': { name: 'Mansfield East Ranch Brook 5', latitude: 44.2643, longitude: -72.8057, elevation: 1120 },
-  'RB06': { name: 'Mansfield East Ranch Brook 6', latitude: 44.2649, longitude: -72.8051, elevation: 1100 },
-  'RB07': { name: 'Mansfield East Ranch Brook 7', latitude: 44.2655, longitude: -72.8045, elevation: 1080 },
-  'RB08': { name: 'Mansfield East Ranch Brook 8', latitude: 44.2661, longitude: -72.8039, elevation: 1060 },
-  'RB09': { name: 'Mansfield East Ranch Brook 9', latitude: 44.2667, longitude: -72.8033, elevation: 1040 },
-  'RB10': { name: 'Mansfield East Ranch Brook 10', latitude: 44.2673, longitude: -72.8027, elevation: 1020 },
-  'RB11': { name: 'Mansfield East Ranch Brook 11', latitude: 44.2679, longitude: -72.8021, elevation: 1000 },
-  'RB12': { name: 'Mansfield East FEMC', latitude: 44.2685, longitude: -72.8015, elevation: 980 },
-  'SPER': { name: 'Spear Street', latitude: 44.4759, longitude: -73.1959, elevation: 120 },
-  'SR01': { name: 'Sleepers R3/Main', latitude: 44.2891, longitude: -72.8211, elevation: 900 },
-  'SR11': { name: 'Sleepers W1/R11', latitude: 44.2885, longitude: -72.8205, elevation: 920 },
-  'SR25': { name: 'Sleepers R25', latitude: 44.2879, longitude: -72.8199, elevation: 940 },
-  'JRCL': { name: 'Jericho clearing', latitude: 44.4919, longitude: -72.9659, elevation: 300 },
-  'JRFO': { name: 'Jericho Forest', latitude: 44.4925, longitude: -72.9665, elevation: 320 },
-  'PROC': { name: 'Mansfield West Proctor', latitude: 44.2561, longitude: -72.8141, elevation: 1300 },
-  'PTSH': { name: 'Potash Brook', latitude: 44.2567, longitude: -72.8147, elevation: 1280 },
-  'SUMM': { name: 'Mansfield SUMMIT', latitude: 44.2573, longitude: -72.8153, elevation: 1339 },
-  'UNDR': { name: 'Mansfield West SCAN', latitude: 44.2555, longitude: -72.8135, elevation: 1260 }
+  'SUMM': { name: 'Mansfield Summit', latitude: 44.5284, longitude: -72.8147, elevation: 1163 },
+  'RB-01': { name: 'Ranch Brook Site #1', latitude: 44.5232, longitude: -72.8087, elevation: 1072 },
+  'RB-02': { name: 'Ranch Brook Site #2', latitude: 44.5178, longitude: -72.8104, elevation: 911 },
+  'RB12': { name: 'Ranch Brook Site #12 (FEMC)', latitude: 44.5189, longitude: -72.7979, elevation: 872 },
+  'RB-09': { name: 'Ranch Brook Site #9', latitude: 44.4891, longitude: -72.7928, elevation: 846 },
+  'RB-03': { name: 'Ranch Brook Site #3', latitude: 44.5148, longitude: -72.8091, elevation: 795 },
+  'UNDR': { name: 'Mansfield West SCAN', latitude: 44.535, longitude: -72.8346, elevation: 705 },
+  'RB-04': { name: 'Ranch Brook Site #4', latitude: 44.511, longitude: -72.8028, elevation: 639 },
+  'RB-07': { name: 'Ranch Brook Site #7', latitude: 44.515, longitude: -72.7854, elevation: 613 },
+  'SR01': { name: 'Sleepers R3/Main', latitude: 44.483, longitude: -72.1647, elevation: 553 },
+  'RB-05': { name: 'Ranch Brook Site #5', latitude: 44.5045, longitude: -72.7994, elevation: 507 },
+  'RB-08': { name: 'Ranch Brook Site #8', latitude: 44.5096, longitude: -72.7824, elevation: 472 },
+  'PROC': { name: 'Proctor Maple', latitude: 44.5285, longitude: -72.8667, elevation: 422 },
+  'RB-06': { name: 'Ranch Brook Site #6', latitude: 44.5037, longitude: -72.7836, elevation: 412 },
+  'RB-11': { name: 'Ranch Brook Site #11', latitude: 44.5055, longitude: -72.7714, elevation: 380 },
+  'SR25': { name: 'Sleepers R25', latitude: 44.4767, longitude: -72.126, elevation: 360 },
+  'RB-10': { name: 'Ranch Brook Site #10', latitude: 44.495, longitude: -72.7864, elevation: 324 },
+  'SI11': { name: 'Sleepers W1/R11', latitude: 44.4999, longitude: -72.0671, elevation: 226 },
+  'JRCL': { name: 'Jericho (Clearing)', latitude: 44.4477, longitude: -73.0025, elevation: 198 },
+  'JRFO': { name: 'Jericho (Forested)', latitude: 44.4478, longitude: -73.0027, elevation: 196 },
+  'SPST': { name: 'Spear St', latitude: 44.4526, longitude: -73.1919, elevation: 86 },
+  'PTSH': { name: 'Potash Brook', latitude: 44.4448, longitude: -73.2143, elevation: 47 }
 };
 
 // Table metadata with detailed descriptions
