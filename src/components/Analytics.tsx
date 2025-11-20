@@ -8,6 +8,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { Loader2, TrendingUp, Database as DatabaseIcon, MapPin, Calendar } from 'lucide-react';
 import { useRealTimeAnalyticsState } from '@/hooks/useRealTimeAnalytics';
 import { TimeSeriesComparison } from './TimeSeriesComparison';
+import { API_BASE_URL } from '@/lib/apiConfig';
 import { DatabaseType, TableType } from '@/services/realTimeAnalyticsService';
 
 const TABLE_LABELS: Record<TableType, string> = {
@@ -98,9 +99,27 @@ export const Analytics = () => {
   // Debug logging
   console.log('Analytics component render - databases:', databases);
   console.log('Analytics component render - isLoading:', isLoading);
+  console.log('Analytics component render - API_BASE_URL:', API_BASE_URL);
 
   return (
     <div className="space-y-6">
+      {/* Error Display */}
+      {!isLoading && (!databases || databases.length === 0) && (
+        <Card className="border-destructive">
+          <CardHeader>
+            <CardTitle className="text-destructive">Database Connection Issue</CardTitle>
+            <CardDescription>
+              Unable to fetch databases from the API server. Please check:
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <p>• Backend API server is running on <code className="bg-muted px-2 py-1 rounded">{API_BASE_URL}</code></p>
+            <p>• CORS is properly configured</p>
+            <p>• Network connection is stable</p>
+            <p className="mt-4 text-muted-foreground">Check browser console (F12) for detailed error messages.</p>
+          </CardContent>
+        </Card>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
