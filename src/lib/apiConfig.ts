@@ -34,3 +34,33 @@ export const getApiBaseUrl = (): string => {
 };
 
 export const API_BASE_URL = getApiBaseUrl();
+
+// Database configuration - only seasonal QAQC data is available for direct download
+export const DOWNLOADABLE_DATABASE = 'seasonal_qaqc_data';
+
+export const DATABASE_CONFIG = {
+  CRRELS2S_raw_data_ingestion: {
+    key: 'raw_data',
+    name: 'CRRELS2S Raw Data Ingestion',
+    downloadable: false,
+    description: 'Raw sensor data directly from field loggers, unprocessed'
+  },
+  CRRELS2S_stage_clean_data: {
+    key: 'stage_clean_data',
+    name: 'CRRELS2S Stage Clean Data',
+    downloadable: false,
+    description: 'Intermediate cleaned datasets using basic quality control (QC) filters'
+  },
+  CRRELS2S_stage_qaqc_data: {
+    key: 'stage_qaqc_data',
+    name: 'CRRELS2S Stage QAQC Data',
+    downloadable: false,
+    description: 'Advanced QAQC with calibration, temporal checks, and derived values'
+  },
+  CRRELS2S_seasonal_qaqc_data: {
+    key: 'seasonal_qaqc_data',
+    name: 'CRRELS2S Seasonal QAQC Data',
+    downloadable: true,
+    description: 'Seasonal datasets after QAQC is applied, designed for time-bounded analysis'
+  }
+} as const;

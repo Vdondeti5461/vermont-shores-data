@@ -8,6 +8,15 @@ import { API_BASE_URL } from '@/lib/apiConfig';
 
 const APIDocumentation = () => {
   const baseUrl = `${API_BASE_URL}/api`;
+  
+  // API Authentication Info
+  const authInfo = {
+    currentAccess: 'Open Access (Seasonal QAQC Data)',
+    restrictedData: ['Raw Data', 'Stage Clean Data', 'Stage QAQC Data'],
+    requestProcess: 'Submit bulk download request form',
+    contactEmail: 's2s@uvm.edu',
+    contactPhone: '(802) 656-2215'
+  };
 
   const endpoints = [
     {
@@ -29,7 +38,7 @@ const APIDocumentation = () => {
     {
       "key": "raw_data",
       "name": "CRRELS2S_raw_data_ingestion",
-      "display_name": "Raw Data Ingestion",
+      "displayName": "Raw Data Ingestion",
       "description": "Raw sensor data directly from field loggers, unprocessed",
       "category": "raw",
       "order": 1
@@ -37,7 +46,7 @@ const APIDocumentation = () => {
     {
       "key": "stage_clean_data",
       "name": "CRRELS2S_stage_clean_data",
-      "display_name": "Stage Clean Data",
+      "displayName": "Stage Clean Data",
       "description": "Intermediate cleaned datasets using basic quality control (QC) filters",
       "category": "cleaned",
       "order": 2
@@ -45,7 +54,7 @@ const APIDocumentation = () => {
     {
       "key": "stage_qaqc_data",
       "name": "CRRELS2S_stage_qaqc_data",
-      "display_name": "Stage QAQC Data",
+      "displayName": "Stage QAQC Data",
       "description": "Advanced QAQC with calibration, temporal checks, and derived values",
       "category": "qaqc",
       "order": 3
@@ -53,7 +62,7 @@ const APIDocumentation = () => {
     {
       "key": "seasonal_qaqc_data",
       "name": "CRRELS2S_seasonal_qaqc_data",
-      "display_name": "Seasonal QAQC Data",
+      "displayName": "Seasonal QAQC Data",
       "description": "Seasonal datasets after QAQC, designed for time-bounded analysis",
       "category": "seasonal",
       "order": 4
@@ -73,31 +82,31 @@ const APIDocumentation = () => {
   "tables": [
     {
       "name": "raw_env_core_observations",
-      "display_name": "Core Environmental Observations",
-      "description": "Primary environmental measurements including temperature, humidity, radiation, and snow metrics",
-      "row_count": 1247892,
-      "columns": ["timestamp", "location", "air_temperature_avg_c", "relative_humidity_percent", "snow_depth_cm", "snow_water_equivalent_mm"]
+      "displayName": "Core Environmental Observations",
+      "description": "Temperature, humidity, radiation, soil, and snow measurements",
+      "rowCount": 1247892,
+      "primaryAttributes": ["timestamp", "location"]
     },
     {
       "name": "raw_env_wind_observations",
-      "display_name": "Wind Observations",
-      "description": "Wind speed and direction measurements from weather stations",
-      "row_count": 1247892,
-      "columns": ["timestamp", "location", "wind_speed_avg_ms", "wind_direction_deg", "wind_speed_max_ms"]
+      "displayName": "Wind Observations",
+      "description": "Wind speed and direction measurements",
+      "rowCount": 1247892,
+      "primaryAttributes": ["timestamp", "location"]
     },
     {
       "name": "raw_env_precipitation_observations",
-      "display_name": "Precipitation Observations",
-      "description": "Precipitation intensity and accumulation measurements",
-      "row_count": 892415,
-      "columns": ["timestamp", "location", "precip_intensity_rt_mm_min", "precip_accum_rt_nrt_mm", "bucket_precip_rt_mm"]
+      "displayName": "Precipitation Observations",
+      "description": "Precipitation intensity and accumulation",
+      "rowCount": 892415,
+      "primaryAttributes": ["timestamp", "location"]
     },
     {
       "name": "raw_env_snowpack_temperature_profile",
-      "display_name": "Snowpack Temperature Profile",
-      "description": "Vertical temperature profile measurements through snowpack (0-290cm depths)",
-      "row_count": 1247892,
-      "columns": ["timestamp", "location", "snow_temp_0cm_avg", "snow_temp_10cm_avg", "snow_temp_290cm_avg"]
+      "displayName": "Snowpack Temperature Profile",
+      "description": "Vertical temperature profile (0-290cm depths)",
+      "rowCount": 745232,
+      "primaryAttributes": ["timestamp", "location"]
     }
   ]
 }`
@@ -515,115 +524,150 @@ try {
                 <Card>
                   <CardHeader>
                     <Key className="h-8 w-8 text-primary mb-2" />
-                    <CardTitle>Authentication</CardTitle>
+                    <CardTitle>Authentication & Data Access</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                      <h4 className="font-semibold text-green-800 mb-2">Current Access Policy</h4>
-                      <p className="text-green-700 text-sm">
-                        The Summit-to-Shore API is currently open access for research and educational purposes. 
-                        Full authentication and access control systems are under development to support 
-                        secure data sharing with partner networks and research institutions.
+                    <div className="p-4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
+                      <h4 className="font-semibold text-green-800 dark:text-green-200 mb-2">✅ Open Access: Seasonal QAQC Data</h4>
+                      <p className="text-green-700 dark:text-green-300 text-sm mb-2">
+                        The <strong>CRRELS2S_seasonal_qaqc_data</strong> database is openly accessible through our API and web interface for research and educational purposes.
                       </p>
-                    </div>
-                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                      <h4 className="font-semibold text-amber-800 mb-2">Upcoming: Restricted Access & API Keys</h4>
-                      <p className="text-amber-700 text-sm mb-2">
-                        Access control is being implemented to ensure data security and quality:
-                      </p>
-                      <ul className="text-amber-700 text-sm list-disc list-inside space-y-1">
-                        <li><strong>Authenticated API Access:</strong> API keys will be required for data access</li>
-                        <li><strong>Network Collaboration:</strong> Dedicated endpoints for partner networks (e.g., Whiteface Mountain, Mount Washington Observatory)</li>
-                        <li><strong>Role-Based Access:</strong> Different permission levels for public, researchers, and network partners</li>
-                        <li><strong>Data Quality Gates:</strong> QA/QC filtered data with documented quality assurance levels</li>
-                        <li><strong>Usage Monitoring:</strong> API usage tracking and rate limiting by user/organization</li>
+                      <ul className="text-green-700 dark:text-green-300 text-sm list-disc list-inside space-y-1">
+                        <li>No API key required</li>
+                        <li>Direct download access via web interface</li>
+                        <li>Programmatic access via REST API</li>
+                        <li>Quality-assured seasonal datasets</li>
                       </ul>
                     </div>
-                    <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
-                      <h4 className="font-semibold text-indigo-800 mb-2">Network API Access</h4>
-                      <p className="text-indigo-700 text-sm mb-2">
-                        Collaborative networks will receive dedicated API access with:
+
+                    <div className="p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                      <h4 className="font-semibold text-amber-800 dark:text-amber-200 mb-2">🔒 Restricted Access: Request Required</h4>
+                      <p className="text-amber-700 dark:text-amber-300 text-sm mb-2">
+                        The following databases require a bulk download request for access:
                       </p>
-                      <ul className="text-indigo-700 text-sm list-disc list-inside space-y-1">
-                        <li>Programmatic data pull capabilities for automated integration</li>
-                        <li>Access to all four database tiers (raw, clean, QAQC, seasonal)</li>
-                        <li>Real-time data streaming for operational monitoring</li>
-                        <li>Bidirectional data exchange protocols</li>
-                        <li>Cross-network data harmonization standards</li>
+                      <ul className="text-amber-700 dark:text-amber-300 text-sm list-disc list-inside space-y-1">
+                        <li><strong>CRRELS2S_raw_data_ingestion:</strong> Unprocessed sensor data</li>
+                        <li><strong>CRRELS2S_stage_clean_data:</strong> Intermediate QC-filtered data</li>
+                        <li><strong>CRRELS2S_stage_qaqc_data:</strong> Advanced QAQC data</li>
                       </ul>
-                      <p className="text-indigo-700 text-sm mt-2">
-                        Contact <a href="mailto:s2s@uvm.edu" className="underline font-medium">s2s@uvm.edu</a> to request network partnership and API credentials.
+                      <p className="text-amber-700 dark:text-amber-300 text-sm mt-2">
+                        <strong>How to request access:</strong>
                       </p>
-                    </div>
-                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                      <h4 className="font-semibold text-blue-800 mb-2">Database Architecture Overview</h4>
-                      <p className="text-blue-700 text-sm mb-2">
-                        Four-tier database architecture for comprehensive data management:
-                      </p>
-                      <ul className="text-blue-700 text-sm list-disc list-inside space-y-1">
-                        <li><strong>CRRELS2S_raw_data_ingestion:</strong> Unprocessed sensor data from 22+ field stations</li>
-                        <li><strong>CRRELS2S_stage_clean_data:</strong> Basic QC-filtered data with range checks and nullification</li>
-                        <li><strong>CRRELS2S_stage_qaqc_data:</strong> Advanced QA/QC with calibration and temporal validation</li>
-                        <li><strong>CRRELS2S_seasonal_qaqc_data:</strong> Season-bounded datasets optimized for analysis</li>
+                      <ul className="text-amber-700 dark:text-amber-300 text-sm list-disc list-inside space-y-1 mt-1">
+                        <li>Submit a <a href="/bulk-request" className="underline font-medium">bulk download request form</a></li>
+                        <li>Email: <a href="mailto:{authInfo.contactEmail}" className="underline font-medium">{authInfo.contactEmail}</a></li>
+                        <li>Phone: {authInfo.contactPhone}</li>
+                        <li>Typical processing time: 2-5 business days</li>
                       </ul>
                     </div>
-                    <div className="p-4 bg-cyan-50 border border-cyan-200 rounded-lg">
-                      <h4 className="font-semibold text-cyan-800 mb-2">Planned API Enhancements</h4>
-                      <p className="text-cyan-700 text-sm mb-2">
-                        Improvements and expansions currently in development:
+
+                    <div className="p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                      <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">🗄️ Database Architecture</h4>
+                      <p className="text-blue-700 dark:text-blue-300 text-sm mb-3">
+                        Four-tier architecture for comprehensive environmental data management:
                       </p>
-                      <ul className="text-cyan-700 text-sm list-disc list-inside space-y-1">
-                        <li><strong>Authentication & Security:</strong> OAuth2 and JWT authentication for network partners</li>
-                        <li><strong>Real-time Streaming:</strong> WebSocket endpoints for live data feeds</li>
-                        <li><strong>Advanced Formats:</strong> NetCDF, Parquet, and HDF5 export for research applications</li>
-                        <li><strong>Geospatial Queries:</strong> Bounding box and region-based filtering</li>
-                        <li><strong>Cross-Network Integration:</strong> Data federation with Whiteface, Mt. Washington, and Vermont Mesonet</li>
-                        <li><strong>Metadata Standards:</strong> CF-compliant metadata and DOI integration for datasets</li>
-                        <li><strong>Rate Limiting:</strong> Fair-use policies with tiered access for partners vs. public</li>
+                      
+                      <div className="space-y-3">
+                        <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded">
+                          <h5 className="font-semibold text-blue-900 dark:text-blue-100 text-sm">1. CRRELS2S_raw_data_ingestion</h5>
+                          <p className="text-blue-800 dark:text-blue-200 text-xs mt-1">
+                            Raw sensor data directly from 22+ field loggers. Tables: raw_env_core_observations, raw_env_wind_observations, 
+                            raw_env_precipitation_observations, raw_env_snowpack_temperature_profile
+                          </p>
+                          <span className="inline-block mt-1 px-2 py-0.5 bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 text-xs rounded">Request Required</span>
+                        </div>
+
+                        <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded">
+                          <h5 className="font-semibold text-blue-900 dark:text-blue-100 text-sm">2. CRRELS2S_stage_clean_data</h5>
+                          <p className="text-blue-800 dark:text-blue-200 text-xs mt-1">
+                            Intermediate cleaned datasets using basic QC filters (range checks, spike detection, null filtering)
+                          </p>
+                          <span className="inline-block mt-1 px-2 py-0.5 bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 text-xs rounded">Request Required</span>
+                        </div>
+
+                        <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded">
+                          <h5 className="font-semibold text-blue-900 dark:text-blue-100 text-sm">3. CRRELS2S_stage_qaqc_data</h5>
+                          <p className="text-blue-800 dark:text-blue-200 text-xs mt-1">
+                            Advanced QAQC with sensor calibration, temporal validation, and derived metrics
+                          </p>
+                          <span className="inline-block mt-1 px-2 py-0.5 bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 text-xs rounded">Request Required</span>
+                        </div>
+
+                        <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded">
+                          <h5 className="font-semibold text-blue-900 dark:text-blue-100 text-sm">4. CRRELS2S_seasonal_qaqc_data</h5>
+                          <p className="text-blue-800 dark:text-blue-200 text-xs mt-1">
+                            Season-bounded QAQC datasets optimized for climate and seasonal analysis
+                          </p>
+                          <span className="inline-block mt-1 px-2 py-0.5 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs rounded">Open Access</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-800 rounded-lg">
+                      <h4 className="font-semibold text-indigo-800 dark:text-indigo-200 mb-2">🌐 Network Collaboration & API Access</h4>
+                      <p className="text-indigo-700 dark:text-indigo-300 text-sm mb-2">
+                        Research networks and collaborating institutions can request dedicated API access:
+                      </p>
+                      <ul className="text-indigo-700 dark:text-indigo-300 text-sm list-disc list-inside space-y-1">
+                        <li>API keys for programmatic data integration</li>
+                        <li>Access to all four database tiers</li>
+                        <li>Real-time data streaming capabilities</li>
+                        <li>Cross-network data harmonization</li>
+                        <li>Custom endpoints for partner networks</li>
+                      </ul>
+                      <p className="text-indigo-700 dark:text-indigo-300 text-sm mt-2">
+                        Contact <a href="mailto:s2s@uvm.edu" className="underline font-medium">s2s@uvm.edu</a> to discuss partnership opportunities.
+                      </p>
+                    </div>
+
+                    <div className="p-4 bg-cyan-50 dark:bg-cyan-950/20 border border-cyan-200 dark:border-cyan-800 rounded-lg">
+                      <h4 className="font-semibold text-cyan-800 dark:text-cyan-200 mb-2">🚀 Planned Enhancements</h4>
+                      <ul className="text-cyan-700 dark:text-cyan-300 text-sm list-disc list-inside space-y-1">
+                        <li><strong>Authentication:</strong> OAuth2 and JWT for secure API access</li>
+                        <li><strong>Real-time Streaming:</strong> WebSocket endpoints for live data</li>
+                        <li><strong>Advanced Formats:</strong> NetCDF, Parquet, HDF5 exports</li>
+                        <li><strong>Geospatial Queries:</strong> Bounding box and region filtering</li>
+                        <li><strong>Rate Limiting:</strong> Fair-use policies and tiered access</li>
+                        <li><strong>Metadata Standards:</strong> CF-compliant metadata and DOI integration</li>
                       </ul>
                     </div>
-                    <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
-                      <h4 className="font-semibold text-indigo-800 mb-2">Data Attribution & Citation</h4>
-                      <p className="text-indigo-700 text-sm mb-2">
-                        When using Summit-to-Shore data in publications or presentations, please cite:
+
+                    <div className="p-4 bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 rounded-lg">
+                      <h4 className="font-semibold text-purple-800 dark:text-purple-200 mb-2">📚 Data Citation</h4>
+                      <p className="text-purple-700 dark:text-purple-300 text-sm mb-2">
+                        When using Summit-to-Shore data, please cite:
                       </p>
-                      <div className="bg-indigo-100 p-3 rounded text-indigo-800 text-xs font-mono">
+                      <div className="bg-purple-100 dark:bg-purple-900/30 p-3 rounded text-purple-800 dark:text-purple-200 text-xs font-mono">
                         "Summit-to-Shore Environmental Observatory, University of Vermont. 
                         Accessed via API at https://crrels2s.w3.uvm.edu on {new Date().toISOString().split('T')[0]}."
                       </div>
                     </div>
 
-                    <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                      <h4 className="font-semibold text-purple-800 mb-2">Support & Collaboration</h4>
-                      <p className="text-purple-700 text-sm mb-2">
-                        Get help or discuss collaboration opportunities:
-                      </p>
-                      <ul className="text-purple-700 text-sm list-disc list-inside space-y-1">
-                        <li>Technical Support: <a href="mailto:s2s@uvm.edu" className="underline font-medium">s2s@uvm.edu</a></li>
-                        <li>Research Collaboration: <a href="/about" className="underline font-medium">Meet Our Team</a></li>
-                        <li>Documentation: <a href="/documentation" className="underline font-medium">Complete Project Docs</a></li>
-                        <li>Data Portal: <a href="/download" className="underline font-medium">Interactive Data Browser</a></li>
+                    <div className="p-4 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                      <h4 className="font-semibold text-yellow-800 dark:text-yellow-200 mb-2">📋 Fair Use Guidelines</h4>
+                      <ul className="text-yellow-700 dark:text-yellow-300 text-sm list-disc list-inside space-y-1">
+                        <li>Check <code>/health</code> endpoint before bulk requests</li>
+                        <li>Implement request timeouts and error handling</li>
+                        <li>Cache responses to reduce repeated queries</li>
+                        <li>Use <code>limit</code> parameter for data preview</li>
+                        <li>Contact us for large bulk downloads: {authInfo.contactEmail}</li>
                       </ul>
-                    </div>
-
-                    <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                      <h4 className="font-semibold text-yellow-800 mb-2">Fair Use Policy & Production API</h4>
-                      <p className="text-yellow-700 text-sm mb-2">
-                        Please use the API responsibly for research and educational purposes:
-                      </p>
-                      <ul className="text-yellow-700 text-sm list-disc list-inside space-y-1">
-                        <li>Use <code>/health</code> endpoint to check server availability</li>
-                        <li>Implement appropriate request timeouts and error handling</li>
-                        <li>Cache responses when possible to reduce repeated queries</li>
-                        <li>Use data preview with <code>limit</code> parameter for exploration</li>
-                        <li>Contact us for bulk data needs: <a href="mailto:s2s@uvm.edu" className="underline">s2s@uvm.edu</a></li>
-                        <li>Phone support: (802) 656-2215 for technical assistance</li>
-                      </ul>
-                      <div className="mt-3 p-2 bg-yellow-100 rounded">
-                        <p className="text-yellow-800 text-sm font-medium">
-                          🌐 Production API Base: <code className="bg-yellow-200 px-1 rounded">https://crrels2s.w3.uvm.edu/api</code>
+                      <div className="mt-3 p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded">
+                        <p className="text-yellow-800 dark:text-yellow-200 text-sm font-medium">
+                          🌐 Production API: <code className="bg-yellow-200 dark:bg-yellow-800 px-1 rounded">https://crrels2s.w3.uvm.edu/api</code>
                         </p>
                       </div>
+                    </div>
+
+                    <div className="p-4 bg-slate-50 dark:bg-slate-900/20 border border-slate-200 dark:border-slate-800 rounded-lg">
+                      <h4 className="font-semibold text-slate-800 dark:text-slate-200 mb-2">💬 Support & Contact</h4>
+                      <ul className="text-slate-700 dark:text-slate-300 text-sm space-y-1">
+                        <li>📧 Email: <a href="mailto:s2s@uvm.edu" className="underline font-medium">s2s@uvm.edu</a></li>
+                        <li>📞 Phone: (802) 656-2215</li>
+                        <li>🔗 <a href="/bulk-request" className="underline font-medium">Submit Bulk Download Request</a></li>
+                        <li>🔗 <a href="/about" className="underline font-medium">Meet Our Team</a></li>
+                        <li>🔗 <a href="/documentation" className="underline font-medium">Full Documentation</a></li>
+                      </ul>
                     </div>
                   </CardContent>
                 </Card>
