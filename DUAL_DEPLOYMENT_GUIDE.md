@@ -1,6 +1,13 @@
 # Dual Server Deployment Guide
 
-This guide explains how to deploy your application to both UVM servers for testing and production environments.
+## Overview
+This guide covers deploying the Summit2Shore application to two UVM servers:
+- **Testing Server**: `vdondeti.w3.uvm.edu` (for testing and validation) 
+- **Production Server**: `crrels2s.w3.uvm.edu` (for production use)
+
+**Deployment Philosophy**: Always test on vdondeti.w3.uvm.edu first, then deploy to crrels2s.w3.uvm.edu production.
+
+> **Note**: This guide covers **frontend-only** deployment. For backend API deployment, see [DEPLOYMENT_QUICK_REFERENCE.md](DEPLOYMENT_QUICK_REFERENCE.md).
 
 ## Server Configuration
 
