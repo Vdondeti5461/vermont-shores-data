@@ -1,5 +1,5 @@
 import { Badge } from '@/components/ui/badge';
-import EnhancedDataDownload from './EnhancedDataDownload';
+import SeasonalDataDownload from './SeasonalDataDownload';
 
 const DataDownload = () => {
   return (
@@ -7,18 +7,18 @@ const DataDownload = () => {
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
           <Badge variant="outline" className="mb-4">
-            Open Data Access
+            Seasonal QAQC Data
           </Badge>
           <h2 className="scientific-heading text-4xl md:text-5xl mb-6">
             <span className="text-primary">Download</span> Research Data
           </h2>
           <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-            Access comprehensive environmental datasets from Vermont's Summit 2 Shore monitoring network. 
-            Filter by location, timestamp, and data attributes to get exactly what you need for your research.
+            Access quality-controlled seasonal environmental data from Vermont's Summit 2 Shore monitoring network. 
+            Filter by date range, location, and specific attributes to customize your dataset for research.
           </p>
         </div>
 
-        <EnhancedDataDownload />
+        <SeasonalDataDownload />
       </div>
     </section>
   );
