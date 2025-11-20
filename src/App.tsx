@@ -17,6 +17,8 @@ import Documentation from "./pages/Documentation";
 import APIDocumentation from "./pages/APIDocumentation";
 import NotFound from "./pages/NotFound";
 import BulkRequest from "./pages/BulkRequest";
+import Auth from "./pages/Auth";
+import APIKeys from "./pages/APIKeys";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +53,8 @@ const App = () => (
           <Route path="/research/gallery" element={<Gallery />} />
           <Route path="/documentation" element={<APIDocumentation />} />
           <Route path="/documentation/api" element={<APIDocumentation />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/api-keys" element={<APIKeys />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
