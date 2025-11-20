@@ -78,11 +78,12 @@ export const useDataDownload = () => {
   const { toast } = useToast();
   
   return useMutation({
-    mutationFn: (filters: DownloadFilters) => DataDownloadService.downloadData(filters),
-    onSuccess: () => {
+    mutationFn: ({ filters, format }: { filters: DownloadFilters; format: 'csv' | 'excel' }) => 
+      DataDownloadService.downloadData(filters, format),
+    onSuccess: (_data, variables) => {
       toast({
         title: "Download Started",
-        description: "Your CSV file download has begun."
+        description: `Your ${variables.format.toUpperCase()} file download has begun.`
       });
     },
     onError: (error: Error) => {

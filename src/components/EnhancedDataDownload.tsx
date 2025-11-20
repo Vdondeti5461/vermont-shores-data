@@ -9,11 +9,13 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
-import { CalendarIcon, Download, Database, Table, MapPin, CheckCircle2, Circle, Loader2, ChevronRight, ChevronLeft, Filter, FileDown } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { CalendarIcon, Download, Database, Table, MapPin, CheckCircle2, Circle, Loader2, ChevronRight, ChevronLeft, Filter, FileDown, FileSpreadsheet, FileText, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { API_BASE_URL } from '@/lib/apiConfig';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface DatabaseInfo {
   key: string;
@@ -62,6 +64,7 @@ const EnhancedDataDownload = () => {
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
+  const [downloadFormat, setDownloadFormat] = useState<'csv' | 'excel'>('csv');
   
   // Loading states
   const [isLoadingDatabases, setIsLoadingDatabases] = useState(false);
@@ -171,20 +174,22 @@ const EnhancedDataDownload = () => {
         start_date: format(startDate, 'yyyy-MM-dd'),
         end_date: format(endDate, 'yyyy-MM-dd'),
         locations: selectedLocations.join(','),
+        format: downloadFormat,
         ...(selectedAttributes.length > 0 && { attributes: selectedAttributes.join(',') })
       });
 
-      const url = `${API_BASE_URL}/api/download?${params.toString()}`;
+      const url = `${API_BASE_URL}/api/databases/${selectedDatabase}/download/${selectedTable}?${params.toString()}`;
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${selectedDatabase}_${selectedTable}_${format(startDate, 'yyyy-MM-dd')}_to_${format(endDate, 'yyyy-MM-dd')}.csv`;
+      const extension = downloadFormat === 'excel' ? 'xlsx' : 'csv';
+      link.download = `${selectedDatabase}_${selectedTable}_${format(startDate, 'yyyy-MM-dd')}_to_${format(endDate, 'yyyy-MM-dd')}.${extension}`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
 
       toast({
         title: "Download Started",
-        description: "Your data export has begun",
+        description: `Your ${downloadFormat.toUpperCase()} export has begun`,
       });
     } catch (error) {
       toast({
@@ -538,8 +543,58 @@ const EnhancedDataDownload = () => {
           {/* Step 4: Review & Download */}
           {currentStep === 4 && (
             <div className="space-y-6">
+              {/* Format Selection */}
+              <div className="space-y-3">
+                <Label className="text-base font-semibold">Export Format *</Label>
+                <RadioGroup value={downloadFormat} onValueChange={(value: 'csv' | 'excel') => setDownloadFormat(value)}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div 
+                      className={cn(
+                        "flex items-start space-x-3 p-4 rounded-lg border-2 cursor-pointer transition-all",
+                        downloadFormat === 'csv' ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+                      )}
+                      onClick={() => setDownloadFormat('csv')}
+                    >
+                      <RadioGroupItem value="csv" id="format-csv" className="mt-1" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-5 w-5" />
+                          <Label htmlFor="format-csv" className="font-semibold cursor-pointer">CSV Format</Label>
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Comma-separated values. Compatible with Excel, R, Python, and most data tools.
+                        </p>
+                      </div>
+                    </div>
+                    <div 
+                      className={cn(
+                        "flex items-start space-x-3 p-4 rounded-lg border-2 cursor-pointer transition-all",
+                        downloadFormat === 'excel' ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+                      )}
+                      onClick={() => setDownloadFormat('excel')}
+                    >
+                      <RadioGroupItem value="excel" id="format-excel" className="mt-1" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <FileSpreadsheet className="h-5 w-5" />
+                          <Label htmlFor="format-excel" className="font-semibold cursor-pointer">Excel Format</Label>
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          .xlsx file with metadata sheet. Better for direct Excel usage and includes data dictionary.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              <Separator />
+
               <div className="bg-muted/50 rounded-lg p-6 space-y-4">
-                <h3 className="font-semibold text-lg">Download Summary</h3>
+                <h3 className="font-semibold text-lg flex items-center gap-2">
+                  <Info className="h-5 w-5 text-primary" />
+                  Export Summary
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                   <div>
                     <Label className="text-muted-foreground">Database</Label>
@@ -575,7 +630,32 @@ const EnhancedDataDownload = () => {
                         : 'All attributes'}
                     </p>
                   </div>
+                  <div>
+                    <Label className="text-muted-foreground">Format</Label>
+                    <p className="font-medium mt-1 uppercase">{downloadFormat}</p>
+                  </div>
                 </div>
+
+                {/* Metadata Information */}
+                {downloadFormat === 'excel' && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="mt-4 p-3 bg-primary/5 border border-primary/20 rounded-md">
+                          <p className="text-sm flex items-start gap-2">
+                            <Info className="h-4 w-4 mt-0.5 flex-shrink-0 text-primary" />
+                            <span>
+                              Excel export includes a metadata sheet with export details, date range, locations, and a data dictionary.
+                            </span>
+                          </p>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs">
+                        <p>The metadata sheet provides context for your data including database info, export parameters, and column descriptions to help with data analysis.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
               </div>
 
               <Button
@@ -592,7 +672,7 @@ const EnhancedDataDownload = () => {
                 ) : (
                   <>
                     <Download className="mr-2 h-5 w-5" />
-                    Download CSV
+                    Download {downloadFormat.toUpperCase()}
                   </>
                 )}
               </Button>
