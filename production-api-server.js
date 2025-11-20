@@ -45,8 +45,9 @@ let pool;
 
 async function connectDB() {
   try {
+    const dbHost = process.env.MYSQL_HOST || 'webdb5.uvm.edu';
     pool = mysql.createPool({
-      host: 'web5.uvm.edu',
+      host: dbHost,
       user: process.env.MYSQL_USER || 'crrels2s_admin',
       password: process.env.MYSQL_PASSWORD || 'y0m5dxldXSLP',
       port: Number(process.env.MYSQL_PORT) || 3306,
@@ -57,7 +58,7 @@ async function connectDB() {
     });
     
     const connection = await pool.getConnection();
-    console.log('✅ Connected to MySQL server: web5.uvm.edu');
+    console.log(`✅ Connected to MySQL server: ${dbHost}`);
     connection.release();
   } catch (error) {
     console.error('❌ Database connection failed:', error);
