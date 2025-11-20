@@ -57,35 +57,71 @@ const SeasonalDataDownload = () => {
   const initializeData = async () => {
     setIsLoading(true);
     try {
+      console.log('🔍 Initializing data download with API_BASE_URL:', API_BASE_URL);
+      console.log('🔍 DOWNLOADABLE_DATABASE:', DOWNLOADABLE_DATABASE);
+      
       // Fetch the single table from seasonal_qaqc_data
-      const tablesResponse = await fetch(`${API_BASE_URL}/api/databases/${DOWNLOADABLE_DATABASE}/tables`);
-      if (!tablesResponse.ok) throw new Error('Failed to fetch table');
+      const tablesUrl = `${API_BASE_URL}/api/databases/${DOWNLOADABLE_DATABASE}/tables`;
+      console.log('📋 Fetching tables from:', tablesUrl);
+      
+      const tablesResponse = await fetch(tablesUrl);
+      console.log('📋 Tables response status:', tablesResponse.status);
+      
+      if (!tablesResponse.ok) {
+        const errorText = await tablesResponse.text();
+        console.error('❌ Tables fetch failed:', errorText);
+        throw new Error('Failed to fetch table');
+      }
+      
       const tablesData = await tablesResponse.json();
+      console.log('📋 Tables data:', tablesData);
       const table = tablesData.tables?.[0];
       
       if (table) {
+        console.log('✅ Found table:', table.name);
         setTableName(table.name);
+        
+        const attributesUrl = `${API_BASE_URL}/api/databases/${DOWNLOADABLE_DATABASE}/tables/${table.name}/attributes`;
+        const locationsUrl = `${API_BASE_URL}/api/databases/${DOWNLOADABLE_DATABASE}/tables/${table.name}/locations`;
+        
+        console.log('📊 Fetching attributes from:', attributesUrl);
+        console.log('📍 Fetching locations from:', locationsUrl);
         
         // Fetch attributes and locations in parallel
         const [attributesResponse, locationsResponse] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/databases/${DOWNLOADABLE_DATABASE}/tables/${table.name}/attributes`),
-          fetch(`${API_BASE_URL}/api/databases/${DOWNLOADABLE_DATABASE}/tables/${table.name}/locations`)
+          fetch(attributesUrl),
+          fetch(locationsUrl)
         ]);
+        
+        console.log('📊 Attributes response status:', attributesResponse.status);
+        console.log('📍 Locations response status:', locationsResponse.status);
         
         if (attributesResponse.ok) {
           const attributesData = await attributesResponse.json();
+          console.log('📊 Attributes data:', attributesData);
           setAttributes(attributesData.attributes || []);
+        } else {
+          console.error('❌ Attributes fetch failed:', attributesResponse.status, attributesResponse.statusText);
         }
         
         if (locationsResponse.ok) {
           const locationsData = await locationsResponse.json();
-          setLocations(locationsData.locations || []);
+          console.log('📍 Locations response:', locationsData);
+          // Backend returns plain array, not wrapped object
+          const locationsList = Array.isArray(locationsData) ? locationsData : (locationsData.locations || []);
+          console.log('📍 Processed locations:', locationsList);
+          setLocations(locationsList);
+        } else {
+          console.error('❌ Locations fetch failed:', locationsResponse.status, locationsResponse.statusText);
         }
+      } else {
+        console.error('❌ No table found in response');
       }
     } catch (error) {
+      console.error('❌ Initialization error:', error);
       toast({
         title: "Initialization Error",
-        description: "Failed to load data options. Please refresh the page.",
+        description: error instanceof Error ? error.message : "Failed to load data options. Please refresh the page.",
         variant: "destructive"
       });
     } finally {
