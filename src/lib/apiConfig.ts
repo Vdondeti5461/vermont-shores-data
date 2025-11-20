@@ -8,9 +8,10 @@ export const getApiBaseUrl = (): string => {
   const cfg = w?.__APP_CONFIG__?.API_BASE_URL as string | undefined;
   if (cfg) return cfg.replace(/\/$/, '');
 
-  // 2) Production server for UVM deployment - use same domain as current site
+  // 2) Production server for UVM deployment - backend runs on port 3001
   if (w && w.location.hostname.includes('uvm.edu')) {
-    return `https://${w.location.hostname}`;
+    // Backend API is on port 3001
+    return `https://${w.location.hostname}:3001`;
   }
 
   // 3) Production server for any non-localhost deployment
