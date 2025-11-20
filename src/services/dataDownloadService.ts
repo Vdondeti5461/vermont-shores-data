@@ -182,8 +182,8 @@ export class DataDownloadService {
     return 'other';
   }
 
-  // Download filtered data as CSV
-  static async downloadData(filters: DownloadFilters): Promise<void> {
+  // Download filtered data
+  static async downloadData(filters: DownloadFilters, format: 'csv' | 'excel' = 'csv'): Promise<void> {
     try {
       // Build query parameters
       const params = new URLSearchParams();
@@ -206,6 +206,9 @@ export class DataDownloadService {
       if (filters.limit) {
         params.append('limit', filters.limit.toString());
       }
+      
+      // Add format parameter
+      params.append('format', format);
 
       const url = `${this.baseUrl}/api/databases/${filters.database}/download/${filters.table}?${params.toString()}`;
       
@@ -226,7 +229,8 @@ export class DataDownloadService {
         ? `_${filters.locations.slice(0, 3).join('-')}${filters.locations.length > 3 ? '-etc' : ''}`
         : '';
       
-      link.download = `${filters.database}_${filters.table}${locationStr}_${timestamp}.csv`;
+      const extension = format === 'excel' ? 'xlsx' : 'csv';
+      link.download = `${filters.database}_${filters.table}${locationStr}_${timestamp}.${extension}`;
       
       document.body.appendChild(link);
       link.click();
