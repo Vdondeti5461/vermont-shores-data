@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Key, Copy, Trash2, Plus, Eye, EyeOff } from 'lucide-react';
+import { Key, Copy, Trash2, Plus, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/apiConfig';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -39,7 +39,7 @@ export default function APIKeys() {
   useEffect(() => {
     const token = localStorage.getItem('auth_token');
     if (!token) {
-      navigate('/auth', { state: { from: location } });
+      navigate('/auth');
       return;
     }
     fetchAPIKeys();
@@ -143,6 +143,15 @@ export default function APIKeys() {
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1 container mx-auto px-4 py-8 max-w-7xl">
+        <Button
+          variant="ghost"
+          onClick={() => navigate('/')}
+          className="mb-4 gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Home
+        </Button>
+        
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold mb-2">API Key Management</h1>
