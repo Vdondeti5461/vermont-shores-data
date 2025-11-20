@@ -95,6 +95,10 @@ export const Analytics = () => {
     'raw_env_precipitation_observations'
   ];
 
+  // Debug logging
+  console.log('Analytics component render - databases:', databases);
+  console.log('Analytics component render - isLoading:', isLoading);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -137,11 +141,17 @@ export const Analytics = () => {
                   <SelectValue placeholder="Select database" />
                 </SelectTrigger>
                 <SelectContent>
-                  {databases?.map((db) => (
-                    <SelectItem key={db.id} value={db.id}>
-                      {DATABASE_LABELS[db.id]}
+                  {databases && databases.length > 0 ? (
+                    databases.map((db) => (
+                      <SelectItem key={db.id} value={db.id}>
+                        {DATABASE_LABELS[db.id] || db.displayName || db.name}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="no-databases" disabled>
+                      No databases available
                     </SelectItem>
-                  ))}
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -152,21 +162,27 @@ export const Analytics = () => {
             <div className="space-y-2">
               <Label>Select Databases to Compare</Label>
               <div className="grid grid-cols-2 gap-3">
-                {databases?.map((db) => (
-                  <div key={db.id} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={db.id}
-                      checked={comparisonDatabases.includes(db.id)}
-                      onCheckedChange={() => handleDatabaseToggle(db.id)}
-                    />
-                    <label
-                      htmlFor={db.id}
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      {DATABASE_LABELS[db.id]}
-                    </label>
-                  </div>
-                ))}
+                {databases && databases.length > 0 ? (
+                  databases.map((db) => (
+                    <div key={db.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={db.id}
+                        checked={comparisonDatabases.includes(db.id)}
+                        onCheckedChange={() => handleDatabaseToggle(db.id)}
+                      />
+                      <label
+                        htmlFor={db.id}
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        {DATABASE_LABELS[db.id] || db.displayName || db.name}
+                      </label>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground col-span-2">
+                    No databases available
+                  </p>
+                )}
               </div>
             </div>
           )}
