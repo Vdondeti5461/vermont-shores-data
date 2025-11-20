@@ -1,6 +1,6 @@
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import Analytics from '@/components/Analytics';
+import { Analytics } from '@/components/Analytics';
 import { Badge } from '@/components/ui/badge';
 import { Clock } from 'lucide-react';
 

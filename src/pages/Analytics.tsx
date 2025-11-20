@@ -1,7 +1,6 @@
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import Analytics from '@/components/Analytics';
-import TimeSeriesComparison from '@/components/TimeSeriesComparison';
+import { Analytics } from '@/components/Analytics';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
