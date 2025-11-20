@@ -310,23 +310,21 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// Get available databases
+// Get available databases - RESTRICTED to seasonal_qaqc_data only
 app.get('/api/databases', async (req, res) => {
   try {
-    const databases = Object.entries(DATABASES)
-      .filter(([key]) => !key.includes('_')) // Remove case variants (those with uppercase)
-      .map(([key, name]) => {
-        const metadata = DATABASE_METADATA[key] || {};
-        return {
-          key,
-          name,
-          displayName: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-          description: metadata.description || getDatabaseDescription(key),
-          category: metadata.category || 'general',
-          order: metadata.order || 999
-        };
-      })
-      .sort((a, b) => a.order - b.order);
+    // Only return the seasonal QAQC database for downloads
+    const allowedDatabase = 'seasonal_qaqc_data';
+    const metadata = DATABASE_METADATA[allowedDatabase] || {};
+    
+    const databases = [{
+      key: allowedDatabase,
+      name: DATABASES[allowedDatabase],
+      displayName: 'Seasonal QAQC Data',
+      description: metadata.description || 'Quality-assured and quality-controlled seasonal environmental data',
+      category: metadata.category || 'seasonal',
+      order: 1
+    }];
     
     res.json({ databases });
   } catch (error) {
