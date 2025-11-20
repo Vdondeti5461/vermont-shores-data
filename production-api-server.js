@@ -351,8 +351,11 @@ app.get('/api/databases/:database/tables', async (req, res) => {
     if (database === 'seasonal_clean_data') {
       // Only filter for seasonal database - it should contain tables starting with 'cleaned_data_season_'
       tableNames = tableNames.filter((t) => t.startsWith('cleaned_data_season_'));
+    } else if (database === 'seasonal_qaqc_data') {
+      // Only show tables ending with _qaqc for seasonal QAQC database
+      tableNames = tableNames.filter((t) => t.endsWith('_qaqc'));
     }
-    // For final_clean_data (CRRELS2S_ProcessedData), show all tables without filtering
+    // For other databases, show all tables without filtering
 
     // Build table info without running COUNT(*) per table
     const rowCountMap = new Map(infoRows.map((r) => [r.TABLE_NAME, r.TABLE_ROWS ?? 0]));
