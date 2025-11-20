@@ -35,7 +35,8 @@ const Header = () => {
   const dataDownloadSubsections = [
     { label: 'Data Download', href: '/download', icon: Download, description: 'Browse and download environmental data' },
     { label: 'Download Request', href: '/download/bulk-request', icon: Mail, description: 'Request bulk data downloads' },
-    { label: 'API Documentation', href: '/documentation/api', icon: FileText, description: 'API endpoints and documentation' }
+    { label: 'API Documentation', href: '/documentation/api', icon: FileText, description: 'API endpoints and documentation' },
+    { label: 'API Keys', href: '/api-keys', icon: FileText, description: 'Manage your API keys' }
   ];
 
   const isActive = (path: string) => location.pathname === path;
