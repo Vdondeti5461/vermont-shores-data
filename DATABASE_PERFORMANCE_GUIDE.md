@@ -1,25 +1,93 @@
 # Database Performance Optimization Guide
 
+## Overview
+
+This guide provides recommended indexes and optimization strategies for the Summit2Shore environmental monitoring databases:
+- **CRRELS2S_raw_data_ingestion** - Raw sensor data
+- **CRRELS2S_stage_clean_data** - Cleaned and validated data
+- **CRRELS2S_stage_qaqc_data** - Quality-controlled data
+- **CRRELS2S_seasonal_qaqc_data** - Seasonal aggregated data
+
 ## Recommended Indexes for Analytics Performance
 
-To ensure optimal performance when querying time series data from your MySQL databases, the following indexes are highly recommended:
+To ensure optimal performance when querying time series data, the following indexes are highly recommended for all four tables across all databases:
 
-### 1. Core Time Series Indexes
+### 1. Core Environmental Observations Table
 
-These indexes are essential for all seasonal data tables:
+**Table: raw_env_core_observations**
 
 ```sql
--- Index on timestamp for time-based queries
-CREATE INDEX idx_timestamp ON table_name (TIMESTAMP);
+-- Primary composite index for location + time queries
+CREATE INDEX idx_core_location_timestamp 
+ON raw_env_core_observations (location, timestamp);
 
--- Index on location for location filtering
-CREATE INDEX idx_location ON table_name (Location);
+-- Index for snow depth queries
+CREATE INDEX idx_core_snow_depth 
+ON raw_env_core_observations (snow_depth_cm);
 
--- Composite index for location + timestamp (most common query pattern)
-CREATE INDEX idx_location_timestamp ON table_name (Location, TIMESTAMP);
+-- Index for air temperature queries
+CREATE INDEX idx_core_air_temp 
+ON raw_env_core_observations (air_temperature_avg_c);
 
--- Index on date range queries
-CREATE INDEX idx_timestamp_range ON table_name (TIMESTAMP DESC);
+-- Index for quality flag filtering
+CREATE INDEX idx_core_quality_flag 
+ON raw_env_core_observations (data_quality_flag, timestamp);
+```
+
+### 2. Wind Observations Table
+
+**Table: raw_env_wind_observations**
+
+```sql
+-- Primary composite index
+CREATE INDEX idx_wind_location_timestamp 
+ON raw_env_wind_observations (location, timestamp);
+
+-- Index for wind speed queries
+CREATE INDEX idx_wind_speed_max 
+ON raw_env_wind_observations (wind_speed_max_ms);
+
+-- Index for wind direction analysis
+CREATE INDEX idx_wind_direction 
+ON raw_env_wind_observations (wind_direction_deg, timestamp);
+```
+
+### 3. Snowpack Temperature Profile Table
+
+**Table: raw_env_snowpack_temperature_profile**
+
+```sql
+-- Primary composite index
+CREATE INDEX idx_snow_temp_location_timestamp 
+ON raw_env_snowpack_temperature_profile (location, timestamp);
+
+-- Indexes for commonly queried depths
+CREATE INDEX idx_snow_temp_surface 
+ON raw_env_snowpack_temperature_profile (snow_temp_0cm_avg, timestamp);
+
+CREATE INDEX idx_snow_temp_50cm 
+ON raw_env_snowpack_temperature_profile (snow_temp_50cm_avg, timestamp);
+
+CREATE INDEX idx_snow_temp_100cm 
+ON raw_env_snowpack_temperature_profile (snow_temp_100cm_avg, timestamp);
+```
+
+### 4. Precipitation Observations Table
+
+**Table: raw_env_precipitation_observations**
+
+```sql
+-- Primary composite index
+CREATE INDEX idx_precip_location_timestamp 
+ON raw_env_precipitation_observations (location, timestamp);
+
+-- Index for precipitation accumulation queries
+CREATE INDEX idx_precip_accum 
+ON raw_env_precipitation_observations (precip_total_nrt_mm, timestamp);
+
+-- Index for intensity queries
+CREATE INDEX idx_precip_intensity 
+ON raw_env_precipitation_observations (precip_intensity_rt_mm_min, timestamp);
 ```
 
 ### 2. Attribute-Specific Indexes
