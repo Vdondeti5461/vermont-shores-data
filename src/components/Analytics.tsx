@@ -62,14 +62,31 @@ export const Analytics = () => {
     );
   };
 
-  // Prepare chart data
-  const chartData = timeSeriesData?.map((point) => ({
-    timestamp: new Date(point.timestamp).toLocaleString(),
-    ...selectedAttributes.reduce((acc, attr) => ({
-      ...acc,
-      [attr]: point[attr],
-    }), {}),
-  })) || [];
+  // Prepare chart data with better formatting
+  const chartData = timeSeriesData?.map((point) => {
+    const date = new Date(point.timestamp);
+    return {
+      timestamp: point.timestamp,
+      displayTime: date.toLocaleString('en-US', { 
+        month: 'short', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }),
+      fullTimestamp: date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      }),
+      ...selectedAttributes.reduce((acc, attr) => ({
+        ...acc,
+        [attr]: point[attr],
+      }), {}),
+    };
+  }) || [];
 
   const tables: TableType[] = [
     'raw_env_core_observations',
@@ -245,44 +262,78 @@ export const Analytics = () => {
       {/* Single View Mode */}
       {!comparisonMode && !isLoading && selectedAttributes.length > 0 && chartData.length > 0 && (
         <div className="space-y-6">
-          {selectedAttributes.map((attribute) => (
-            <Card key={attribute}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 capitalize">
-                  <TrendingUp className="h-5 w-5" />
-                  {attribute.replace(/_/g, ' ')}
-                </CardTitle>
-                <CardDescription>
-                  Time series data for {selectedLocation} - {DATABASE_LABELS[selectedDatabase!]}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={400}>
-                  <LineChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis
-                      dataKey="timestamp"
-                      tick={{ fontSize: 12 }}
-                      angle={-45}
-                      textAnchor="end"
-                      height={80}
-                    />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line
-                      type="monotone"
-                      dataKey={attribute}
-                      stroke="#3b82f6"
-                      strokeWidth={2}
-                      dot={false}
-                      connectNulls
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          ))}
+          {selectedAttributes.map((attribute) => {
+            const attributeInfo = attributes?.find(a => a.name === attribute);
+            return (
+              <Card key={attribute}>
+                <CardHeader>
+                  <div className="space-y-1">
+                    <CardTitle className="text-2xl font-bold">
+                      {selectedLocation} {selectedTable && `(${TABLE_LABELS[selectedTable]})`}
+                    </CardTitle>
+                    <CardDescription className="text-base">
+                      <span className="capitalize">{attribute.replace(/_/g, ' ')}</span>
+                      {attributeInfo?.unit && <span> ({attributeInfo.unit})</span>}
+                    </CardDescription>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={500}>
+                    <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 80 }}>
+                      <CartesianGrid 
+                        strokeDasharray="3 3" 
+                        stroke="hsl(var(--border))" 
+                        opacity={0.3} 
+                      />
+                      <XAxis
+                        dataKey="displayTime"
+                        angle={-45}
+                        textAnchor="end"
+                        height={100}
+                        stroke="hsl(var(--muted-foreground))"
+                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                      />
+                      <YAxis
+                        stroke="hsl(var(--muted-foreground))"
+                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                        label={{ 
+                          value: attributeInfo?.unit || '', 
+                          angle: -90, 
+                          position: 'insideLeft',
+                          style: { fill: 'hsl(var(--muted-foreground))' }
+                        }}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--card))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px',
+                          padding: '12px'
+                        }}
+                        labelFormatter={(value) => {
+                          const point = chartData.find(d => d.displayTime === value);
+                          return point?.fullTimestamp || value;
+                        }}
+                        formatter={(value: any) => [
+                          `${typeof value === 'number' ? value.toFixed(2) : value} ${attributeInfo?.unit || ''}`,
+                          attribute.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+                        ]}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey={attribute}
+                        stroke="hsl(var(--primary))"
+                        strokeWidth={2.5}
+                        dot={{ r: 4, fill: 'hsl(var(--primary))' }}
+                        activeDot={{ r: 6, fill: 'hsl(var(--primary))' }}
+                        connectNulls
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 
