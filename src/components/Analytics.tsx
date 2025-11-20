@@ -208,244 +208,362 @@ const Analytics = () => {
   return (
     <section id="analytics" className="py-8 sm:py-12">
       <div className="container mx-auto px-4">
-        {/* Filters */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Filter className="w-5 h-5" />
-              Data Filters
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Season Selection */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Season</label>
-                <Select
-                  value={selectedSeason?.id || ''}
-                  onValueChange={(value) => {
-                    const season = seasons.find(s => s.id === value);
-                    setSelectedSeason(season);
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select season..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {seasons.map(season => (
-                      <SelectItem key={season.id} value={season.id}>
-                        <div className="flex items-center gap-2">
-                          <Database className="w-4 h-4" />
-                          {season.name}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+        <Tabs defaultValue="raw" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 mb-8">
+            <TabsTrigger value="raw">Raw Data</TabsTrigger>
+            <TabsTrigger value="clean">Clean Data</TabsTrigger>
+            <TabsTrigger value="qaqc">QAQC Data</TabsTrigger>
+          </TabsList>
 
-              {/* Attribute Selection */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Attribute</label>
-                <Select
-                  value={selectedAttribute}
-                  onValueChange={setSelectedAttribute}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ATTRIBUTES.map(attr => {
-                      const Icon = attr.icon;
-                      return (
-                        <SelectItem key={attr.id} value={attr.id}>
+          {/* Filters - Shared across all tabs */}
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Filter className="w-5 h-5" />
+                Data Filters
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Season Selection */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Season</label>
+                  <Select
+                    value={selectedSeason?.id || ''}
+                    onValueChange={(value) => {
+                      const season = seasons.find(s => s.id === value);
+                      setSelectedSeason(season);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select season..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {seasons.map(season => (
+                        <SelectItem key={season.id} value={season.id}>
                           <div className="flex items-center gap-2">
-                            <Icon className="w-4 h-4" />
-                            {attr.label}
+                            <Database className="w-4 h-4" />
+                            {season.name}
                           </div>
                         </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-              </div>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              {/* Location Selection */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Locations</label>
-                <div className="border rounded-md p-4 max-h-48 overflow-y-auto">
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-2 pb-2 border-b">
-                      <Checkbox
-                        id="select-all"
-                        checked={selectedLocations.length === locations.length}
-                        onCheckedChange={handleSelectAllLocations}
-                      />
-                      <label
-                        htmlFor="select-all"
-                        className="text-sm font-medium cursor-pointer"
-                      >
-                        Select All ({locations.length})
-                      </label>
-                    </div>
-                    {locations.map(location => (
-                      <div key={location.id} className="flex items-center space-x-2">
+                {/* Attribute Selection */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Attribute</label>
+                  <Select
+                    value={selectedAttribute}
+                    onValueChange={setSelectedAttribute}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ATTRIBUTES.map(attr => {
+                        const Icon = attr.icon;
+                        return (
+                          <SelectItem key={attr.id} value={attr.id}>
+                            <div className="flex items-center gap-2">
+                              <Icon className="w-4 h-4" />
+                              {attr.label}
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Location Selection */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Locations</label>
+                  <div className="border rounded-md p-4 max-h-48 overflow-y-auto">
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-2 pb-2 border-b">
                         <Checkbox
-                          id={location.id}
-                          checked={selectedLocations.includes(location.id)}
-                          onCheckedChange={() => handleLocationToggle(location.id)}
+                          id="select-all"
+                          checked={selectedLocations.length === locations.length}
+                          onCheckedChange={handleSelectAllLocations}
                         />
                         <label
-                          htmlFor={location.id}
-                          className="text-sm cursor-pointer flex items-center gap-2"
+                          htmlFor="select-all"
+                          className="text-sm font-medium cursor-pointer"
                         >
-                          <MapPin className="w-3 h-3" />
-                          {location.name}
+                          Select All ({locations.length})
                         </label>
                       </div>
-                    ))}
+                      {locations.map(location => (
+                        <div key={location.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={location.id}
+                            checked={selectedLocations.includes(location.id)}
+                            onCheckedChange={() => handleLocationToggle(location.id)}
+                          />
+                          <label
+                            htmlFor={location.id}
+                            className="text-sm cursor-pointer flex items-center gap-2"
+                          >
+                            <MapPin className="w-3 h-3" />
+                            {location.name}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Raw Data Tab */}
+          <TabsContent value="raw" className="space-y-8">
+            <div className="text-center mb-8">
+              <Badge variant="outline" className="mb-4">Raw Time Series Data</Badge>
+              <h2 className="text-2xl font-bold mb-2">Unprocessed Sensor Data</h2>
+              <p className="text-sm text-muted-foreground">
+                Direct measurements from environmental sensors before any processing
+              </p>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Raw Data
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="text-2xl font-bold">
-                  {statistics.raw.avg.toFixed(2)} {currentAttribute.unit}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Raw Data Statistics
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="text-2xl font-bold">
+                    {statistics.raw.avg.toFixed(2)} {currentAttribute.unit}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Range: {statistics.raw.min.toFixed(1)} - {statistics.raw.max.toFixed(1)} {currentAttribute.unit}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {statistics.raw.count} data points
+                  </div>
                 </div>
-                <div className="text-sm text-muted-foreground">
-                  Range: {statistics.raw.min.toFixed(1)} - {statistics.raw.max.toFixed(1)} {currentAttribute.unit}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  {statistics.raw.count} data points
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Clean Data
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="text-2xl font-bold">
-                  {statistics.clean.avg.toFixed(2)} {currentAttribute.unit}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  Range: {statistics.clean.min.toFixed(1)} - {statistics.clean.max.toFixed(1)} {currentAttribute.unit}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  {statistics.clean.count} data points
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Raw Data: {currentAttribute.label}</span>
+                  <Badge variant="outline">{selectedSeason?.name || 'No season selected'}</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {chartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={500}>
+                    <RechartsLineChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                      <XAxis 
+                        dataKey="dateLabel" 
+                        tick={{ fontSize: 12 }}
+                        angle={-45}
+                        textAnchor="end"
+                        height={80}
+                      />
+                      <YAxis 
+                        label={{ value: `${currentAttribute.label} (${currentAttribute.unit})`, angle: -90, position: 'insideLeft' }}
+                        tick={{ fontSize: 12 }}
+                      />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'hsl(var(--background))', 
+                          border: '1px solid hsl(var(--border))' 
+                        }}
+                      />
+                      <Legend />
+                      <Line 
+                        type="monotone" 
+                        dataKey={currentAttribute.rawKey} 
+                        stroke="#94a3b8" 
+                        name="Raw Data"
+                        dot={false}
+                        strokeWidth={2}
+                      />
+                    </RechartsLineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-96 text-muted-foreground">
+                    <Database className="w-16 h-16 mb-4 opacity-20" />
+                    <p className="text-lg font-medium">No data available</p>
+                    <p className="text-sm">Select a season and location to view raw data</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                QAQC Data
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="text-2xl font-bold">
-                  {statistics.qaqc.avg.toFixed(2)} {currentAttribute.unit}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  Range: {statistics.qaqc.min.toFixed(1)} - {statistics.qaqc.max.toFixed(1)} {currentAttribute.unit}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  {statistics.qaqc.count} data points
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+          {/* Clean Data Tab */}
+          <TabsContent value="clean" className="space-y-8">
+            <div className="text-center mb-8">
+              <Badge variant="outline" className="mb-4">Clean Time Series Data</Badge>
+              <h2 className="text-2xl font-bold mb-2">Processed & Validated Data</h2>
+              <p className="text-sm text-muted-foreground">
+                Data after quality control processing and validation
+              </p>
+            </div>
 
-        {/* Time Series Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>Time Series Comparison: {currentAttribute.label}</span>
-              <Badge variant="outline">
-                {selectedSeason?.name || 'No season selected'}
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {chartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={500}>
-                <ComposedChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                  <XAxis 
-                    dataKey="dateLabel" 
-                    tick={{ fontSize: 12 }}
-                    angle={-45}
-                    textAnchor="end"
-                    height={80}
-                  />
-                  <YAxis 
-                    label={{ value: `${currentAttribute.label} (${currentAttribute.unit})`, angle: -90, position: 'insideLeft' }}
-                    tick={{ fontSize: 12 }}
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--background))', 
-                      border: '1px solid hsl(var(--border))' 
-                    }}
-                  />
-                  <Legend />
-                  <Line 
-                    type="monotone" 
-                    dataKey={currentAttribute.rawKey} 
-                    stroke="#94a3b8" 
-                    name="Raw Data"
-                    dot={false}
-                    strokeWidth={1}
-                    opacity={0.5}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey={currentAttribute.cleanKey} 
-                    stroke="#3b82f6" 
-                    name="Clean Data"
-                    dot={false}
-                    strokeWidth={2}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey={currentAttribute.qaqcKey} 
-                    stroke="#10b981" 
-                    name="QAQC Data"
-                    dot={false}
-                    strokeWidth={2}
-                  />
-                </ComposedChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-96 text-muted-foreground">
-                <Database className="w-16 h-16 mb-4 opacity-20" />
-                <p className="text-lg font-medium">No data available</p>
-                <p className="text-sm">Select a season and location to view time series data</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Clean Data Statistics
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="text-2xl font-bold">
+                    {statistics.clean.avg.toFixed(2)} {currentAttribute.unit}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Range: {statistics.clean.min.toFixed(1)} - {statistics.clean.max.toFixed(1)} {currentAttribute.unit}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {statistics.clean.count} data points
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Clean Data: {currentAttribute.label}</span>
+                  <Badge variant="outline">{selectedSeason?.name || 'No season selected'}</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {chartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={500}>
+                    <RechartsLineChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                      <XAxis 
+                        dataKey="dateLabel" 
+                        tick={{ fontSize: 12 }}
+                        angle={-45}
+                        textAnchor="end"
+                        height={80}
+                      />
+                      <YAxis 
+                        label={{ value: `${currentAttribute.label} (${currentAttribute.unit})`, angle: -90, position: 'insideLeft' }}
+                        tick={{ fontSize: 12 }}
+                      />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'hsl(var(--background))', 
+                          border: '1px solid hsl(var(--border))' 
+                        }}
+                      />
+                      <Legend />
+                      <Line 
+                        type="monotone" 
+                        dataKey={currentAttribute.cleanKey} 
+                        stroke="#3b82f6" 
+                        name="Clean Data"
+                        dot={false}
+                        strokeWidth={2}
+                      />
+                    </RechartsLineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-96 text-muted-foreground">
+                    <Database className="w-16 h-16 mb-4 opacity-20" />
+                    <p className="text-lg font-medium">No data available</p>
+                    <p className="text-sm">Select a season and location to view clean data</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* QAQC Data Tab */}
+          <TabsContent value="qaqc" className="space-y-8">
+            <div className="text-center mb-8">
+              <Badge variant="outline" className="mb-4">QAQC Time Series Data</Badge>
+              <h2 className="text-2xl font-bold mb-2">Quality Assured & Quality Controlled</h2>
+              <p className="text-sm text-muted-foreground">
+                Final verified data after complete quality assurance process
+              </p>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  QAQC Data Statistics
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="text-2xl font-bold">
+                    {statistics.qaqc.avg.toFixed(2)} {currentAttribute.unit}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Range: {statistics.qaqc.min.toFixed(1)} - {statistics.qaqc.max.toFixed(1)} {currentAttribute.unit}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {statistics.qaqc.count} data points
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>QAQC Data: {currentAttribute.label}</span>
+                  <Badge variant="outline">{selectedSeason?.name || 'No season selected'}</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {chartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={500}>
+                    <RechartsLineChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                      <XAxis 
+                        dataKey="dateLabel" 
+                        tick={{ fontSize: 12 }}
+                        angle={-45}
+                        textAnchor="end"
+                        height={80}
+                      />
+                      <YAxis 
+                        label={{ value: `${currentAttribute.label} (${currentAttribute.unit})`, angle: -90, position: 'insideLeft' }}
+                        tick={{ fontSize: 12 }}
+                      />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'hsl(var(--background))', 
+                          border: '1px solid hsl(var(--border))' 
+                        }}
+                      />
+                      <Legend />
+                      <Line 
+                        type="monotone" 
+                        dataKey={currentAttribute.qaqcKey} 
+                        stroke="#10b981" 
+                        name="QAQC Data"
+                        dot={false}
+                        strokeWidth={2}
+                      />
+                    </RechartsLineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-96 text-muted-foreground">
+                    <Database className="w-16 h-16 mb-4 opacity-20" />
+                    <p className="text-lg font-medium">No data available</p>
+                    <p className="text-sm">Select a season and location to view QAQC data</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
         {/* Call to Action */}
         <div className="mt-12 text-center">
