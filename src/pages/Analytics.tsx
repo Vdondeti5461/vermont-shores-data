@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Database, LineChart, TrendingUp, GitCompare, Layers } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { ApiDiagnostic } from '@/components/ApiDiagnostic';
 
 const AnalyticsPage = () => {
   const databaseInfo = [
@@ -136,6 +137,9 @@ const AnalyticsPage = () => {
         {/* Main Analytics Interface */}
         <section id="analytics" className="py-16">
           <div className="container mx-auto px-4">
+            {/* API Diagnostic Tool */}
+            <ApiDiagnostic />
+            
             <div className="text-center mb-12">
               <Badge variant="outline" className="mb-4">
                 Interactive Analysis
