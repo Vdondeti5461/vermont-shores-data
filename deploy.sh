@@ -2,7 +2,7 @@
 set -e
 
 echo "🚀 Starting deployment to production..."
-cd ~/site-src
+cd ~/vermont-shores-data
 
 # Pull latest changes from GitHub
 echo "🔄 Pulling latest changes from GitHub..."
