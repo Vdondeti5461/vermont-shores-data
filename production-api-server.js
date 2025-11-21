@@ -327,7 +327,7 @@ app.get('/api/databases', async (req, res) => {
           id: DATABASES[key] || key, // Use actual database name
           key: key,
           name: DATABASES[key],
-          displayName: key.split('_').map(word => 
+          displayName: key.split('_').map(word =>
             word.charAt(0).toUpperCase() + word.slice(1)
           ).join(' '),
           description: metadata.description || 'Environmental monitoring database',
@@ -337,11 +337,225 @@ app.get('/api/databases', async (req, res) => {
         };
       })
       .sort((a, b) => a.order - b.order);
-    
+
     res.json(databases);
   } catch (error) {
     console.error('Error fetching databases:', error);
     res.status(500).json({ error: 'Failed to fetch databases' });
+  }
+});
+
+// SEASONAL QAQC SPECIFIC ENDPOINTS
+
+// Get all available seasonal tables (seasons) from seasonal_qaqc_data
+app.get('/api/seasonal/tables', async (req, res) => {
+  console.log('📅 [SEASONAL TABLES] Fetching available seasons');
+  try {
+    const { connection, databaseName } = await getConnectionWithDB('seasonal_qaqc_data');
+    
+    // Get all tables ending with _qaqc
+    const [infoRows] = await connection.execute(
+      `SELECT TABLE_NAME, TABLE_ROWS FROM INFORMATION_SCHEMA.TABLES 
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME LIKE '%_qaqc' 
+       ORDER BY TABLE_NAME DESC`,
+      [databaseName]
+    );
+
+    const tables = infoRows.map(row => {
+      const tableName = row.TABLE_NAME;
+      // Extract season name from table name (e.g., "season_2023_2024_qaqc" -> "2023-2024")
+      const seasonMatch = tableName.match(/season_(\d{4})_(\d{4})_qaqc/);
+      const displayName = seasonMatch ? `Season ${seasonMatch[1]}-${seasonMatch[2]}` : tableName;
+      
+      return {
+        id: tableName,
+        name: tableName,
+        displayName: displayName,
+        rowCount: row.TABLE_ROWS || 0,
+        description: `Quality-assured and quality-controlled seasonal data for ${displayName}`
+      };
+    });
+
+    connection.release();
+    console.log(`✅ [SEASONAL TABLES] Found ${tables.length} seasons`);
+    res.json(tables);
+  } catch (error) {
+    console.error('❌ [SEASONAL TABLES] Error:', error);
+    res.status(500).json({ error: 'Failed to fetch seasonal tables', details: error.message });
+  }
+});
+
+// Get attributes for a specific seasonal table
+app.get('/api/seasonal/tables/:table/attributes', async (req, res) => {
+  const { table } = req.params;
+  console.log(`📊 [SEASONAL ATTRIBUTES] Fetching for table: ${table}`);
+  
+  try {
+    const { connection, databaseName } = await getConnectionWithDB('seasonal_qaqc_data');
+
+    const [columns] = await connection.execute(`
+      SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE, COLUMN_DEFAULT, COLUMN_COMMENT
+      FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?
+      ORDER BY ORDINAL_POSITION
+    `, [databaseName, table]);
+
+    const attributes = columns.map(col => {
+      const name = col.COLUMN_NAME;
+      return {
+        name: name,
+        type: col.DATA_TYPE,
+        nullable: col.IS_NULLABLE === 'YES',
+        description: col.COLUMN_COMMENT || name,
+        category: getAttributeCategory(name),
+        isPrimary: ['TIMESTAMP', 'timestamp', 'Location', 'location'].includes(name)
+      };
+    });
+
+    connection.release();
+    console.log(`✅ [SEASONAL ATTRIBUTES] Found ${attributes.length} attributes`);
+    res.json({ table, attributes });
+  } catch (error) {
+    console.error('❌ [SEASONAL ATTRIBUTES] Error:', error);
+    res.status(500).json({ error: 'Failed to fetch table attributes', details: error.message });
+  }
+});
+
+// Get locations for a specific seasonal table
+app.get('/api/seasonal/tables/:table/locations', async (req, res) => {
+  const { table } = req.params;
+  console.log(`📍 [SEASONAL LOCATIONS] Fetching for table: ${table}`);
+  
+  try {
+    const { connection, databaseName } = await getConnectionWithDB('seasonal_qaqc_data');
+
+    // Case-safe column discovery
+    const [cols] = await connection.query(`SHOW COLUMNS FROM \`${table}\``);
+    const colMap = new Map(cols.map(c => [c.Field.toLowerCase(), c.Field]));
+    const locCol = colMap.get('location') || 'Location';
+
+    const query = `SELECT DISTINCT \`${locCol}\` AS code FROM \`${table}\`
+                   WHERE \`${locCol}\` IS NOT NULL AND \`${locCol}\` <> ''
+                   ORDER BY \`${locCol}\``;
+    
+    const [rows] = await connection.execute(query);
+
+    // Enrich with metadata
+    const locations = rows.map(row => {
+      const code = row.code;
+      const metadata = LOCATION_METADATA[code];
+      return {
+        code: code,
+        name: metadata ? metadata.name : code,
+        latitude: metadata ? metadata.latitude : null,
+        longitude: metadata ? metadata.longitude : null,
+        elevation: metadata ? metadata.elevation : null
+      };
+    });
+
+    connection.release();
+    console.log(`✅ [SEASONAL LOCATIONS] Found ${locations.length} locations`);
+    res.json(locations);
+  } catch (error) {
+    console.error('❌ [SEASONAL LOCATIONS] Error:', error);
+    res.status(500).json({ error: 'Failed to fetch locations', details: error.message });
+  }
+});
+
+// Download seasonal data with filters
+app.get('/api/seasonal/download/:table', async (req, res) => {
+  const { table } = req.params;
+  const { locations, start_date, end_date, attributes } = req.query;
+  
+  console.log(`📥 [SEASONAL DOWNLOAD] Starting download for ${table}`);
+  console.log(`   Locations: ${locations || 'all'}`);
+  console.log(`   Date range: ${start_date} to ${end_date}`);
+  console.log(`   Attributes: ${attributes || 'all'}`);
+  
+  try {
+    const { connection, databaseName } = await getConnectionWithDB('seasonal_qaqc_data');
+
+    // Discover actual column names
+    const [colRows] = await connection.query(`SHOW COLUMNS FROM \`${table}\``);
+    const allCols = colRows.map(c => c.Field);
+    const colMap = new Map(allCols.map(c => [c.toLowerCase(), c]));
+    const tsCol = colMap.get('timestamp') || 'TIMESTAMP';
+    const locCol = colMap.get('location') || 'Location';
+
+    // Determine selected columns
+    let selected;
+    if (attributes) {
+      const requested = String(attributes).split(',').map(a => a.trim()).filter(Boolean);
+      const mapped = requested.map(a => colMap.get(a.toLowerCase()) || a);
+      selected = Array.from(new Set([tsCol, locCol, ...mapped])).filter(c => allCols.includes(c));
+    } else {
+      selected = allCols;
+    }
+
+    // Build SELECT with formatted timestamp
+    const selectList = selected.map(c => {
+      if (c.toLowerCase() === 'timestamp') {
+        return `DATE_FORMAT(\`${tsCol}\`, '%Y-%m-%d %H:%i:%s') AS \`TIMESTAMP\``;
+      }
+      return `\`${c}\``;
+    }).join(', ');
+
+    // Build query with filters
+    let query = `SELECT ${selectList} FROM \`${table}\` WHERE 1=1`;
+    const params = [];
+
+    // Location filter
+    if (locations) {
+      const locationList = locations.split(',').map(l => l.trim()).filter(Boolean);
+      if (locationList.length > 0) {
+        query += ` AND \`${locCol}\` IN (${locationList.map(() => '?').join(',')})`;
+        params.push(...locationList);
+      }
+    }
+
+    // Date range filters
+    if (start_date) {
+      query += ` AND \`${tsCol}\` >= ?`;
+      params.push(start_date);
+    }
+    if (end_date) {
+      query += ` AND \`${tsCol}\` <= ?`;
+      params.push(end_date);
+    }
+
+    query += ` ORDER BY \`${tsCol}\` ASC`;
+
+    console.log(`🔍 [SEASONAL DOWNLOAD] Executing query with ${params.length} parameters`);
+    const [rows] = await connection.execute(query, params);
+    console.log(`📊 [SEASONAL DOWNLOAD] Retrieved ${rows.length} rows`);
+
+    // Set CSV headers
+    const filename = `seasonal_qaqc_${table}_${new Date().toISOString().split('T')[0]}.csv`;
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+    // Write CSV
+    if (rows.length > 0) {
+      const headers = Object.keys(rows[0]);
+      res.write(headers.join(',') + '\n');
+
+      rows.forEach(row => {
+        const values = headers.map(h => {
+          const v = row[h];
+          if (v === null || v === undefined) return '';
+          const s = String(v);
+          return s.includes(',') || s.includes('"') ? `"${s.replace(/"/g, '""')}"` : s;
+        });
+        res.write(values.join(',') + '\n');
+      });
+    }
+
+    connection.release();
+    console.log(`✅ [SEASONAL DOWNLOAD] Download complete`);
+    res.end();
+  } catch (error) {
+    console.error('❌ [SEASONAL DOWNLOAD] Error:', error);
+    res.status(500).json({ error: 'Failed to download seasonal data', details: error.message });
   }
 });
 

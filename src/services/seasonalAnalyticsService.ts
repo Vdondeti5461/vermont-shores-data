@@ -1,5 +1,3 @@
-import { API_BASE_URL } from '@/lib/apiConfig';
-
 export interface Location {
   id: string;
   name: string;
@@ -43,106 +41,69 @@ export interface TimeSeriesFilter {
   seasonId?: string;
   startDate?: string;
   endDate?: string;
-  monthFilter?: string; // e.g., '01', '02', etc. for specific months
-  seasonPeriod?: 'fall' | 'winter' | 'spring' | 'summer'; // seasonal periods
+  monthFilter?: string;
+  seasonPeriod?: 'fall' | 'winter' | 'spring' | 'summer';
 }
 
 export class SeasonalAnalyticsService {
-  private static readonly DATABASE = 'seasonal_clean';
+  private static readonly API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
   static async getLocations(): Promise<Location[]> {
     try {
-      // First get available seasons/tables
       const seasons = await this.getSeasons();
-      const uniqueLocations = new Set<string>();
-      
-      // Fetch data from all available tables to get unique locations
-      for (const season of seasons) {
-        try {
-          const params = new URLSearchParams({
-            database: this.DATABASE,
-            table: season.id,
-            limit: '1000' // Get enough data to find all locations
-          });
-
-          const response = await fetch(`${API_BASE_URL}/api/data?${params}`);
-          if (response.ok) {
-            const data = await response.json();
-            
-            // Extract unique locations from the Location column
-            if (data.data && Array.isArray(data.data)) {
-              data.data.forEach((row: any) => {
-                if (row.Location || row.location) {
-                  const locationValue = row.Location || row.location;
-                  if (locationValue && typeof locationValue === 'string') {
-                    uniqueLocations.add(locationValue.trim());
-                  }
-                }
-              });
-            }
-          }
-        } catch (seasonError) {
-          console.warn(`Error fetching data from season ${season.id}:`, seasonError);
-        }
+      if (!seasons || seasons.length === 0) {
+        return [];
       }
 
-      // Convert unique locations to Location objects
-      const locations: Location[] = Array.from(uniqueLocations)
-        .filter(loc => loc && loc.length > 0)
-        .map(locationName => ({
-          id: locationName,
-          name: locationName
-        }))
-        .sort((a, b) => a.name.localeCompare(b.name));
+      const firstSeasonTable = seasons[0].id;
+      const response = await fetch(`${this.API_BASE}/seasonal/tables/${firstSeasonTable}/locations`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch locations');
+      }
+
+      const locationsData = await response.json();
+      
+      const locations: Location[] = locationsData.map((loc: any) => ({
+        id: loc.code,
+        name: loc.name || loc.code,
+        latitude: loc.latitude,
+        longitude: loc.longitude,
+        elevation: loc.elevation
+      }));
 
       return locations;
     } catch (error) {
       console.error('Error fetching locations:', error);
-      // Return empty array if API fails so locations can be fetched when seasons are available
       return [];
     }
   }
 
   static async getSeasons(): Promise<Season[]> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/databases`);
+      const response = await fetch(`${this.API_BASE}/seasonal/tables`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      const data = await response.json();
       
-      // Extract seasons from the available tables/databases
-      const seasons: Season[] = [];
-      if (data.databases) {
-        // Look for seasonal tables in seasonal_clean database
-        const seasonalData = data.databases.find((db: any) => db.name === this.DATABASE);
-        if (seasonalData?.tables) {
-          seasonalData.tables.forEach((table: string) => {
-            // Extract season info from table names like "cleaned_data_season_2022_2023"
-            const seasonMatch = table.match(/cleaned_data_season_(\d{4})_(\d{4})/);
-            if (seasonMatch) {
-              const startYear = seasonMatch[1];
-              const endYear = seasonMatch[2];
-              seasons.push({
-                id: table,
-                name: `${startYear}-${endYear}`,
-                start_date: `${startYear}-09-01`, // Assume seasons start Sept 1
-                end_date: `${endYear}-08-31`      // and end Aug 31 next year
-              });
-            }
-          });
-        }
-      }
+      const tablesData = await response.json();
+      
+      const seasons: Season[] = tablesData.map((table: any) => {
+        const seasonMatch = table.name.match(/season_(\d{4})_(\d{4})_qaqc/);
+        const startYear = seasonMatch ? seasonMatch[1] : '2023';
+        const endYear = seasonMatch ? seasonMatch[2] : '2024';
+        
+        return {
+          id: table.name,
+          name: `${startYear}-${endYear}`,
+          start_date: `${startYear}-09-01`,
+          end_date: `${endYear}-08-31`
+        };
+      });
       
       return seasons.length > 0 ? seasons : [
         {
-          id: 'cleaned_data_season_2022_2023',
-          name: '2022-2023',
-          start_date: '2022-09-01',
-          end_date: '2023-08-31'
-        },
-        {
-          id: 'cleaned_data_season_2023_2024',
+          id: 'season_2023_2024_qaqc',
           name: '2023-2024',
           start_date: '2023-09-01',
           end_date: '2024-08-31'
@@ -150,16 +111,9 @@ export class SeasonalAnalyticsService {
       ];
     } catch (error) {
       console.error('Error fetching seasons:', error);
-      // Return default seasons if API fails
       return [
         {
-          id: 'cleaned_data_season_2022_2023',
-          name: '2022-2023',
-          start_date: '2022-09-01',
-          end_date: '2023-08-31'
-        },
-        {
-          id: 'cleaned_data_season_2023_2024',
+          id: 'season_2023_2024_qaqc',
           name: '2023-2024',
           start_date: '2023-09-01',
           end_date: '2024-08-31'
@@ -170,67 +124,86 @@ export class SeasonalAnalyticsService {
 
   static async getEnvironmentalData(filters: TimeSeriesFilter = {}): Promise<EnvironmentalData[]> {
     try {
-      const params = new URLSearchParams({
-        database: this.DATABASE,
-        ...(filters.seasonId && { table: filters.seasonId }),
-        ...(filters.locationIds?.length && { locations: filters.locationIds.join(',') }),
-        ...(filters.startDate && { start_date: filters.startDate }),
-        ...(filters.endDate && { end_date: filters.endDate }),
-        limit: '10000' // Get more data for time series
-      });
+      if (!filters.seasonId) {
+        const seasons = await this.getSeasons();
+        if (seasons.length > 0) {
+          filters.seasonId = seasons[0].id;
+        }
+      }
 
-      const response = await fetch(`${API_BASE_URL}/api/data?${params}`);
+      const params = new URLSearchParams();
+      if (filters.locationIds?.length) {
+        params.append('locations', filters.locationIds.join(','));
+      }
+      if (filters.startDate) {
+        params.append('start_date', filters.startDate);
+      }
+      if (filters.endDate) {
+        params.append('end_date', filters.endDate);
+      }
+
+      const response = await fetch(
+        `${this.API_BASE}/seasonal/download/${filters.seasonId}?${params}`
+      );
+      
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      const data = await response.json();
+
+      const csvText = await response.text();
+      const lines = csvText.trim().split('\n');
       
-      let environmentalData = data.data || [];
-
-      // Apply location filter - check both 'Location' and 'location' columns
-      if (filters.locationIds?.length) {
-        environmentalData = environmentalData.filter((item: any) => {
-          const locationValue = item.Location || item.location || item.location_name;
-          return locationValue && filters.locationIds!.includes(locationValue);
-        });
+      if (lines.length < 2) {
+        return [];
       }
 
-      // Apply month filter if specified
-      if (filters.monthFilter) {
-        environmentalData = environmentalData.filter((item: any) => {
-          const date = new Date(item.TIMESTAMP || item.datetime);
+      const headers = lines[0].split(',').map(h => h.trim());
+      const data: EnvironmentalData[] = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',');
+        const row: any = {};
+        
+        headers.forEach((header, index) => {
+          row[header] = values[index]?.trim();
+        });
+
+        // Apply month filter
+        if (filters.monthFilter) {
+          const date = new Date(row.TIMESTAMP || row.timestamp);
           const month = String(date.getMonth() + 1).padStart(2, '0');
-          return month === filters.monthFilter;
-        });
-      }
+          if (month !== filters.monthFilter) continue;
+        }
 
-      // Apply seasonal period filter
-      if (filters.seasonPeriod) {
-        environmentalData = environmentalData.filter((item: any) => {
-          const date = new Date(item.TIMESTAMP || item.datetime);
-          const month = date.getMonth() + 1; // 1-12
+        // Apply seasonal period filter
+        if (filters.seasonPeriod) {
+          const date = new Date(row.TIMESTAMP || row.timestamp);
+          const month = date.getMonth() + 1;
           
+          let matches = false;
           switch (filters.seasonPeriod) {
-            case 'winter': return month === 12 || month <= 2;
-            case 'spring': return month >= 3 && month <= 5;
-            case 'summer': return month >= 6 && month <= 8;
-            case 'fall': return month >= 9 && month <= 11;
-            default: return true;
+            case 'winter': matches = month === 12 || month <= 2; break;
+            case 'spring': matches = month >= 3 && month <= 5; break;
+            case 'summer': matches = month >= 6 && month <= 8; break;
+            case 'fall': matches = month >= 9 && month <= 11; break;
           }
+          
+          if (!matches) continue;
+        }
+
+        data.push({
+          datetime: row.TIMESTAMP || row.timestamp,
+          location_name: row.Location || row.location,
+          temperature: parseFloat(row.air_temperature_avg_c) || undefined,
+          precipitation: parseFloat(row.precip_total_nrt_mm) || undefined,
+          wind_speed: parseFloat(row.wind_speed_avg_ms) || undefined,
+          snow_depth: parseFloat(row.snow_depth_cm) || undefined,
+          humidity: parseFloat(row.relative_humidity_percent) || undefined,
+          pressure: undefined
         });
       }
 
-      // Map the data to the expected format based on actual schema
-      return environmentalData.map((item: any) => ({
-        datetime: item.TIMESTAMP || item.datetime,
-        location_name: item.Location || item.location || item.location_name,
-        temperature: item.Bal_soil_Min || item.Bal_Temperature_C || item.temperature,
-        precipitation: item.Precip || item.precipitation,  
-        wind_speed: item.AIRTC_Avg || item.wind_speed,
-        snow_depth: item.SW_ul || item.Snow_Depth_SRDD || item.snow_depth,
-        humidity: item.RH || item.humidity,
-        pressure: item.Pressure || item.pressure
-      }));
+      return data;
     } catch (error) {
       console.error('Error fetching environmental data:', error);
       return [];
@@ -244,7 +217,6 @@ export class SeasonalAnalyticsService {
       return [];
     }
 
-    // Group data by location
     const locationGroups = data.reduce((acc, item) => {
       const key = item.location_name;
       if (!acc[key]) {
@@ -254,7 +226,6 @@ export class SeasonalAnalyticsService {
       return acc;
     }, {} as Record<string, EnvironmentalData[]>);
 
-    // Calculate metrics for each location
     const metrics: SeasonalMetrics[] = [];
     
     Object.entries(locationGroups).forEach(([location, locationData]) => {
@@ -284,7 +255,6 @@ export class SeasonalAnalyticsService {
   static async getMonthlyTrends(filters: TimeSeriesFilter = {}): Promise<Record<string, EnvironmentalData[]>> {
     const data = await this.getEnvironmentalData(filters);
     
-    // Group by month
     const monthlyData = data.reduce((acc, item) => {
       const date = new Date(item.datetime);
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
@@ -302,10 +272,9 @@ export class SeasonalAnalyticsService {
   static async getSeasonalTrends(filters: TimeSeriesFilter = {}): Promise<Record<string, EnvironmentalData[]>> {
     const data = await this.getEnvironmentalData(filters);
     
-    // Group by seasonal periods
     const seasonalData = data.reduce((acc, item) => {
       const date = new Date(item.datetime);
-      const month = date.getMonth() + 1; // 1-12
+      const month = date.getMonth() + 1;
       
       let season: string;
       if (month === 12 || month <= 2) season = 'winter';
