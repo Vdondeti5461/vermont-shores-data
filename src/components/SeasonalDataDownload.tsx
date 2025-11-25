@@ -413,6 +413,24 @@ const SeasonalDataDownload = () => {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
+              <MultiSelect
+                options={attributeOptions}
+                selected={selectedAttributes}
+                onChange={setSelectedAttributes}
+                placeholder="Select attributes..."
+                searchPlaceholder="Search attributes..."
+                emptyText="No attributes found"
+                maxDisplay={3}
+              />
+              
+              {selectedAttributes.length > 0 && (
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertDescription>
+                    {selectedAttributes.length} attribute(s) selected
+                  </AlertDescription>
+                </Alert>
+              )}
             </CardContent>
           </Card>
 
