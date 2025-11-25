@@ -350,39 +350,6 @@ function extractUnitFromAttributeName(attributeName) {
   
   return 'No Unit';
 }
-  if (lowerName === 'rh' || lowerName.includes('humidity')) return '%';
-  
-  // Distance/depth
-  if (lowerName.endsWith('_cm') || lowerName.includes('depth_cm')) return 'cm';
-  if (lowerName.endsWith('_mm') || lowerName.includes('_mm')) return 'mm';
-  if (lowerName.endsWith('_m')) return 'm';
-  
-  // Speed
-  if (lowerName.endsWith('_ms') || lowerName.includes('speed_ms')) return 'm/s';
-  if (lowerName.endsWith('_kmh')) return 'km/h';
-  
-  // Angles
-  if (lowerName.endsWith('_deg') || lowerName.includes('direction_deg')) return 'degrees';
-  
-  // Energy/Radiation
-  if (lowerName.endsWith('_w_m2') || lowerName.includes('radiation')) return 'W/m²';
-  if (lowerName.includes('flux') && lowerName.includes('w_m2')) return 'W/m²';
-  
-  // Density
-  if (lowerName.endsWith('_kg_m3') || lowerName.includes('density')) return 'kg/m³';
-  
-  // Voltage
-  if (lowerName.includes('voltage') && lowerName.includes('_min')) return 'Volts';
-  
-  // Time
-  if (lowerName === 'timestamp') return 'DateTime';
-  
-  // Location
-  if (lowerName === 'location') return 'LOC';
-  
-  // No unit detected
-  return 'No Unit';
-}
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
