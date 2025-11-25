@@ -121,11 +121,12 @@ const DynamicDataBrowser = () => {
       const dbList = Array.isArray(data) ? data : (data.databases || []);
       setDatabases(dbList);
       
-      if (dbList.length > 0) {
-        toast({
-          title: "Databases Loaded",
-          description: `Found ${dbList.length} databases`,
-        });
+      // Auto-select if only one database (seasonal_qaqc_data)
+      if (dbList.length === 1) {
+        const db = dbList[0];
+        setSelectedDatabase(db.key);
+        loadTables(db.key);
+        loadLocations(db.key);
       }
     } catch (error) {
       setDatabases([]);

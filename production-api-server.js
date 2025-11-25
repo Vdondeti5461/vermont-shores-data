@@ -291,6 +291,51 @@ function getAttributeCategory(attributeName) {
   return 'Other';
 }
 
+// Extract unit from attribute name (e.g., "panel_temperature_c" → "°C")
+function extractUnitFromAttributeName(attributeName) {
+  const lowerName = attributeName.toLowerCase();
+  
+  // Temperature units
+  if (lowerName.endsWith('_c') || lowerName.endsWith('_tc')) return '°C';
+  if (lowerName.endsWith('_f') || lowerName.endsWith('_tf')) return '°F';
+  if (lowerName.endsWith('_k')) return 'K';
+  
+  // Percentage
+  if (lowerName.includes('percent') || lowerName.endsWith('_pct')) return '%';
+  if (lowerName === 'rh' || lowerName.includes('humidity')) return '%';
+  
+  // Distance/depth
+  if (lowerName.endsWith('_cm') || lowerName.includes('depth_cm')) return 'cm';
+  if (lowerName.endsWith('_mm') || lowerName.includes('_mm')) return 'mm';
+  if (lowerName.endsWith('_m')) return 'm';
+  
+  // Speed
+  if (lowerName.endsWith('_ms') || lowerName.includes('speed_ms')) return 'm/s';
+  if (lowerName.endsWith('_kmh')) return 'km/h';
+  
+  // Angles
+  if (lowerName.endsWith('_deg') || lowerName.includes('direction_deg')) return 'degrees';
+  
+  // Energy/Radiation
+  if (lowerName.endsWith('_w_m2') || lowerName.includes('radiation')) return 'W/m²';
+  if (lowerName.includes('flux') && lowerName.includes('w_m2')) return 'W/m²';
+  
+  // Density
+  if (lowerName.endsWith('_kg_m3') || lowerName.includes('density')) return 'kg/m³';
+  
+  // Voltage
+  if (lowerName.includes('voltage') && lowerName.includes('_min')) return 'Volts';
+  
+  // Time
+  if (lowerName === 'timestamp') return 'DateTime';
+  
+  // Location
+  if (lowerName === 'location') return 'LOC';
+  
+  // No unit detected
+  return 'No Unit';
+}
+
 // Health check endpoint
 app.get('/health', async (req, res) => {
   try {
@@ -404,6 +449,9 @@ app.get('/api/seasonal/tables/:table/attributes', async (req, res) => {
       const name = col.COLUMN_NAME;
       const attrMetadata = tableMetadata?.attributes?.[name] || {};
       
+      // Try to get unit from metadata first, then extract from attribute name
+      const unit = attrMetadata.unit || extractUnitFromAttributeName(name);
+      
       return {
         name: name,
         type: col.DATA_TYPE,
@@ -411,7 +459,7 @@ app.get('/api/seasonal/tables/:table/attributes', async (req, res) => {
         description: attrMetadata.description || col.COLUMN_COMMENT || name,
         category: attrMetadata.category || getAttributeCategory(name),
         isPrimary: ['TIMESTAMP', 'timestamp', 'Location', 'location'].includes(name),
-        unit: attrMetadata.unit || 'No Unit',
+        unit: unit,
         measurementType: attrMetadata.measurement_type || 'Sample'
       };
     });
@@ -623,6 +671,9 @@ app.get('/api/databases/:database/tables/:table/attributes', async (req, res) =>
     const attributes = columns.map(col => {
       const attrMetadata = tableMetadata?.attributes?.[col.COLUMN_NAME] || {};
       
+      // Try to get unit from metadata first, then extract from attribute name
+      const unit = attrMetadata.unit || extractUnitFromAttributeName(col.COLUMN_NAME);
+      
       return {
         name: col.COLUMN_NAME,
         type: col.DATA_TYPE,
@@ -631,8 +682,8 @@ app.get('/api/databases/:database/tables/:table/attributes', async (req, res) =>
         comment: attrMetadata.description || col.COLUMN_COMMENT || '',
         category: attrMetadata.category || getAttributeCategory(col.COLUMN_NAME),
         isPrimary: ['TIMESTAMP', 'Location'].includes(col.COLUMN_NAME),
-        unit: attrMetadata.unit || 'No_Unit',
-        measurementType: attrMetadata.measurement_type || 'smp'
+        unit: unit,
+        measurementType: attrMetadata.measurement_type || 'Sample'
       };
     });
     

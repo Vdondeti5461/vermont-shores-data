@@ -11,9 +11,9 @@ const APIDocumentation = () => {
   
   // API Authentication Info
   const authInfo = {
-    currentAccess: 'Open Access (Seasonal QAQC Data)',
-    restrictedData: ['Raw Data', 'Stage Clean Data', 'Stage QAQC Data'],
-    requestProcess: 'Submit bulk download request form',
+    currentAccess: 'Open Access - Seasonal QAQC Data Only',
+    restrictedData: ['Raw Data Ingestion', 'Stage Clean Data', 'Stage QAQC Data'],
+    requestProcess: 'Contact research team for bulk access to restricted datasets',
     contactEmail: 's2s@uvm.edu',
     contactPhone: '(802) 656-2215'
   };
@@ -32,43 +32,121 @@ const APIDocumentation = () => {
     {
       method: 'GET',
       path: '/databases',
-      description: 'Get all available databases with metadata',
+      description: 'Get publicly accessible databases (currently restricted to seasonal QAQC data only)',
+      response: `[
+  {
+    "id": "CRRELS2S_seasonal_qaqc_data",
+    "key": "seasonal_qaqc_data",
+    "name": "CRRELS2S_seasonal_qaqc_data",
+    "displayName": "Seasonal QAQC Data",
+    "description": "Quality-controlled seasonal environmental datasets",
+    "category": "seasonal",
+    "order": 4,
+    "tables": []
+  }
+]`
+    },
+    {
+      method: 'GET',
+      path: '/seasonal/tables',
+      description: 'Get all available seasonal tables from seasonal QAQC database',
+      response: `[
+  {
+    "id": "season_2023_2024_qaqc",
+    "name": "season_2023_2024_qaqc",
+    "displayName": "Season 2023-2024",
+    "rowCount": 125340,
+    "description": "Quality-assured and quality-controlled seasonal data for Season 2023-2024"
+  }
+]`
+    },
+    {
+      method: 'GET',
+      path: '/seasonal/tables/:table/attributes',
+      description: 'Get detailed attribute information for a specific seasonal table with unit metadata',
+      parameters: [
+        { name: 'table', description: 'Seasonal table name (e.g., season_2023_2024_qaqc)' }
+      ],
       response: `{
-  "databases": [
+  "table": "season_2023_2024_qaqc",
+  "attributes": [
     {
-      "key": "raw_data",
-      "name": "CRRELS2S_raw_data_ingestion",
-      "displayName": "Raw Data Ingestion",
-      "description": "Raw sensor data directly from field loggers, unprocessed",
-      "category": "raw",
-      "order": 1
+      "name": "timestamp",
+      "type": "datetime",
+      "nullable": false,
+      "description": "Date and time of observation (EST)",
+      "category": "Time",
+      "isPrimary": true,
+      "unit": "DateTime",
+      "measurementType": "Sample"
     },
     {
-      "key": "stage_clean_data",
-      "name": "CRRELS2S_stage_clean_data",
-      "displayName": "Stage Clean Data",
-      "description": "Intermediate cleaned datasets using basic quality control (QC) filters",
-      "category": "cleaned",
-      "order": 2
+      "name": "location",
+      "type": "varchar",
+      "nullable": false,
+      "description": "Logger site ID",
+      "category": "Location",
+      "isPrimary": true,
+      "unit": "LOC",
+      "measurementType": "Sample"
     },
     {
-      "key": "stage_qaqc_data",
-      "name": "CRRELS2S_stage_qaqc_data",
-      "displayName": "Stage QAQC Data",
-      "description": "Advanced QAQC with calibration, temporal checks, and derived values",
-      "category": "qaqc",
-      "order": 3
-    },
-    {
-      "key": "seasonal_qaqc_data",
-      "name": "CRRELS2S_seasonal_qaqc_data",
-      "displayName": "Seasonal QAQC Data",
-      "description": "Seasonal datasets after QAQC, designed for time-bounded analysis",
-      "category": "seasonal",
-      "order": 4
+      "name": "panel_temperature_c",
+      "type": "float",
+      "nullable": true,
+      "description": "Panel (enclosure) temperature",
+      "category": "Temperature",
+      "isPrimary": false,
+      "unit": "°C",
+      "measurementType": "Sample"
     }
   ]
 }`
+    },
+    {
+      method: 'GET',
+      path: '/seasonal/tables/:table/locations',
+      description: 'Get monitoring locations for a specific seasonal table with geographic metadata',
+      parameters: [
+        { name: 'table', description: 'Seasonal table name' }
+      ],
+      response: `[
+  {
+    "code": "SUMM",
+    "name": "Mansfield Summit",
+    "latitude": 44.5284,
+    "longitude": -72.8147,
+    "elevation": 1163
+  },
+  {
+    "code": "RB-01",
+    "name": "Ranch Brook Site #1",
+    "latitude": 44.5232,
+    "longitude": -72.8087,
+    "elevation": 1072
+  }
+]`
+    },
+    {
+      method: 'GET',
+      path: '/seasonal/download/:table',
+      description: 'Download seasonal environmental data as CSV with filtering options',
+      parameters: [
+        { name: 'table', description: 'Seasonal table name (required)' },
+        { name: 'locations', description: 'Comma-separated location codes (optional)' },
+        { name: 'start_date', description: 'Start date in format: YYYY-MM-DD HH:mm:ss (optional)' },
+        { name: 'end_date', description: 'End date in format: YYYY-MM-DD HH:mm:ss (optional)' },
+        { name: 'attributes', description: 'Comma-separated attribute names (optional)' }
+      ],
+      response: `CSV file download with properly formatted timestamps:
+timestamp,location,panel_temperature_c,air_temperature_avg_c
+2024-01-15 12:00:00,SUMM,-5.2,-8.1
+2024-01-15 13:00:00,SUMM,-5.5,-8.3
+...
+
+Filename format: seasonal_qaqc_{table}_{date}.csv
+Content-Type: text/csv
+Content-Disposition: attachment`
     },
     {
       method: 'GET',
@@ -268,44 +346,39 @@ Content-Disposition: attachment`
       description: 'Verify API server status and availability before making data requests'
     },
     {
-      title: 'Get All Available Databases',
+      title: 'Get Available Database',
       url: `https://crrels2s.w3.uvm.edu/api/databases`,
-      description: 'Retrieve all environmental databases with metadata and processing levels'
+      description: 'Retrieve publicly accessible database (Seasonal QAQC only)'
     },
     {
-      title: 'Get Raw Data Tables',
-      url: `https://crrels2s.w3.uvm.edu/api/databases/raw_data/tables`,
-      description: 'List all data tables in the raw environmental dataset'
+      title: 'Get Seasonal Tables',
+      url: `https://crrels2s.w3.uvm.edu/api/seasonal/tables`,
+      description: 'List all available seasonal periods in the QAQC database'
     },
     {
-      title: 'Get Monitoring Station Locations',
-      url: `https://crrels2s.w3.uvm.edu/api/databases/raw_data/locations`,
-      description: 'Fetch all monitoring station locations with coordinates and elevation data'
+      title: 'Get Table Attributes with Units',
+      url: `https://crrels2s.w3.uvm.edu/api/seasonal/tables/season_2023_2024_qaqc/attributes`,
+      description: 'Retrieve complete attribute information including units and measurement types'
     },
     {
-      title: 'Get Detailed Table Schema',
-      url: `https://crrels2s.w3.uvm.edu/api/databases/raw_data/tables/raw_env_core_observations/attributes`,
-      description: 'Retrieve complete attribute information including data types and categories'
+      title: 'Get Table Locations',
+      url: `https://crrels2s.w3.uvm.edu/api/seasonal/tables/season_2023_2024_qaqc/locations`,
+      description: 'Fetch all monitoring station locations with geographic coordinates'
     },
     {
-      title: 'Get Winter Temperature Data',
-      url: `https://crrels2s.w3.uvm.edu/api/databases/raw_data/data/raw_env_core_observations?location=RB01&season=winter&attributes=timestamp,location,air_temperature_avg_c,soil_temperature_c`,
-      description: 'Retrieve winter temperature measurements from RB01 monitoring station'
+      title: 'Download Multi-Location Data',
+      url: `https://crrels2s.w3.uvm.edu/api/seasonal/download/season_2023_2024_qaqc?locations=SUMM,RB-01&attributes=timestamp,location,panel_temperature_c,air_temperature_avg_c&start_date=2024-01-01 00:00:00&end_date=2024-03-31 23:59:59`,
+      description: 'Download winter temperature data from multiple monitoring locations'
     },
     {
-      title: 'Get Multi-Location Snow Data',
-      url: `https://crrels2s.w3.uvm.edu/api/databases/raw_data/data/raw_env_core_observations?location=RB01,SUMM&attributes=timestamp,location,snow_water_equivalent_mm,snow_depth_cm&start_date=2024-01-01&end_date=2024-03-31`,
-      description: 'Compare snow measurements between multiple monitoring locations for winter season'
+      title: 'Download All Locations with Date Filter',
+      url: `https://crrels2s.w3.uvm.edu/api/seasonal/download/season_2023_2024_qaqc?start_date=2024-01-01 00:00:00&end_date=2024-12-31 23:59:59`,
+      description: 'Download full-year data from all locations'
     },
     {
-      title: 'Download Complete Weather Dataset',
-      url: `https://crrels2s.w3.uvm.edu/api/databases/raw_data/download/raw_env_core_observations?start_date=2024-01-01&end_date=2024-12-31&attributes=timestamp,location,air_temperature_avg_c,relative_humidity_percent,wind_speed_avg_ms`,
-      description: 'Download full-year weather data including temperature, humidity, and wind'
-    },
-    {
-      title: 'Preview Wind Data Sample',
-      url: `https://crrels2s.w3.uvm.edu/api/databases/raw_data/data/raw_env_wind_observations?attributes=timestamp,location,wind_speed_avg_ms,wind_direction_deg&limit=100`,
-      description: 'Preview first 100 records of wind monitoring data for data exploration'
+      title: 'Download Specific Attributes Only',
+      url: `https://crrels2s.w3.uvm.edu/api/seasonal/download/season_2023_2024_qaqc?attributes=timestamp,location,snow_water_equivalent_mm,snow_depth_cm`,
+      description: 'Download only snow-related measurements for all time periods and locations'
     }
   ];
 
@@ -523,8 +596,68 @@ try {
               <TabsContent value="authentication" className="mt-8">
                 <Card>
                   <CardHeader>
-                    <Key className="h-8 w-8 text-primary mb-2" />
-                    <CardTitle>Authentication & Data Access</CardTitle>
+                    <div className="flex items-center gap-3">
+                      <Key className="h-8 w-8 text-primary" />
+                      <div>
+                        <CardTitle>Data Access & Availability</CardTitle>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Current access policies and restricted datasets
+                        </p>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div>
+                      <h3 className="font-semibold mb-2">Public Access</h3>
+                      <Badge variant="secondary" className="text-base py-1">
+                        {authInfo.currentAccess}
+                      </Badge>
+                      <p className="text-sm text-muted-foreground mt-2">
+                        No API key required for accessing seasonal QAQC datasets. All endpoints are open for public use.
+                      </p>
+                    </div>
+
+                    <div>
+                      <h3 className="font-semibold mb-2">Restricted Datasets</h3>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        The following datasets are currently restricted and require special authorization:
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {authInfo.restrictedData.map((dataset, idx) => (
+                          <Badge key={idx} variant="outline">
+                            {dataset}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="font-semibold mb-2">Request Access to Restricted Data</h3>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        {authInfo.requestProcess}
+                      </p>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">Email</Badge>
+                          <code className="text-sm">{authInfo.contactEmail}</code>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">Phone</Badge>
+                          <code className="text-sm">{authInfo.contactPhone}</code>
+                        </div>
+                      </div>
+                    </div>
+
+                    <Alert>
+                      <Info className="h-4 w-4" />
+                      <AlertDescription>
+                        All API requests are subject to rate limiting to ensure fair usage. 
+                        Please implement caching and avoid excessive concurrent requests.
+                      </AlertDescription>
+                    </Alert>
+                  </CardContent>
+                </Card>
+              </TabsContent>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="p-4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
@@ -593,18 +726,72 @@ try {
                           <span className="inline-block mt-1 px-2 py-0.5 bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 text-xs rounded">Request Required</span>
                         </div>
 
-                        <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded">
-                          <h5 className="font-semibold text-blue-900 dark:text-blue-100 text-sm">4. CRRELS2S_seasonal_qaqc_data</h5>
-                          <p className="text-blue-800 dark:text-blue-200 text-xs mt-1">
-                            Season-bounded QAQC datasets optimized for climate and seasonal analysis
-                          </p>
-                          <span className="inline-block mt-1 px-2 py-0.5 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs rounded">Open Access</span>
+              <TabsContent value="authentication" className="mt-8">
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center gap-3">
+                      <Key className="h-8 w-8 text-primary" />
+                      <div>
+                        <CardTitle>Data Access & Availability</CardTitle>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Current access policies and restricted datasets
+                        </p>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div>
+                      <h3 className="font-semibold mb-2">Public Access</h3>
+                      <Badge variant="secondary" className="text-base py-1">
+                        {authInfo.currentAccess}
+                      </Badge>
+                      <p className="text-sm text-muted-foreground mt-2">
+                        No API key required for accessing seasonal QAQC datasets. All endpoints are open for public use.
+                      </p>
+                    </div>
+
+                    <div>
+                      <h3 className="font-semibold mb-2">Restricted Datasets</h3>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        The following datasets are currently restricted and require special authorization:
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {authInfo.restrictedData.map((dataset, idx) => (
+                          <Badge key={idx} variant="outline">
+                            {dataset}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="font-semibold mb-2">Request Access to Restricted Data</h3>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        {authInfo.requestProcess}
+                      </p>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">Email</Badge>
+                          <code className="text-sm">{authInfo.contactEmail}</code>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">Phone</Badge>
+                          <code className="text-sm">{authInfo.contactPhone}</code>
                         </div>
                       </div>
                     </div>
 
-                    <div className="p-4 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-800 rounded-lg">
-                      <h4 className="font-semibold text-indigo-800 dark:text-indigo-200 mb-2">🌐 Network Collaboration & API Access</h4>
+                    <Alert>
+                      <Info className="h-4 w-4" />
+                      <AlertDescription>
+                        All API requests are subject to rate limiting to ensure fair usage. 
+                        Please implement caching and avoid excessive concurrent requests.
+                      </AlertDescription>
+                    </Alert>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
                       <p className="text-indigo-700 dark:text-indigo-300 text-sm mb-2">
                         Research networks and collaborating institutions can request dedicated API access:
                       </p>
