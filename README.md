@@ -6,10 +6,9 @@ The Summit2Shore platform provides access to environmental monitoring data from 
 
 **Lovable Project**: https://lovable.dev/projects/5d5ff90d-8cee-4075-81bd-555a25d8e14f
 
-## Live Deployments
+## Live Deployment
 
-- **Testing Environment**: https://vdondeti.w3.uvm.edu
-- **Production Environment**: https://crrels2s.w3.uvm.edu
+- **Production**: https://crrels2s.w3.uvm.edu
 
 ## How can I edit this code?
 
@@ -71,47 +70,52 @@ This project is built with:
 
 📚 **[DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)** - Complete documentation navigation
 
-🚀 **[GETTING_STARTED.md](GETTING_STARTED.md)** - New developer setup guide
+🚀 **[CRRELS2S_DEPLOYMENT.md](CRRELS2S_DEPLOYMENT.md)** - Production deployment guide
 
-⚡ **[DEPLOYMENT_QUICK_REFERENCE.md](DEPLOYMENT_QUICK_REFERENCE.md)** - Deploy commands
+🔧 **[SERVER_VERIFICATION_CHECKLIST.md](SERVER_VERIFICATION_CHECKLIST.md)** - Troubleshooting
 
 📋 **[TODO.md](TODO.md)** - Future tasks and roadmap
 
-## Deployment to UVM Servers
+## Production Deployment
 
-This project uses a dual-server deployment strategy:
+Deploy to **crrels2s.w3.uvm.edu** with a single command:
 
-### Quick Deploy
 ```bash
-# Deploy to both testing and production
-./deploy-dual.sh
-
-# Deploy to testing only
-./deploy-dual.sh testing
-
-# Deploy to production only
-./deploy-dual.sh production
+cd ~/vermont-shores-data
+chmod +x deploy-crrels2s.sh
+./deploy-crrels2s.sh
 ```
 
-### Architecture
+This automated script:
+- ✅ Pulls latest code from GitHub
+- ✅ Builds React frontend → deploys to `~/www-root/`
+- ✅ Updates Node.js backend → deploys to `~/api/`
+- ✅ Restarts API server with pm2
+- ✅ Creates automatic backups
+- ✅ Tests API health
+
+### Production Architecture
 
 **Frontend**: React + TypeScript + Vite + Tailwind CSS
 - Source: `src/`
-- Build output: `dist/` (deployed to `~/www-root/` on servers)
+- Build: `dist/`
+- Deployment: `~/www-root/` (served by Apache)
 
 **Backend**: Node.js + Express + MySQL
 - Source: `production-api-server.js`
-- Deployed: `~/api/` on servers
-- Database: MySQL on `webdb5.uvm.edu`
+- Deployment: `~/api/`
+- Database: MySQL (CRREL2S databases)
+- Process Manager: pm2
 
-### Server Structure
+### Server Structure on crrels2s.w3.uvm.edu
 ```
-~/site-src/     # Source code from GitHub
-~/api/          # Backend API deployment
-~/www-root/     # Frontend build (Apache serves from here)
+~/vermont-shores-data/  # Git repository (source code)
+~/www-root/             # Frontend deployment
+~/api/                  # Backend deployment
+~/backup-*/             # Automatic timestamped backups
 ```
 
-📖 **See [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) for complete details**
+📖 **See [CRRELS2S_DEPLOYMENT.md](CRRELS2S_DEPLOYMENT.md) for detailed deployment guide**
 
 ## Development
 
@@ -142,7 +146,7 @@ See [BACKEND_API_ENDPOINTS.md](BACKEND_API_ENDPOINTS.md) for API documentation.
 All documentation is organized in **[DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)**
 
 ### Quick Links
-- 🚀 New here? Start with [GETTING_STARTED.md](GETTING_STARTED.md)
-- 🔧 Deployment help? See [DEPLOYMENT_QUICK_REFERENCE.md](DEPLOYMENT_QUICK_REFERENCE.md)
-- 🐛 Issues? Check [SERVER_VERIFICATION_CHECKLIST.md](SERVER_VERIFICATION_CHECKLIST.md)
-- 📋 What's next? View [TODO.md](TODO.md)
+- 🚀 Deploy to production? [CRRELS2S_DEPLOYMENT.md](CRRELS2S_DEPLOYMENT.md)
+- 🔧 API documentation? [BACKEND_API_ENDPOINTS.md](BACKEND_API_ENDPOINTS.md)
+- 🐛 Troubleshooting? [SERVER_VERIFICATION_CHECKLIST.md](SERVER_VERIFICATION_CHECKLIST.md)
+- 📋 What's next? [TODO.md](TODO.md)
