@@ -18,6 +18,4 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
           script_stop: false
-          script: |
-            cd "$HOME/vermont-shores-data"
-            ./deploy-crrels2s.sh
+          script: cd "$HOME/vermont-shores-data" && ./deploy-crrels2s.sh
