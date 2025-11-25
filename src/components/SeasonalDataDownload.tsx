@@ -8,8 +8,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { 
-  Loader2, Download, Database, Table, MapPin, Calendar as CalendarIcon, 
-  Filter, CheckCircle2, Info, FileText, Layers
+  Loader2, Download, Table, MapPin, Calendar as CalendarIcon, 
+  Filter, CheckCircle2, Info, FileText, TrendingUp
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -177,7 +177,7 @@ const SeasonalDataDownload = () => {
 
       toast({
         title: "Download Complete",
-        description: "Your data has been downloaded successfully",
+        description: "Your data has been downloaded successfully with metadata headers",
       });
     } catch (error) {
       toast({
@@ -222,62 +222,45 @@ const SeasonalDataDownload = () => {
   }, {} as Record<string, Attribute[]>);
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="text-center space-y-4">
-        <Badge variant="outline" className="mb-2">
-          <Database className="w-4 h-4 mr-2" />
-          Seasonal QAQC Data Access
-        </Badge>
-        <h2 className="text-3xl font-bold tracking-tight">
-          Download Environmental Data
-        </h2>
-        <p className="text-muted-foreground max-w-2xl mx-auto">
-          Access quality-controlled seasonal environmental datasets with advanced filtering options
-        </p>
+    <div className="space-y-6">
+      {/* Progress Steps */}
+      <div className="flex items-center justify-center gap-2 flex-wrap">
+        {[
+          { num: 1, label: 'Select Season', icon: Table },
+          { num: 2, label: 'Configure', icon: Filter },
+          { num: 3, label: 'Download', icon: Download }
+        ].map(({ num, label, icon: Icon }, idx) => (
+          <React.Fragment key={num}>
+            <div className={cn(
+              "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all",
+              currentStep >= num 
+                ? "bg-primary text-primary-foreground shadow-md" 
+                : "bg-muted text-muted-foreground"
+            )}>
+              <Icon className="w-4 h-4" />
+              <span className="hidden sm:inline">{label}</span>
+            </div>
+            {idx < 2 && <div className="h-0.5 w-8 bg-border" />}
+          </React.Fragment>
+        ))}
       </div>
 
-      {/* Progress Indicator */}
-      <div className="flex items-center justify-center gap-4">
-        <div className={cn(
-          "flex items-center gap-2 px-4 py-2 rounded-lg transition-colors",
-          currentStep >= 1 ? "bg-primary text-primary-foreground" : "bg-muted"
-        )}>
-          <Database className="w-4 h-4" />
-          <span className="font-medium">Select Season</span>
-        </div>
-        <div className="h-0.5 w-12 bg-border" />
-        <div className={cn(
-          "flex items-center gap-2 px-4 py-2 rounded-lg transition-colors",
-          currentStep >= 2 ? "bg-primary text-primary-foreground" : "bg-muted"
-        )}>
-          <Filter className="w-4 h-4" />
-          <span className="font-medium">Configure Filters</span>
-        </div>
-        <div className="h-0.5 w-12 bg-border" />
-        <div className={cn(
-          "flex items-center gap-2 px-4 py-2 rounded-lg transition-colors",
-          currentStep >= 3 ? "bg-primary text-primary-foreground" : "bg-muted"
-        )}>
-          <Download className="w-4 h-4" />
-          <span className="font-medium">Download</span>
-        </div>
-      </div>
-
-      {/* Step 1: Table Selection */}
-      <Card>
+      {/* Step 1: Season Selection */}
+      <Card className="border-2">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Table className="w-5 h-5" />
-            Step 1: Select Seasonal Dataset
-          </CardTitle>
-          <CardDescription>
-            Choose the seasonal period for your environmental data download
-          </CardDescription>
+          <div className="flex items-center gap-2">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <Table className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <CardTitle>Select Seasonal Dataset</CardTitle>
+              <CardDescription>Choose the monitoring season for your analysis</CardDescription>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {loading && tables.length === 0 ? (
-            <div className="flex justify-center py-8">
+            <div className="flex justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
@@ -286,26 +269,29 @@ const SeasonalDataDownload = () => {
                 <Card
                   key={table.id}
                   className={cn(
-                    "cursor-pointer transition-all hover:shadow-lg hover:border-primary",
-                    selectedTable === table.name && "border-primary bg-primary/5"
+                    "cursor-pointer transition-all border-2 hover:shadow-xl hover:scale-105",
+                    selectedTable === table.name 
+                      ? "border-primary bg-primary/5 shadow-lg" 
+                      : "border-border hover:border-primary/50"
                   )}
                   onClick={() => handleTableSelection(table.name)}
                 >
-                  <CardHeader>
+                  <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
-                      <CardTitle className="text-lg">{table.displayName}</CardTitle>
+                      <CardTitle className="text-base">{table.displayName}</CardTitle>
                       {selectedTable === table.name && (
-                        <CheckCircle2 className="w-5 h-5 text-primary" />
+                        <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />
                       )}
                     </div>
-                    <CardDescription className="line-clamp-2">
-                      {table.description}
-                    </CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <Badge variant="secondary">
-                      {table.rowCount.toLocaleString()} records
-                    </Badge>
+                  <CardContent className="space-y-3">
+                    <p className="text-xs text-muted-foreground line-clamp-2">{table.description}</p>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-xs">
+                        <TrendingUp className="w-3 h-3 mr-1" />
+                        {table.rowCount.toLocaleString()} records
+                      </Badge>
+                    </div>
                   </CardContent>
                 </Card>
               ))}
@@ -314,43 +300,56 @@ const SeasonalDataDownload = () => {
         </CardContent>
       </Card>
 
-      {/* Step 2: Location & Date Selection */}
+      {/* Step 2: Filters */}
       {selectedTable && (
         <>
-          <Card>
+          {/* Location Selection */}
+          <Card className="border-2">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="w-5 h-5" />
-                Step 2: Select Monitoring Locations
-              </CardTitle>
-              <CardDescription>
-                Choose one or more monitoring stations for your data download
-              </CardDescription>
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <MapPin className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <CardTitle>Select Monitoring Locations</CardTitle>
+                  <CardDescription>Choose stations from the monitoring network</CardDescription>
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex gap-2 mb-4">
+              <div className="flex flex-wrap gap-2">
                 <Button 
                   variant="outline" 
                   size="sm"
                   onClick={() => setSelectedLocations(locations.map(l => l.code))}
+                  className="text-xs"
                 >
-                  Select All
+                  Select All ({locations.length})
                 </Button>
                 <Button 
                   variant="outline" 
                   size="sm"
                   onClick={() => setSelectedLocations([])}
+                  className="text-xs"
                 >
                   Clear All
                 </Button>
+                {selectedLocations.length > 0 && (
+                  <Badge variant="default" className="ml-auto">
+                    {selectedLocations.length} selected
+                  </Badge>
+                )}
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-80 overflow-y-auto p-1">
                 {locations.map((location) => (
                   <Card
                     key={location.code}
                     className={cn(
-                      "cursor-pointer transition-all hover:shadow-md",
-                      selectedLocations.includes(location.code) && "border-primary bg-primary/5"
+                      "cursor-pointer transition-all hover:shadow-md border",
+                      selectedLocations.includes(location.code) 
+                        ? "border-primary bg-primary/5" 
+                        : "border-border"
                     )}
                     onClick={() => {
                       setSelectedLocations(prev =>
@@ -360,86 +359,79 @@ const SeasonalDataDownload = () => {
                       );
                     }}
                   >
-                    <CardContent className="pt-4">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <Checkbox 
-                              checked={selectedLocations.includes(location.code)}
-                              onCheckedChange={(checked) => {
-                                if (checked) {
-                                  setSelectedLocations(prev => [...prev, location.code]);
-                                } else {
-                                  setSelectedLocations(prev => prev.filter(l => l !== location.code));
-                                }
-                              }}
-                            />
-                            <span className="font-medium text-sm">{location.name}</span>
+                    <CardContent className="p-3">
+                      <div className="flex items-start gap-2">
+                        <Checkbox 
+                          checked={selectedLocations.includes(location.code)}
+                          className="mt-1"
+                        />
+                        <div className="space-y-1 flex-1 min-w-0">
+                          <div className="font-medium text-sm truncate">{location.name}</div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge variant="outline" className="text-xs">
+                              {location.code}
+                            </Badge>
+                            {location.elevation && (
+                              <span className="text-xs text-muted-foreground">
+                                {location.elevation}m
+                              </span>
+                            )}
                           </div>
-                          <Badge variant="outline" className="text-xs">
-                            {location.code}
-                          </Badge>
-                          {location.elevation && (
-                            <p className="text-xs text-muted-foreground">
-                              Elevation: {location.elevation}m
-                            </p>
-                          )}
                         </div>
                       </div>
                     </CardContent>
                   </Card>
                 ))}
               </div>
-              {selectedLocations.length > 0 && (
-                <Alert>
-                  <Info className="h-4 w-4" />
-                  <AlertDescription>
-                    {selectedLocations.length} location(s) selected
-                  </AlertDescription>
-                </Alert>
-              )}
             </CardContent>
           </Card>
 
-          <Card>
+          {/* Date Range Selection */}
+          <Card className="border-2">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CalendarIcon className="w-5 h-5" />
-                Step 3: Select Date Range
-              </CardTitle>
-              <CardDescription>
-                Filter data by specifying a date range or use quick presets
-              </CardDescription>
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <CalendarIcon className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <CardTitle>Select Date Range</CardTitle>
+                  <CardDescription>Filter data by time period</CardDescription>
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" onClick={() => setQuickDateRange('last_30')}>
-                  Last 30 Days
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => setQuickDateRange('last_90')}>
-                  Last 90 Days
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => setQuickDateRange('this_year')}>
-                  This Year
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => setQuickDateRange('last_year')}>
-                  Last Year
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => { setStartDate(undefined); setEndDate(undefined); }}>
-                  All Time
-                </Button>
+                {[
+                  { label: 'Last 30 Days', value: 'last_30' },
+                  { label: 'Last 90 Days', value: 'last_90' },
+                  { label: 'This Year', value: 'this_year' },
+                  { label: 'Last Year', value: 'last_year' },
+                ].map(preset => (
+                  <Button
+                    key={preset.value}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setQuickDateRange(preset.value)}
+                    className="text-xs"
+                  >
+                    {preset.label}
+                  </Button>
+                ))}
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              
+              <Separator />
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Start Date</label>
+                  <Label className="text-sm font-medium">Start Date</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button variant="outline" className="w-full justify-start text-left">
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {startDate ? format(startDate, 'PPP') : 'Pick start date'}
+                        {startDate ? format(startDate, 'PP') : 'Pick start date'}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
+                    <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
                         mode="single"
                         selected={startDate}
@@ -449,16 +441,17 @@ const SeasonalDataDownload = () => {
                     </PopoverContent>
                   </Popover>
                 </div>
+                
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">End Date</label>
+                  <Label className="text-sm font-medium">End Date</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button variant="outline" className="w-full justify-start text-left">
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {endDate ? format(endDate, 'PPP') : 'Pick end date'}
+                        {endDate ? format(endDate, 'PP') : 'Pick end date'}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
+                    <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
                         mode="single"
                         selected={endDate}
@@ -469,25 +462,38 @@ const SeasonalDataDownload = () => {
                   </Popover>
                 </div>
               </div>
+              
+              {startDate && endDate && (
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertDescription>
+                    Selected range: {format(startDate, 'PP')} to {format(endDate, 'PP')}
+                  </AlertDescription>
+                </Alert>
+              )}
             </CardContent>
           </Card>
 
-          <Card>
+          {/* Attribute Selection */}
+          <Card className="border-2">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Layers className="w-5 h-5" />
-                Step 4: Select Data Attributes
-              </CardTitle>
-              <CardDescription>
-                Choose specific environmental measurements to include in your download
-              </CardDescription>
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Filter className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <CardTitle>Select Data Attributes</CardTitle>
+                  <CardDescription>Choose which measurements to include</CardDescription>
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex gap-2 mb-4">
+              <div className="flex flex-wrap gap-2">
                 <Button 
                   variant="outline" 
                   size="sm"
                   onClick={() => setSelectedAttributes(attributes.map(a => a.name))}
+                  className="text-xs"
                 >
                   Select All
                 </Button>
@@ -495,9 +501,12 @@ const SeasonalDataDownload = () => {
                   variant="outline" 
                   size="sm"
                   onClick={() => {
-                    const primaryAttrs = attributes.filter(a => a.isPrimary).map(a => a.name);
+                    const primaryAttrs = attributes
+                      .filter(attr => attr.isPrimary)
+                      .map(attr => attr.name);
                     setSelectedAttributes(primaryAttrs);
                   }}
+                  className="text-xs"
                 >
                   Primary Only
                 </Button>
@@ -505,25 +514,33 @@ const SeasonalDataDownload = () => {
                   variant="outline" 
                   size="sm"
                   onClick={() => setSelectedAttributes([])}
+                  className="text-xs"
                 >
                   Clear All
                 </Button>
+                {selectedAttributes.length > 0 && (
+                  <Badge variant="default" className="ml-auto">
+                    {selectedAttributes.length} selected
+                  </Badge>
+                )}
               </div>
               
-              <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
+              <div className="space-y-4 max-h-96 overflow-y-auto p-1">
                 {Object.entries(groupedAttributes).map(([category, attrs]) => (
-                  <div key={category} className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary">{category}</Badge>
+                  <div key={category} className="space-y-2">
+                    <div className="flex items-center gap-2 sticky top-0 bg-background py-1">
+                      <Badge className="text-xs">{category}</Badge>
                       <Separator className="flex-1" />
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {attrs.map((attr) => (
                         <Card
                           key={attr.name}
                           className={cn(
-                            "cursor-pointer transition-all hover:shadow-md",
-                            selectedAttributes.includes(attr.name) && "border-primary bg-primary/5",
+                            "cursor-pointer transition-all hover:shadow-md border",
+                            selectedAttributes.includes(attr.name) 
+                              ? "border-primary bg-primary/5" 
+                              : "border-border",
                             attr.isPrimary && "border-l-4 border-l-primary"
                           )}
                           onClick={() => {
@@ -534,33 +551,27 @@ const SeasonalDataDownload = () => {
                             );
                           }}
                         >
-                          <CardContent className="pt-4">
+                          <CardContent className="p-3">
                             <div className="flex items-start gap-2">
                               <Checkbox 
                                 checked={selectedAttributes.includes(attr.name)}
-                                onCheckedChange={(checked) => {
-                                  if (checked) {
-                                    setSelectedAttributes(prev => [...prev, attr.name]);
-                                  } else {
-                                    setSelectedAttributes(prev => prev.filter(a => a !== attr.name));
-                                  }
-                                }}
+                                className="mt-1"
                               />
-                              <div className="flex-1 space-y-1">
+                              <div className="flex-1 space-y-1 min-w-0">
                                 <div className="flex items-center justify-between gap-2">
-                                  <span className="font-medium text-sm">{attr.name}</span>
+                                  <span className="font-medium text-xs truncate">{attr.name}</span>
                                   {attr.isPrimary && (
-                                    <Badge variant="outline" className="text-xs">Primary</Badge>
+                                    <Badge variant="outline" className="text-2xs">Key</Badge>
                                   )}
                                 </div>
-                                <p className="text-xs text-muted-foreground line-clamp-2">
+                                <p className="text-2xs text-muted-foreground line-clamp-1">
                                   {attr.description}
                                 </p>
-                                <div className="flex items-center gap-2">
-                                  <Badge variant="secondary" className="text-xs">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <Badge variant="secondary" className="text-2xs">
                                     {attr.unit}
                                   </Badge>
-                                  <span className="text-xs text-muted-foreground">
+                                  <span className="text-2xs text-muted-foreground">
                                     {attr.measurementType}
                                   </span>
                                 </div>
@@ -573,49 +584,45 @@ const SeasonalDataDownload = () => {
                   </div>
                 ))}
               </div>
-              
-              {selectedAttributes.length > 0 && (
-                <Alert>
-                  <Info className="h-4 w-4" />
-                  <AlertDescription>
-                    {selectedAttributes.length} attribute(s) selected
-                  </AlertDescription>
-                </Alert>
-              )}
             </CardContent>
           </Card>
 
-          {/* Download Summary & Action */}
-          <Card className="border-primary">
+          {/* Download Summary */}
+          <Card className="border-2 border-primary shadow-lg">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="w-5 h-5" />
-                Download Summary
-              </CardTitle>
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <FileText className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <CardTitle>Download Summary</CardTitle>
+                  <CardDescription>Review your selections before downloading</CardDescription>
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Season</p>
-                  <p className="font-medium">{selectedTableInfo?.displayName}</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="space-y-1 p-3 rounded-lg bg-muted/50">
+                  <p className="text-xs text-muted-foreground">Season</p>
+                  <p className="font-medium text-sm">{selectedTableInfo?.displayName}</p>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Locations</p>
-                  <p className="font-medium">
+                <div className="space-y-1 p-3 rounded-lg bg-muted/50">
+                  <p className="text-xs text-muted-foreground">Locations</p>
+                  <p className="font-medium text-sm">
                     {selectedLocations.length > 0 ? `${selectedLocations.length} selected` : 'All locations'}
                   </p>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Date Range</p>
-                  <p className="font-medium">
+                <div className="space-y-1 p-3 rounded-lg bg-muted/50">
+                  <p className="text-xs text-muted-foreground">Date Range</p>
+                  <p className="font-medium text-sm">
                     {startDate && endDate 
-                      ? `${format(startDate, 'MMM d, yyyy')} - ${format(endDate, 'MMM d, yyyy')}`
-                      : 'All available data'}
+                      ? `${format(startDate, 'MMM d')} - ${format(endDate, 'MMM d, yyyy')}`
+                      : 'All data'}
                   </p>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Attributes</p>
-                  <p className="font-medium">
+                <div className="space-y-1 p-3 rounded-lg bg-muted/50">
+                  <p className="text-xs text-muted-foreground">Attributes</p>
+                  <p className="font-medium text-sm">
                     {selectedAttributes.length > 0 ? `${selectedAttributes.length} selected` : 'All attributes'}
                   </p>
                 </div>
@@ -637,10 +644,17 @@ const SeasonalDataDownload = () => {
                 ) : (
                   <>
                     <Download className="mr-2 h-5 w-5" />
-                    Download Data (CSV Format)
+                    Download CSV with Metadata
                   </>
                 )}
               </Button>
+              
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  Your download will include metadata headers with location names, date ranges, and dataset information.
+                </AlertDescription>
+              </Alert>
             </CardContent>
           </Card>
         </>
@@ -648,5 +662,12 @@ const SeasonalDataDownload = () => {
     </div>
   );
 };
+
+// Add Label component if not imported
+const Label = ({ children, className }: { children: React.ReactNode; className?: string }) => (
+  <label className={cn("text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70", className)}>
+    {children}
+  </label>
+);
 
 export default SeasonalDataDownload;

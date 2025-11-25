@@ -296,12 +296,60 @@ function extractUnitFromAttributeName(attributeName) {
   const lowerName = attributeName.toLowerCase();
   
   // Temperature units
-  if (lowerName.endsWith('_c') || lowerName.endsWith('_tc')) return '°C';
-  if (lowerName.endsWith('_f') || lowerName.endsWith('_tf')) return '°F';
+  if (lowerName.endsWith('_c') || lowerName.endsWith('_tc') || lowerName.includes('temperature_c')) return '°C';
+  if (lowerName.endsWith('_f') || lowerName.endsWith('_tf') || lowerName.includes('temperature_f')) return '°F';
   if (lowerName.endsWith('_k')) return 'K';
   
   // Percentage
-  if (lowerName.includes('percent') || lowerName.endsWith('_pct')) return '%';
+  if (lowerName.includes('percent') || lowerName.endsWith('_pct') || lowerName.includes('humidity_percent')) return '%';
+  
+  // Distance/Depth
+  if (lowerName.endsWith('_mm') || lowerName.includes('_mm_')) return 'mm';
+  if (lowerName.endsWith('_cm') || lowerName.includes('_cm_') || lowerName.includes('depth_cm') || lowerName.includes('snow_depth_cm')) return 'cm';
+  if (lowerName.endsWith('_m') && !lowerName.includes('_m2') && !lowerName.includes('_m3')) return 'm';
+  if (lowerName.endsWith('_km')) return 'km';
+  if (lowerName.endsWith('_in')) return 'in';
+  
+  // Density
+  if (lowerName.includes('_kg_m3') || lowerName.includes('density_kg_m3')) return 'kg/m³';
+  if (lowerName.includes('_g_cm3')) return 'g/cm³';
+  
+  // Radiation/Power/Flux
+  if (lowerName.includes('_w_m2') || lowerName.includes('radiation_') || lowerName.includes('_flux_')) return 'W/m²';
+  if (lowerName.includes('_watt')) return 'W';
+  
+  // Electrical
+  if (lowerName.includes('voltage') || lowerName.endsWith('_v')) return 'Volts';
+  if (lowerName.includes('current') || lowerName.endsWith('_a')) return 'Amps';
+  
+  // Soil moisture
+  if (lowerName.includes('wfv') || lowerName.includes('moisture_wfv')) return '%';
+  
+  // Speed
+  if (lowerName.includes('_m_s') || lowerName.includes('_ms') || lowerName.includes('wind_speed')) return 'm/s';
+  if (lowerName.includes('_mph')) return 'mph';
+  if (lowerName.includes('_km_h')) return 'km/h';
+  
+  // Pressure
+  if (lowerName.includes('_pa') && !lowerName.includes('_kpa') && !lowerName.includes('_hpa')) return 'Pa';
+  if (lowerName.includes('_kpa')) return 'kPa';
+  if (lowerName.includes('_hpa')) return 'hPa';
+  if (lowerName.includes('_mbar')) return 'mbar';
+  
+  // Time
+  if (lowerName.includes('timestamp') || lowerName.includes('datetime') || lowerName === 'date') return 'DateTime';
+  if (lowerName.endsWith('_sec') || lowerName.endsWith('_s')) return 's';
+  if (lowerName.endsWith('_min')) return 'min';
+  if (lowerName.endsWith('_hr') || lowerName.endsWith('_h')) return 'hr';
+  
+  // Angle/Direction
+  if (lowerName.includes('_deg') || lowerName.includes('direction')) return '°';
+  
+  // Identifiers
+  if (lowerName === 'id' || lowerName === 'location' || lowerName === 'site') return 'ID';
+  
+  return 'No Unit';
+}
   if (lowerName === 'rh' || lowerName.includes('humidity')) return '%';
   
   // Distance/depth
@@ -586,8 +634,26 @@ app.get('/api/seasonal/download/:table', async (req, res) => {
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
 
-    // Write CSV
+    // Write CSV with metadata header
     if (rows.length > 0) {
+      // Add metadata header rows
+      res.write(`# Summit 2 Shore Environmental Data\n`);
+      res.write(`# Dataset: ${table}\n`);
+      res.write(`# Generated: ${new Date().toISOString()}\n`);
+      res.write(`# Date Range: ${start_date || 'All'} to ${end_date || 'All'}\n`);
+      if (locations) {
+        const locationList = locations.split(',').map(l => l.trim());
+        const locationNames = locationList.map(code => {
+          const meta = LOCATION_METADATA[code];
+          return meta ? `${meta.name} (${code})` : code;
+        }).join(', ');
+        res.write(`# Locations: ${locationNames}\n`);
+      } else {
+        res.write(`# Locations: All\n`);
+      }
+      res.write(`# Total Records: ${rows.length}\n`);
+      res.write(`#\n`);
+      
       const headers = Object.keys(rows[0]);
       res.write(headers.join(',') + '\n');
 
@@ -700,7 +766,7 @@ app.get('/api/databases/:database/tables/:table/attributes', async (req, res) =>
   }
 });
 
-// Get distinct locations for a specific table with enhanced debugging
+// Get distinct locations for a specific table with location name mapping
 app.get('/api/databases/:database/tables/:table/locations', async (req, res) => {
   const { database, table } = req.params;
   console.log(`\n🔍 [LOCATIONS ENDPOINT] Starting request for ${database}/${table}`);
@@ -720,20 +786,32 @@ app.get('/api/databases/:database/tables/:table/locations', async (req, res) => 
     console.log(`🎯 [LOCATION COLUMN] Using column: ${locCol}`);
 
     // Query distinct locations with debugging
-    const query = `SELECT DISTINCT \`${locCol}\` AS name FROM \`${table}\` 
+    const query = `SELECT DISTINCT \`${locCol}\` AS code FROM \`${table}\` 
                    WHERE \`${locCol}\` IS NOT NULL AND \`${locCol}\` <> '' 
                    ORDER BY \`${locCol}\``;
     console.log(`🔍 [SQL QUERY] Executing:`, query);
     
     const [rows] = await connection.execute(query);
-    console.log(`📊 [QUERY RESULT] Found ${rows.length} locations:`, rows.map(r => r.name));
+    console.log(`📊 [QUERY RESULT] Found ${rows.length} locations:`, rows.map(r => r.code));
+
+    // Enrich with metadata from LOCATION_METADATA
+    const locations = rows.map(row => {
+      const code = row.code;
+      const metadata = LOCATION_METADATA[code];
+      return {
+        code: code,
+        name: metadata ? metadata.name : code,
+        displayName: metadata ? metadata.name : code,
+        latitude: metadata ? metadata.latitude : null,
+        longitude: metadata ? metadata.longitude : null,
+        elevation: metadata ? metadata.elevation : null
+      };
+    });
 
     connection.release();
-    console.log(`✅ [LOCATIONS ENDPOINT] Success - returning ${rows.length} locations`);
+    console.log(`✅ [LOCATIONS ENDPOINT] Success - returning ${locations.length} mapped locations`);
 
-    // Return array of strings (matches UI expectation)
-    const result = rows.map(r => r.name);
-    res.json(result);
+    res.json(locations);
     
   } catch (error) {
     console.error(`❌ [LOCATIONS ENDPOINT] Error for ${database}/${table}:`, error);

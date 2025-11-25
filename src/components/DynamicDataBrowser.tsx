@@ -165,14 +165,53 @@ const DynamicDataBrowser = () => {
       // Request canonical list for raw_data to ensure all 22 locations
       const endpoint = `/api/databases/${databaseKey}/locations${databaseKey === 'raw_data' ? '?canonical=1' : ''}`;
       const data = await apiCall(endpoint, `Load locations for ${databaseKey}`);
-      const raw = Array.isArray(data) ? data : data.locations || [];
-
-      // Normalize to LocationInfo objects if API returns array of strings
-      const normalized: LocationInfo[] = raw.map((item: any, idx: number) =>
-        typeof item === 'string'
-          ? { id: idx + 1, name: item, displayName: item, latitude: 0, longitude: 0, elevation: 0 }
-          : item
-      );
+      
+      // Handle both array of location objects and array of strings
+      let normalized: LocationInfo[] = [];
+      
+      if (Array.isArray(data)) {
+        normalized = data.map((item: any, idx: number) => {
+          if (typeof item === 'string') {
+            return { 
+              id: idx + 1, 
+              name: item, 
+              displayName: item, 
+              latitude: 0, 
+              longitude: 0, 
+              elevation: 0 
+            };
+          } else if (item.code) {
+            // New format with code, name, displayName
+            return {
+              id: idx + 1,
+              name: item.code,
+              displayName: item.displayName || item.name,
+              latitude: item.latitude || 0,
+              longitude: item.longitude || 0,
+              elevation: item.elevation || 0
+            };
+          } else {
+            // Existing format
+            return {
+              id: item.id ?? idx + 1,
+              name: item.name,
+              displayName: item.displayName || item.name,
+              latitude: item.latitude ?? 0,
+              longitude: item.longitude ?? 0,
+              elevation: item.elevation ?? 0
+            };
+          }
+        });
+      } else if (data.locations) {
+        normalized = data.locations.map((item: any, idx: number) => ({
+          id: item.id ?? idx + 1,
+          name: item.name,
+          displayName: item.displayName || item.name,
+          latitude: item.latitude ?? 0,
+          longitude: item.longitude ?? 0,
+          elevation: item.elevation ?? 0
+        }));
+      }
 
       // Fallback to canonical 22 sites for raw_data if backend returns fewer
       if (databaseKey === 'raw_data' && normalized.length < 22) {
