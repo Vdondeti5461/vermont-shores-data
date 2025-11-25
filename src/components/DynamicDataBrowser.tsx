@@ -402,7 +402,7 @@ const DynamicDataBrowser = () => {
         // Filter columns to only selected attributes (if any selected)
         let colIndices: number[] = [];
         if (selectedAttributes.length > 0) {
-          colIndices = selectedAttributes.map(attr => headerCols.findIndex(h => h.trim() === attr.trim())).filter(idx => idx !== -1);
+          colIndices = selectedAttributes.map(attr => headerCols.findIndex(h => h.trim().toLowerCase() === attr.trim().toLowerCase())).filter(idx => idx !== -1);
         } else {
           colIndices = headerCols.map((_, idx) => idx);
         }
