@@ -316,27 +316,21 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// Get available databases - Return all for analytics, but downloads are restricted by table filter
+// Get available databases - RESTRICTED to seasonal QAQC only for public download access
 app.get('/api/databases', async (req, res) => {
   try {
-    // Return all databases sorted by order
-    const databases = Object.keys(DATABASE_METADATA)
-      .map(key => {
-        const metadata = DATABASE_METADATA[key];
-        return {
-          id: DATABASES[key] || key, // Use actual database name
-          key: key,
-          name: DATABASES[key],
-          displayName: key.split('_').map(word =>
-            word.charAt(0).toUpperCase() + word.slice(1)
-          ).join(' '),
-          description: metadata.description || 'Environmental monitoring database',
-          category: metadata.category || 'general',
-          order: metadata.order || 99,
-          tables: [] // Will be fetched separately
-        };
-      })
-      .sort((a, b) => a.order - b.order);
+    // Only return seasonal_qaqc_data database for public download access
+    const metadata = DATABASE_METADATA['seasonal_qaqc_data'];
+    const databases = [{
+      id: DATABASES['seasonal_qaqc_data'],
+      key: 'seasonal_qaqc_data',
+      name: DATABASES['seasonal_qaqc_data'],
+      displayName: 'Seasonal QAQC Data',
+      description: metadata.description || 'Quality-controlled seasonal environmental datasets',
+      category: metadata.category || 'seasonal',
+      order: metadata.order || 4,
+      tables: []
+    }];
 
     res.json(databases);
   } catch (error) {
@@ -385,7 +379,7 @@ app.get('/api/seasonal/tables', async (req, res) => {
   }
 });
 
-// Get attributes for a specific seasonal table
+// Get attributes for a specific seasonal table with unit information
 app.get('/api/seasonal/tables/:table/attributes', async (req, res) => {
   const { table } = req.params;
   console.log(`📊 [SEASONAL ATTRIBUTES] Fetching for table: ${table}`);
@@ -400,20 +394,30 @@ app.get('/api/seasonal/tables/:table/attributes', async (req, res) => {
       ORDER BY ORDINAL_POSITION
     `, [databaseName, table]);
 
+    // Match table to metadata - try to find matching table in TABLE_METADATA
+    const tableKey = Object.keys(TABLE_METADATA).find(key => 
+      table.toLowerCase().includes(key.toLowerCase().replace('raw_env_', ''))
+    );
+    const tableMetadata = tableKey ? TABLE_METADATA[tableKey] : null;
+
     const attributes = columns.map(col => {
       const name = col.COLUMN_NAME;
+      const attrMetadata = tableMetadata?.attributes?.[name] || {};
+      
       return {
         name: name,
         type: col.DATA_TYPE,
         nullable: col.IS_NULLABLE === 'YES',
-        description: col.COLUMN_COMMENT || name,
-        category: getAttributeCategory(name),
-        isPrimary: ['TIMESTAMP', 'timestamp', 'Location', 'location'].includes(name)
+        description: attrMetadata.description || col.COLUMN_COMMENT || name,
+        category: attrMetadata.category || getAttributeCategory(name),
+        isPrimary: ['TIMESTAMP', 'timestamp', 'Location', 'location'].includes(name),
+        unit: attrMetadata.unit || 'No Unit',
+        measurementType: attrMetadata.measurement_type || 'Sample'
       };
     });
 
     connection.release();
-    console.log(`✅ [SEASONAL ATTRIBUTES] Found ${attributes.length} attributes`);
+    console.log(`✅ [SEASONAL ATTRIBUTES] Found ${attributes.length} attributes with unit info`);
     res.json({ table, attributes });
   } catch (error) {
     console.error('❌ [SEASONAL ATTRIBUTES] Error:', error);

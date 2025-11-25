@@ -9,10 +9,10 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CalendarIcon, Download, MapPin, Filter, Loader2, Info, CheckCircle2, Database, Table2, Clock, FileText } from 'lucide-react';
+import { CalendarIcon, Download, MapPin, Filter, Loader2, Info, CheckCircle2, Database, Table2, Clock, FileText, ChevronRight, BarChart3 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { API_BASE_URL, DOWNLOADABLE_DATABASE } from '@/lib/apiConfig';
+import { API_BASE_URL } from '@/lib/apiConfig';
 import { cn } from '@/lib/utils';
 
 interface AttributeInfo {
@@ -21,7 +21,17 @@ interface AttributeInfo {
   nullable: boolean;
   category: string;
   isPrimary: boolean;
-  comment: string;
+  description: string;
+  unit: string;
+  measurementType: string;
+}
+
+interface LocationInfo {
+  code: string;
+  name: string;
+  latitude: number | null;
+  longitude: number | null;
+  elevation: number | null;
 }
 
 interface TableInfo {
@@ -29,31 +39,13 @@ interface TableInfo {
   rowCount?: number;
 }
 
-// Location name mapping from Network page
-const LOCATION_NAMES: Record<string, string> = {
-  'SUMM': 'Mansfield Summit',
-  'RB01': 'Ranch Brook #1',
-  'RB02': 'Ranch Brook #2',
-  'RB12': 'Ranch Brook #12',
-  'RB09': 'Ranch Brook #9',
-  'RB03': 'Ranch Brook #3',
-  'UNDR': 'Mansfield West SCAN',
-  'RB04': 'Ranch Brook #4',
-  'RB10': 'Ranch Brook #10',
-  'RB07': 'Ranch Brook #7',
-  'SR01': 'Sleepers R3/Main',
-  'RB05': 'Ranch Brook #5',
-  'RB08': 'Ranch Brook #8',
-  'PROC': 'Mansfield West Proctor',
-  'RB06': 'Ranch Brook #6',
-  'RB11': 'Ranch Brook #11',
-  'SR25': 'Sleepers R25',
-  'SI11': 'Sleepers W1/R11',
-  'JRCL': 'Jericho Clearing',
-  'JRFO': 'Jericho Forest',
-  'SPST': 'Spear St',
-  'PTSH': 'Potash Brook'
-};
+interface MetadataInfo {
+  table: string;
+  locations: string[];
+  dateRange: { start: string; end: string };
+  attributeCount: number;
+  estimatedRows: number;
+}
 
 const SeasonalDataDownload = () => {
   const { toast } = useToast();
@@ -61,7 +53,7 @@ const SeasonalDataDownload = () => {
   // State
   const [tables, setTables] = useState<TableInfo[]>([]);
   const [attributes, setAttributes] = useState<AttributeInfo[]>([]);
-  const [locations, setLocations] = useState<string[]>([]);
+  const [locations, setLocations] = useState<LocationInfo[]>([]);
   const [selectedTable, setSelectedTable] = useState<string>('');
   
   // Selections
@@ -73,8 +65,9 @@ const SeasonalDataDownload = () => {
   // Loading states
   const [isLoading, setIsLoading] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [metadata, setMetadata] = useState<MetadataInfo | null>(null);
 
-  // Initialize - fetch tables
+  // Initialize - fetch seasonal tables
   useEffect(() => {
     initializeData();
   }, []);
@@ -86,10 +79,15 @@ const SeasonalDataDownload = () => {
     }
   }, [selectedTable]);
 
+  // Update metadata when selections change
+  useEffect(() => {
+    updateMetadata();
+  }, [selectedTable, selectedLocations, startDate, endDate, selectedAttributes]);
+
   const initializeData = async () => {
     setIsLoading(true);
     try {
-      const tablesUrl = `${API_BASE_URL}/api/databases/${DOWNLOADABLE_DATABASE}/tables`;
+      const tablesUrl = `${API_BASE_URL}/api/seasonal/tables`;
       const tablesResponse = await fetch(tablesUrl);
       
       if (!tablesResponse.ok) {
@@ -97,18 +95,17 @@ const SeasonalDataDownload = () => {
       }
       
       const tablesData = await tablesResponse.json();
-      const tablesList = tablesData.tables || [];
-      setTables(tablesList);
+      setTables(tablesData);
       
       // Auto-select first table if available
-      if (tablesList.length > 0) {
-        setSelectedTable(tablesList[0].name);
+      if (tablesData.length > 0) {
+        setSelectedTable(tablesData[0].name);
       }
     } catch (error) {
       console.error('❌ Initialization error:', error);
       toast({
         title: "Initialization Error",
-        description: "Failed to load data options. Please refresh the page.",
+        description: "Failed to load seasonal data tables. Please refresh the page.",
         variant: "destructive"
       });
     } finally {
@@ -119,8 +116,8 @@ const SeasonalDataDownload = () => {
   const fetchTableDetails = async (tableName: string) => {
     setIsLoading(true);
     try {
-      const attributesUrl = `${API_BASE_URL}/api/databases/${DOWNLOADABLE_DATABASE}/tables/${tableName}/attributes`;
-      const locationsUrl = `${API_BASE_URL}/api/databases/${DOWNLOADABLE_DATABASE}/tables/${tableName}/locations`;
+      const attributesUrl = `${API_BASE_URL}/api/seasonal/tables/${tableName}/attributes`;
+      const locationsUrl = `${API_BASE_URL}/api/seasonal/tables/${tableName}/locations`;
       
       const [attributesResponse, locationsResponse] = await Promise.all([
         fetch(attributesUrl),
@@ -134,14 +131,40 @@ const SeasonalDataDownload = () => {
       
       if (locationsResponse.ok) {
         const locationsData = await locationsResponse.json();
-        const locationsList = Array.isArray(locationsData) ? locationsData : (locationsData.locations || []);
-        setLocations(locationsList);
+        setLocations(Array.isArray(locationsData) ? locationsData : []);
       }
     } catch (error) {
       console.error('❌ Failed to fetch table details:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load table details",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const updateMetadata = () => {
+    if (!selectedTable || selectedLocations.length === 0 || !startDate || !endDate) {
+      setMetadata(null);
+      return;
+    }
+
+    const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    const dataPointsPerDay = 144; // 10-minute intervals
+    const estimatedRows = daysDiff * dataPointsPerDay * selectedLocations.length;
+
+    setMetadata({
+      table: selectedTable,
+      locations: selectedLocations,
+      dateRange: {
+        start: format(startDate, 'PPP'),
+        end: format(endDate, 'PPP')
+      },
+      attributeCount: selectedAttributes.length > 0 ? selectedAttributes.length : attributes.length,
+      estimatedRows
+    });
   };
 
   const handleDownload = async () => {
@@ -160,23 +183,32 @@ const SeasonalDataDownload = () => {
         start_date: format(startDate, 'yyyy-MM-dd'),
         end_date: format(endDate, 'yyyy-MM-dd'),
         locations: selectedLocations.join(','),
-        format: 'csv',
         ...(selectedAttributes.length > 0 && { attributes: selectedAttributes.join(',') })
       });
 
-      const url = `${API_BASE_URL}/api/databases/${DOWNLOADABLE_DATABASE}/download/${selectedTable}?${params.toString()}`;
+      const url = `${API_BASE_URL}/api/seasonal/download/${selectedTable}?${params.toString()}`;
+      
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Download failed');
+      }
+
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = url;
+      link.href = downloadUrl;
       link.download = `seasonal_qaqc_${selectedTable}_${format(startDate, 'yyyy-MM-dd')}_to_${format(endDate, 'yyyy-MM-dd')}.csv`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
 
       toast({
-        title: "Download Started",
-        description: "Your CSV export has begun",
+        title: "Download Complete",
+        description: `Downloaded ${selectedLocations.length} location(s) for ${selectedTable}`,
       });
     } catch (error) {
+      console.error('Download error:', error);
       toast({
         title: "Download Failed",
         description: "Unable to download data. Please try again.",
@@ -188,6 +220,7 @@ const SeasonalDataDownload = () => {
   };
 
   const groupedAttributes = attributes.reduce((groups, attr) => {
+    if (attr.isPrimary) return groups; // Skip TIMESTAMP and Location
     const category = attr.category || 'Other';
     if (!groups[category]) groups[category] = [];
     groups[category].push(attr);
@@ -195,18 +228,14 @@ const SeasonalDataDownload = () => {
   }, {} as Record<string, AttributeInfo[]>);
 
   const canDownload = selectedLocations.length > 0 && !!startDate && !!endDate && !!selectedTable;
-  
-  const getLocationDisplayName = (code: string) => {
-    return LOCATION_NAMES[code] || code;
-  };
 
   if (isLoading && tables.length === 0) {
     return (
-      <Card className="border-2">
-        <CardContent className="flex items-center justify-center py-12">
+      <Card className="border-2 shadow-lg">
+        <CardContent className="flex items-center justify-center py-16">
           <div className="text-center space-y-4">
-            <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-            <p className="text-sm text-muted-foreground">Loading data options...</p>
+            <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
+            <p className="text-base text-muted-foreground">Loading seasonal data options...</p>
           </div>
         </CardContent>
       </Card>
@@ -214,406 +243,519 @@ const SeasonalDataDownload = () => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
-      {/* Database Info Alert */}
-      <Alert className="border-primary/50 bg-primary/5">
-        <Database className="h-4 w-4" />
-        <AlertDescription>
-          <div className="space-y-2">
-            <div className="font-semibold">Seasonal QAQC Database</div>
-            <p className="text-sm">
-              Download quality-controlled seasonal environmental data from Vermont's monitoring network. 
-              Select your table, date range, locations, and attributes to customize your dataset.
+    <div className="max-w-7xl mx-auto space-y-8">
+      {/* Header Section */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="p-3 rounded-xl bg-primary/10">
+            <Database className="h-8 w-8 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">Seasonal QAQC Data Download</h2>
+            <p className="text-muted-foreground mt-1">
+              Quality-controlled environmental data from Vermont's monitoring network
             </p>
           </div>
-        </AlertDescription>
-      </Alert>
+        </div>
+        
+        <Alert className="border-primary/30 bg-primary/5">
+          <Info className="h-4 w-4" />
+          <AlertDescription className="text-sm">
+            This interface provides access to quality-controlled seasonal environmental datasets. 
+            Select your parameters below to customize and download your data in CSV format.
+          </AlertDescription>
+        </Alert>
+      </div>
 
-      {/* Table Selection */}
-      <Card className="border-2 hover:border-primary/50 transition-colors">
-        <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <CardTitle className="flex items-center gap-2">
-                <Table2 className="h-5 w-5 text-primary" />
-                Select Data Table
-              </CardTitle>
-              <CardDescription>Choose the environmental data table to download</CardDescription>
-            </div>
-            {selectedTable && (
-              <Badge variant="secondary" className="ml-2">
-                <CheckCircle2 className="h-3 w-3 mr-1" />
-                Selected
-              </Badge>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <div className="space-y-4">
-            <Select value={selectedTable} onValueChange={setSelectedTable}>
-              <SelectTrigger className="w-full h-12 text-base">
-                <SelectValue placeholder="Select a table..." />
-              </SelectTrigger>
-              <SelectContent>
-                {tables.map((table) => (
-                  <SelectItem key={table.name} value={table.name} className="text-base py-3">
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4" />
-                      <span>{table.name}</span>
-                      {table.rowCount && (
-                        <Badge variant="outline" className="ml-auto text-xs">
-                          {table.rowCount.toLocaleString()} rows
-                        </Badge>
-                      )}
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Main Configuration Column */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Table Selection */}
+          <Card className="border-2 shadow-sm hover:shadow-md transition-all duration-300">
+            <CardHeader className="bg-gradient-to-r from-primary/5 via-primary/3 to-transparent border-b">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <CardTitle className="flex items-center gap-2 text-xl">
+                    <div className="p-1.5 rounded-lg bg-primary/10">
+                      <Table2 className="h-5 w-5 text-primary" />
                     </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Date Range Selection */}
-      <Card className="border-2 hover:border-primary/50 transition-colors">
-        <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5 text-primary" />
-                Date Range
-              </CardTitle>
-              <CardDescription>Select the time period for your data</CardDescription>
-            </div>
-            {startDate && endDate && (
-              <Badge variant="secondary" className="ml-2">
-                <CheckCircle2 className="h-3 w-3 mr-1" />
-                Selected
-              </Badge>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent className="pt-6 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-base font-medium">Start Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    className={cn(
-                      "w-full justify-start h-12 text-left font-normal",
-                      !startDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {startDate ? format(startDate, 'PPP') : 'Pick a date'}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={startDate}
-                    onSelect={setStartDate}
-                    initialFocus
-                    className="pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-base font-medium">End Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    className={cn(
-                      "w-full justify-start h-12 text-left font-normal",
-                      !endDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {endDate ? format(endDate, 'PPP') : 'Pick a date'}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={endDate}
-                    onSelect={setEndDate}
-                    initialFocus
-                    className="pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
-          
-          <div className="pt-2">
-            <Label className="text-sm font-medium mb-2 block">Quick Presets</Label>
-            <div className="flex gap-2 flex-wrap">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => {
-                  const today = new Date();
-                  const lastWeek = new Date(today);
-                  lastWeek.setDate(today.getDate() - 7);
-                  setStartDate(lastWeek);
-                  setEndDate(today);
-                }}
-              >
-                Last 7 Days
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => {
-                  const today = new Date();
-                  const lastMonth = new Date(today);
-                  lastMonth.setMonth(today.getMonth() - 1);
-                  setStartDate(lastMonth);
-                  setEndDate(today);
-                }}
-              >
-                Last Month
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => {
-                  const today = new Date();
-                  const lastYear = new Date(today);
-                  lastYear.setFullYear(today.getFullYear() - 1);
-                  setStartDate(lastYear);
-                  setEndDate(today);
-                }}
-              >
-                Last Year
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Location Selection */}
-      <Card className="border-2 hover:border-primary/50 transition-colors">
-        <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="space-y-1">
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="h-5 w-5 text-primary" />
-                Monitoring Locations
-              </CardTitle>
-              <CardDescription>Select one or more locations (Required)</CardDescription>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSelectedLocations(locations)}
-              >
-                Select All
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSelectedLocations([])}
-              >
-                Clear
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {locations.map((location) => (
-              <div 
-                key={location} 
-                className={cn(
-                  "flex items-center space-x-3 p-3 rounded-lg border-2 transition-all cursor-pointer hover:bg-accent/50",
-                  selectedLocations.includes(location) ? "border-primary bg-primary/5" : "border-border"
+                    Data Table Selection
+                  </CardTitle>
+                  <CardDescription className="text-sm">Choose the environmental data table</CardDescription>
+                </div>
+                {selectedTable && (
+                  <Badge variant="secondary" className="gap-1.5">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    Selected
+                  </Badge>
                 )}
-                onClick={() => {
-                  setSelectedLocations(prev => 
-                    prev.includes(location)
-                      ? prev.filter(loc => loc !== location)
-                      : [...prev, location]
-                  );
-                }}
-              >
-                <Checkbox
-                  id={`location-${location}`}
-                  checked={selectedLocations.includes(location)}
-                  onCheckedChange={() => {}}
-                  className="pointer-events-none"
-                />
-                <Label 
-                  htmlFor={`location-${location}`}
-                  className="text-sm font-medium cursor-pointer flex-1"
-                >
-                  <div className="font-semibold">{location}</div>
-                  <div className="text-xs text-muted-foreground mt-0.5">
-                    {getLocationDisplayName(location)}
-                  </div>
-                </Label>
               </div>
-            ))}
-          </div>
-          {selectedLocations.length > 0 && (
-            <div className="mt-6 pt-4 border-t">
-              <Badge variant="secondary" className="text-sm px-3 py-1">
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-                {selectedLocations.length} location{selectedLocations.length !== 1 ? 's' : ''} selected
-              </Badge>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <Select value={selectedTable} onValueChange={setSelectedTable}>
+                <SelectTrigger className="w-full h-14 text-base border-2 hover:border-primary/50 transition-colors">
+                  <SelectValue placeholder="Select a seasonal table..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {tables.map((table) => (
+                    <SelectItem key={table.name} value={table.name} className="text-base py-4">
+                      <div className="flex items-center gap-3">
+                        <FileText className="h-5 w-5 text-primary" />
+                        <div className="flex-1">
+                          <div className="font-medium">{table.name}</div>
+                          {table.rowCount && (
+                            <div className="text-xs text-muted-foreground">
+                              {table.rowCount.toLocaleString()} records available
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </CardContent>
+          </Card>
 
-      {/* Attribute Selection */}
-      <Card className="border-2 hover:border-primary/50 transition-colors">
-        <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="space-y-1">
-              <CardTitle className="flex items-center gap-2">
-                <Filter className="h-5 w-5 text-primary" />
-                Data Attributes
-              </CardTitle>
-              <CardDescription>Select specific attributes (Optional - defaults to all)</CardDescription>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSelectedAttributes(attributes.map(a => a.name))}
-              >
-                Select All
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSelectedAttributes([])}
-              >
-                Clear
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-6 space-y-6">
-          {Object.entries(groupedAttributes).map(([category, attrs]) => (
-            <div key={category} className="space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="h-px flex-1 bg-border" />
-                <h4 className="text-sm font-semibold text-primary px-2">{category}</h4>
-                <div className="h-px flex-1 bg-border" />
+          {/* Date Range Selection */}
+          <Card className="border-2 shadow-sm hover:shadow-md transition-all duration-300">
+            <CardHeader className="bg-gradient-to-r from-primary/5 via-primary/3 to-transparent border-b">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <CardTitle className="flex items-center gap-2 text-xl">
+                    <div className="p-1.5 rounded-lg bg-primary/10">
+                      <Clock className="h-5 w-5 text-primary" />
+                    </div>
+                    Date Range
+                  </CardTitle>
+                  <CardDescription className="text-sm">Select the time period for your dataset</CardDescription>
+                </div>
+                {startDate && endDate && (
+                  <Badge variant="secondary" className="gap-1.5">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    {Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))} days
+                  </Badge>
+                )}
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {attrs.map((attr) => (
+            </CardHeader>
+            <CardContent className="pt-6 space-y-6">
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-base font-medium">Start Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        className={cn(
+                          "w-full justify-start h-12 text-left font-normal border-2 hover:border-primary/50",
+                          !startDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {startDate ? format(startDate, 'PPP') : 'Select start date'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={startDate}
+                        onSelect={setStartDate}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-base font-medium">End Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        className={cn(
+                          "w-full justify-start h-12 text-left font-normal border-2 hover:border-primary/50",
+                          !endDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {endDate ? format(endDate, 'PPP') : 'Select end date'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={endDate}
+                        onSelect={setEndDate}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+              
+              <div>
+                <Label className="text-sm font-medium mb-3 block">Quick Presets</Label>
+                <div className="flex gap-2 flex-wrap">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="border-2"
+                    onClick={() => {
+                      const today = new Date();
+                      const lastWeek = new Date(today);
+                      lastWeek.setDate(today.getDate() - 7);
+                      setStartDate(lastWeek);
+                      setEndDate(today);
+                    }}
+                  >
+                    Last 7 Days
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="border-2"
+                    onClick={() => {
+                      const today = new Date();
+                      const lastMonth = new Date(today);
+                      lastMonth.setMonth(today.getMonth() - 1);
+                      setStartDate(lastMonth);
+                      setEndDate(today);
+                    }}
+                  >
+                    Last Month
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="border-2"
+                    onClick={() => {
+                      const today = new Date();
+                      const lastSeason = new Date(today);
+                      lastSeason.setMonth(today.getMonth() - 6);
+                      setStartDate(lastSeason);
+                      setEndDate(today);
+                    }}
+                  >
+                    Last 6 Months
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="border-2"
+                    onClick={() => {
+                      const today = new Date();
+                      const lastYear = new Date(today);
+                      lastYear.setFullYear(today.getFullYear() - 1);
+                      setStartDate(lastYear);
+                      setEndDate(today);
+                    }}
+                  >
+                    Last Year
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Location Selection */}
+          <Card className="border-2 shadow-sm hover:shadow-md transition-all duration-300">
+            <CardHeader className="bg-gradient-to-r from-primary/5 via-primary/3 to-transparent border-b">
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div className="space-y-1">
+                  <CardTitle className="flex items-center gap-2 text-xl">
+                    <div className="p-1.5 rounded-lg bg-primary/10">
+                      <MapPin className="h-5 w-5 text-primary" />
+                    </div>
+                    Monitoring Locations
+                  </CardTitle>
+                  <CardDescription className="text-sm">Select one or more locations (required)</CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedLocations(locations.map(loc => loc.code))}
+                  >
+                    Select All
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedLocations([])}
+                  >
+                    Clear
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {locations.map((location) => (
                   <div 
-                    key={attr.name} 
+                    key={location.code} 
                     className={cn(
-                      "flex items-start space-x-3 p-3 rounded-lg border-2 transition-all cursor-pointer hover:bg-accent/50",
-                      selectedAttributes.includes(attr.name) ? "border-primary bg-primary/5" : "border-border"
+                      "flex items-start space-x-3 p-4 rounded-lg border-2 transition-all cursor-pointer hover:shadow-sm",
+                      selectedLocations.includes(location.code) 
+                        ? "border-primary bg-primary/5 shadow-sm" 
+                        : "border-border hover:border-primary/30"
                     )}
                     onClick={() => {
-                      setSelectedAttributes(prev => 
-                        prev.includes(attr.name)
-                          ? prev.filter(a => a !== attr.name)
-                          : [...prev, attr.name]
+                      setSelectedLocations(prev => 
+                        prev.includes(location.code)
+                          ? prev.filter(loc => loc !== location.code)
+                          : [...prev, location.code]
                       );
                     }}
                   >
                     <Checkbox
-                      id={`attr-${attr.name}`}
-                      checked={selectedAttributes.includes(attr.name)}
+                      id={`location-${location.code}`}
+                      checked={selectedLocations.includes(location.code)}
                       onCheckedChange={() => {}}
-                      className="pointer-events-none mt-0.5"
+                      className="pointer-events-none mt-1"
                     />
-                    <div className="grid gap-1.5 leading-none flex-1">
+                    <div className="flex-1 min-w-0">
                       <Label 
-                        htmlFor={`attr-${attr.name}`}
-                        className="text-sm font-medium cursor-pointer flex items-center gap-2"
+                        htmlFor={`location-${location.code}`}
+                        className="text-sm font-semibold cursor-pointer block"
                       >
-                        {attr.name}
-                        {attr.isPrimary && (
-                          <Badge variant="outline" className="text-xs">Primary</Badge>
-                        )}
+                        {location.code}
                       </Label>
-                      {attr.comment && (
-                        <p className="text-xs text-muted-foreground">{attr.comment}</p>
-                      )}
-                      <div className="flex gap-2 mt-1">
-                        <Badge variant="secondary" className="text-xs">{attr.type}</Badge>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {location.name}
                       </div>
+                      {location.elevation && (
+                        <div className="text-xs text-muted-foreground/70 mt-0.5">
+                          {location.elevation}m elevation
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
-          ))}
-          {selectedAttributes.length > 0 && (
-            <div className="pt-4 border-t">
-              <Badge variant="secondary" className="text-sm px-3 py-1">
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-                {selectedAttributes.length} attribute{selectedAttributes.length !== 1 ? 's' : ''} selected
-              </Badge>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Download Summary & Button */}
-      <Card className={cn(
-        "border-2 transition-all",
-        canDownload ? "border-primary bg-gradient-to-br from-primary/10 to-transparent shadow-lg" : "border-muted"
-      )}>
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="space-y-2">
-              <h3 className="font-semibold text-lg flex items-center gap-2">
-                {canDownload ? (
-                  <>
-                    <CheckCircle2 className="h-6 w-6 text-primary" />
-                    Ready to Download
-                  </>
-                ) : (
-                  <>
-                    <Info className="h-6 w-6 text-muted-foreground" />
-                    Complete Required Fields
-                  </>
-                )}
-              </h3>
-              {canDownload && (
-                <div className="space-y-1 text-sm text-muted-foreground">
-                  <p><strong>Table:</strong> {selectedTable}</p>
-                  <p><strong>Period:</strong> {startDate ? format(startDate, 'MMM d, yyyy') : ''} to {endDate ? format(endDate, 'MMM d, yyyy') : ''}</p>
-                  <p><strong>Locations:</strong> {selectedLocations.length} selected</p>
-                  <p><strong>Attributes:</strong> {selectedAttributes.length > 0 ? `${selectedAttributes.length} selected` : 'All attributes'}</p>
+              {selectedLocations.length > 0 && (
+                <div className="mt-6 pt-4 border-t">
+                  <Badge variant="secondary" className="text-sm px-4 py-2">
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    {selectedLocations.length} location{selectedLocations.length !== 1 ? 's' : ''} selected
+                  </Badge>
                 </div>
               )}
-            </div>
-            <Button 
-              onClick={handleDownload}
-              disabled={!canDownload || isDownloading}
-              size="lg"
-              className="min-w-[200px] h-12 text-base"
-            >
-              {isDownloading ? (
+            </CardContent>
+          </Card>
+
+          {/* Attribute Selection */}
+          <Card className="border-2 shadow-sm hover:shadow-md transition-all duration-300">
+            <CardHeader className="bg-gradient-to-r from-primary/5 via-primary/3 to-transparent border-b">
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div className="space-y-1">
+                  <CardTitle className="flex items-center gap-2 text-xl">
+                    <div className="p-1.5 rounded-lg bg-primary/10">
+                      <Filter className="h-5 w-5 text-primary" />
+                    </div>
+                    Data Attributes
+                  </CardTitle>
+                  <CardDescription className="text-sm">
+                    Optional: Select specific attributes (default: all)
+                  </CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedAttributes(
+                      attributes.filter(a => !a.isPrimary).map(a => a.name)
+                    )}
+                  >
+                    Select All
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedAttributes([])}
+                  >
+                    Clear
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-6">
+              {Object.entries(groupedAttributes).map(([category, attrs]) => (
+                <div key={category} className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs font-semibold">
+                      {category}
+                    </Badge>
+                    <Separator className="flex-1" />
+                  </div>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    {attrs.map((attr) => (
+                      <div
+                        key={attr.name}
+                        className={cn(
+                          "flex items-start space-x-3 p-3 rounded-lg border-2 transition-all cursor-pointer",
+                          selectedAttributes.includes(attr.name)
+                            ? "border-primary bg-primary/5"
+                            : "border-border hover:border-primary/30"
+                        )}
+                        onClick={() => {
+                          setSelectedAttributes(prev =>
+                            prev.includes(attr.name)
+                              ? prev.filter(a => a !== attr.name)
+                              : [...prev, attr.name]
+                          );
+                        }}
+                      >
+                        <Checkbox
+                          id={`attr-${attr.name}`}
+                          checked={selectedAttributes.includes(attr.name)}
+                          onCheckedChange={() => {}}
+                          className="pointer-events-none mt-1"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <Label
+                            htmlFor={`attr-${attr.name}`}
+                            className="text-sm font-medium cursor-pointer block leading-tight"
+                          >
+                            {attr.name}
+                          </Label>
+                          {attr.unit && attr.unit !== 'No Unit' && (
+                            <div className="text-xs text-primary font-medium mt-1">
+                              Unit: {attr.unit}
+                            </div>
+                          )}
+                          {attr.description && (
+                            <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                              {attr.description}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              {selectedAttributes.length > 0 && (
+                <div className="pt-4 border-t">
+                  <Badge variant="secondary" className="text-sm px-4 py-2">
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    {selectedAttributes.length} attribute{selectedAttributes.length !== 1 ? 's' : ''} selected
+                  </Badge>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Summary & Download Column */}
+        <div className="space-y-6">
+          {/* Download Summary */}
+          <Card className="border-2 shadow-sm sticky top-6">
+            <CardHeader className="bg-gradient-to-br from-primary/10 to-primary/5 border-b">
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                Download Summary
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-4">
+              {metadata ? (
                 <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Downloading...
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between text-sm">
+                      <span className="text-muted-foreground">Table:</span>
+                      <span className="font-medium text-right flex-1 ml-2">{metadata.table}</span>
+                    </div>
+                    <Separator />
+                    <div className="flex items-start justify-between text-sm">
+                      <span className="text-muted-foreground">Date Range:</span>
+                      <span className="font-medium text-right flex-1 ml-2">
+                        {metadata.dateRange.start}
+                        <ChevronRight className="inline h-3 w-3 mx-1" />
+                        {metadata.dateRange.end}
+                      </span>
+                    </div>
+                    <Separator />
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Locations:</span>
+                      <span className="font-semibold">{metadata.locations.length}</span>
+                    </div>
+                    <Separator />
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Attributes:</span>
+                      <span className="font-semibold">{metadata.attributeCount}</span>
+                    </div>
+                    <Separator />
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Est. Rows:</span>
+                      <span className="font-semibold text-primary">
+                        ~{metadata.estimatedRows.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="pt-4">
+                    <Button
+                      onClick={handleDownload}
+                      disabled={!canDownload || isDownloading}
+                      className="w-full h-12 text-base gap-2 shadow-md hover:shadow-lg transition-all"
+                      size="lg"
+                    >
+                      {isDownloading ? (
+                        <>
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                          Preparing Download...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="h-5 w-5" />
+                          Download CSV
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </>
               ) : (
-                <>
-                  <Download className="mr-2 h-5 w-5" />
-                  Download CSV
-                </>
+                <div className="text-center py-8 text-sm text-muted-foreground">
+                  <Info className="h-8 w-8 mx-auto mb-3 opacity-50" />
+                  <p>Complete your selections to see download summary</p>
+                </div>
               )}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+
+          {/* Help Card */}
+          <Card className="border-2 shadow-sm">
+            <CardHeader className="bg-muted/30 border-b">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Info className="h-4 w-4" />
+                Download Guide
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <ol className="space-y-3 text-sm">
+                <li className="flex gap-2">
+                  <Badge variant="outline" className="h-6 w-6 flex items-center justify-center p-0 flex-shrink-0">1</Badge>
+                  <span className="text-muted-foreground">Select a data table</span>
+                </li>
+                <li className="flex gap-2">
+                  <Badge variant="outline" className="h-6 w-6 flex items-center justify-center p-0 flex-shrink-0">2</Badge>
+                  <span className="text-muted-foreground">Choose date range</span>
+                </li>
+                <li className="flex gap-2">
+                  <Badge variant="outline" className="h-6 w-6 flex items-center justify-center p-0 flex-shrink-0">3</Badge>
+                  <span className="text-muted-foreground">Pick monitoring locations</span>
+                </li>
+                <li className="flex gap-2">
+                  <Badge variant="outline" className="h-6 w-6 flex items-center justify-center p-0 flex-shrink-0">4</Badge>
+                  <span className="text-muted-foreground">Optionally filter attributes</span>
+                </li>
+                <li className="flex gap-2">
+                  <Badge variant="outline" className="h-6 w-6 flex items-center justify-center p-0 flex-shrink-0">5</Badge>
+                  <span className="text-muted-foreground">Download your custom dataset</span>
+                </li>
+              </ol>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 };
