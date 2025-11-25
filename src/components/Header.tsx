@@ -112,14 +112,15 @@ const Header = () => {
                 <Link
                   key={item.label}
                   to={item.href}
-                  className={`flex items-center space-x-1 transition-all duration-200 font-medium px-2 py-1 rounded-md ${
+                  className={cn(
+                    "flex items-center space-x-2 transition-all duration-200 font-semibold px-3 py-2 rounded-lg text-sm",
                     isActive(item.href) 
-                      ? 'text-primary bg-primary/10' 
-                      : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
-                  }`}
+                      ? 'text-primary bg-primary/15 shadow-sm' 
+                      : 'text-foreground hover:text-primary hover:bg-accent/50'
+                  )}
                 >
                   <Icon className="h-4 w-4" />
-                  <span className="text-sm">{item.label}</span>
+                  <span>{item.label}</span>
                 </Link>
               );
             })}
@@ -129,131 +130,187 @@ const Header = () => {
               <NavigationMenuList>
                 <NavigationMenuItem>
                   <NavigationMenuTrigger 
-                    className={`flex items-center space-x-1 transition-all duration-200 font-medium px-2 py-1 rounded-md ${
-                      location.pathname.startsWith('/research') || location.pathname.startsWith('/documentation')
-                        ? 'text-primary bg-primary/10' 
-                        : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
-                    }`}
+                    className={cn(
+                      "flex items-center space-x-2 transition-all duration-200 font-semibold px-3 py-2 rounded-lg text-sm",
+                      location.pathname.startsWith('/research')
+                        ? 'text-primary bg-primary/15 shadow-sm' 
+                        : 'text-foreground hover:text-primary hover:bg-accent/50'
+                    )}
                   >
                     <Users className="h-4 w-4" />
-                    <span className="text-sm">Research</span>
+                    <span>Research</span>
                   </NavigationMenuTrigger>
                   <NavigationMenuContent>
-                    <ul className="grid w-full max-w-[400px] gap-3 p-4 bg-popover">
-                      {researchSubsections.map((item) => {
-                        const Icon = item.icon;
-                        return (
-                          <li key={item.label}>
-                            <NavigationMenuLink asChild>
-                              <Link
-                                to={item.href}
-                                className={`block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground ${
-                                  isActive(item.href) ? 'bg-accent/50' : ''
-                                }`}
-                              >
-                                <div className="flex items-center gap-2">
-                                  <Icon className="h-4 w-4" />
-                                  <div className="text-sm font-medium leading-none">{item.label}</div>
-                                </div>
-                                <p className="line-clamp-2 text-xs leading-snug text-muted-foreground mt-1">
-                                  {item.description}
-                                </p>
-                              </Link>
-                            </NavigationMenuLink>
-                          </li>
-                        );
-                      })}
-                    </ul>
+                    <div className="w-[420px] p-6 bg-card border border-border/50">
+                      <div className="mb-4 pb-3 border-b border-border">
+                        <h3 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Research & Collaboration</h3>
+                      </div>
+                      <ul className="grid gap-2">
+                        {researchSubsections.map((item) => {
+                          const Icon = item.icon;
+                          return (
+                            <li key={item.label}>
+                              <NavigationMenuLink asChild>
+                                <Link
+                                  to={item.href}
+                                  className={cn(
+                                    "group block select-none rounded-lg p-4 leading-none no-underline outline-none transition-all hover:shadow-md border",
+                                    isActive(item.href) 
+                                      ? 'bg-primary/10 border-primary/30 shadow-sm' 
+                                      : 'bg-card hover:bg-accent/50 border-transparent hover:border-border'
+                                  )}
+                                >
+                                  <div className="flex items-start gap-3">
+                                    <div className={cn(
+                                      "mt-0.5 p-2 rounded-md transition-colors",
+                                      isActive(item.href) ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary'
+                                    )}>
+                                      <Icon className="h-5 w-5" />
+                                    </div>
+                                    <div className="flex-1 space-y-1">
+                                      <div className="font-semibold text-sm leading-tight text-foreground group-hover:text-primary transition-colors">
+                                        {item.label}
+                                      </div>
+                                      <p className="text-xs leading-snug text-muted-foreground line-clamp-2">
+                                        {item.description}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </Link>
+                              </NavigationMenuLink>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
                   </NavigationMenuContent>
                 </NavigationMenuItem>
               </NavigationMenuList>
             </NavigationMenu>
             
-            {/* Data Download Dropdown */}
+            {/* Data Download Dropdown - Mega Menu Style */}
             <NavigationMenu>
               <NavigationMenuList>
                 <NavigationMenuItem>
                   <NavigationMenuTrigger 
-                    className={`flex items-center space-x-1 transition-all duration-200 font-medium px-2 py-1 rounded-md ${
-                      location.pathname.startsWith('/download') || location.pathname.startsWith('/documentation')
-                        ? 'text-primary bg-primary/10' 
-                        : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
-                    }`}
+                    className={cn(
+                      "flex items-center space-x-2 transition-all duration-200 font-semibold px-3 py-2 rounded-lg text-sm",
+                      location.pathname.startsWith('/download') || location.pathname.startsWith('/api') || location.pathname.startsWith('/documentation')
+                        ? 'text-primary bg-primary/15 shadow-sm' 
+                        : 'text-foreground hover:text-primary hover:bg-accent/50'
+                    )}
                   >
                     <Download className="h-4 w-4" />
-                    <span className="text-sm">Data Download</span>
+                    <span>Data Access</span>
                   </NavigationMenuTrigger>
                   <NavigationMenuContent>
-                    <ul className="grid w-full max-w-[400px] gap-3 p-4 bg-popover">
-                      {dataDownloadSubsections.map((item) => {
-                        const Icon = item.icon;
-                        return (
-                          <li key={item.label}>
-                            <NavigationMenuLink asChild>
-                              <Link
-                                to={item.href}
-                                className={`block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground ${
-                                  isActive(item.href) ? 'bg-accent/50' : ''
-                                }`}
-                              >
-                                <div className="flex items-center gap-2">
-                                  <Icon className="h-4 w-4" />
-                                  <div className="text-sm font-medium leading-none">{item.label}</div>
-                                </div>
-                                <p className="line-clamp-2 text-xs leading-snug text-muted-foreground mt-1">
-                                  {item.description}
-                                </p>
-                              </Link>
-                            </NavigationMenuLink>
-                          </li>
-                        );
-                      })}
-                    </ul>
+                    <div className="w-[520px] p-6 bg-card border border-border/50">
+                      <div className="mb-4 pb-3 border-b border-border">
+                        <h3 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Data Download & API Access</h3>
+                        <p className="text-xs text-muted-foreground mt-1">Access environmental data through downloads or API</p>
+                      </div>
+                      <ul className="grid grid-cols-2 gap-3">
+                        {dataDownloadSubsections.map((item) => {
+                          const Icon = item.icon;
+                          return (
+                            <li key={item.label}>
+                              <NavigationMenuLink asChild>
+                                <Link
+                                  to={item.href}
+                                  className={cn(
+                                    "group block select-none rounded-lg p-4 leading-none no-underline outline-none transition-all hover:shadow-md border h-full",
+                                    isActive(item.href) 
+                                      ? 'bg-primary/10 border-primary/30 shadow-sm' 
+                                      : 'bg-card hover:bg-accent/50 border-transparent hover:border-border'
+                                  )}
+                                >
+                                  <div className="flex flex-col gap-2 h-full">
+                                    <div className="flex items-center gap-2">
+                                      <div className={cn(
+                                        "p-2 rounded-md transition-colors",
+                                        isActive(item.href) ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary'
+                                      )}>
+                                        <Icon className="h-4 w-4" />
+                                      </div>
+                                      <div className="font-semibold text-sm leading-tight text-foreground group-hover:text-primary transition-colors">
+                                        {item.label}
+                                      </div>
+                                    </div>
+                                    <p className="text-xs leading-snug text-muted-foreground line-clamp-2">
+                                      {item.description}
+                                    </p>
+                                  </div>
+                                </Link>
+                              </NavigationMenuLink>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
                   </NavigationMenuContent>
                 </NavigationMenuItem>
               </NavigationMenuList>
             </NavigationMenu>
 
-            {/* Analytics Dropdown */}
+            {/* Analytics Dropdown - Enhanced Visibility */}
             <NavigationMenu>
               <NavigationMenuList>
                 <NavigationMenuItem>
                   <NavigationMenuTrigger 
-                    className={`flex items-center space-x-1 transition-all duration-200 font-medium px-2 py-1 rounded-md ${
+                    className={cn(
+                      "flex items-center space-x-2 transition-all duration-200 font-semibold px-3 py-2 rounded-lg text-sm",
                       location.pathname.startsWith('/analytics')
-                        ? 'text-primary bg-primary/10' 
-                        : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
-                    }`}
+                        ? 'text-primary bg-primary/15 shadow-sm' 
+                        : 'text-foreground hover:text-primary hover:bg-accent/50'
+                    )}
                   >
                     <BarChart3 className="h-4 w-4" />
-                    <span className="text-sm">Analytics</span>
+                    <span>Analytics</span>
                   </NavigationMenuTrigger>
                   <NavigationMenuContent>
-                    <ul className="grid w-full max-w-[400px] gap-3 p-4 bg-popover">
-                      {analyticsSubsections.map((item) => {
-                        const Icon = item.icon;
-                        return (
-                          <li key={item.label}>
-                            <NavigationMenuLink asChild>
-                              <Link
-                                to={item.href}
-                                className={`block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground ${
-                                  isActive(item.href) ? 'bg-accent/50' : ''
-                                }`}
-                              >
-                                <div className="flex items-center gap-2">
-                                  <Icon className="h-4 w-4" />
-                                  <div className="text-sm font-medium leading-none">{item.label}</div>
-                                </div>
-                                <p className="line-clamp-2 text-xs leading-snug text-muted-foreground mt-1">
-                                  {item.description}
-                                </p>
-                              </Link>
-                            </NavigationMenuLink>
-                          </li>
-                        );
-                      })}
-                    </ul>
+                    <div className="w-[480px] p-6 bg-card border border-border/50">
+                      <div className="mb-4 pb-3 border-b border-border">
+                        <h3 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Data Analytics & Visualization</h3>
+                        <p className="text-xs text-muted-foreground mt-1">Explore environmental data through interactive dashboards</p>
+                      </div>
+                      <ul className="grid gap-2">
+                        {analyticsSubsections.map((item) => {
+                          const Icon = item.icon;
+                          return (
+                            <li key={item.label}>
+                              <NavigationMenuLink asChild>
+                                <Link
+                                  to={item.href}
+                                  className={cn(
+                                    "group block select-none rounded-lg p-4 leading-none no-underline outline-none transition-all hover:shadow-md border",
+                                    isActive(item.href) 
+                                      ? 'bg-primary/10 border-primary/30 shadow-sm' 
+                                      : 'bg-card hover:bg-accent/50 border-transparent hover:border-border'
+                                  )}
+                                >
+                                  <div className="flex items-start gap-3">
+                                    <div className={cn(
+                                      "mt-0.5 p-2 rounded-md transition-colors",
+                                      isActive(item.href) ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary'
+                                    )}>
+                                      <Icon className="h-5 w-5" />
+                                    </div>
+                                    <div className="flex-1 space-y-1">
+                                      <div className="font-semibold text-sm leading-tight text-foreground group-hover:text-primary transition-colors">
+                                        {item.label}
+                                      </div>
+                                      <p className="text-xs leading-snug text-muted-foreground line-clamp-2">
+                                        {item.description}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </Link>
+                              </NavigationMenuLink>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
                   </NavigationMenuContent>
                 </NavigationMenuItem>
               </NavigationMenuList>
@@ -262,7 +319,7 @@ const Header = () => {
 
           {/* CTA Button */}
           <div className="hidden lg:block">
-            <Button className="btn-research text-sm px-4 py-2">
+            <Button className="btn-research text-sm font-semibold px-5 py-2.5 shadow-md hover:shadow-lg transition-all">
               Access Live Data
             </Button>
           </div>
@@ -296,13 +353,18 @@ const Header = () => {
                   key={item.label}
                   to={item.href}
                   className={cn(
-                    "flex items-center space-x-3 px-4 py-3 transition-all duration-200 rounded-lg font-medium min-h-[48px] active:scale-[0.98]",
+                    "flex items-center space-x-3 px-4 py-3 transition-all duration-200 rounded-lg font-semibold min-h-[52px] active:scale-[0.98]",
                     isActive(item.href)
-                      ? 'text-primary bg-primary/10'
+                      ? 'text-primary bg-primary/15 shadow-sm'
                       : 'text-foreground hover:bg-accent'
                   )}
                 >
-                  <Icon className="h-5 w-5 flex-shrink-0" />
+                  <div className={cn(
+                    "p-2 rounded-lg transition-colors",
+                    isActive(item.href) ? 'bg-primary/20 text-primary' : 'bg-muted text-foreground'
+                  )}>
+                    <Icon className="h-5 w-5 flex-shrink-0" />
+                  </div>
                   <span className="text-base">{item.label}</span>
                 </Link>
               );
@@ -313,26 +375,34 @@ const Header = () => {
               <button
                 onClick={() => toggleMobileSection('research')}
                 className={cn(
-                  "flex items-center justify-between w-full px-4 py-3 transition-all duration-200 rounded-lg font-medium min-h-[48px] active:scale-[0.98]",
-                  location.pathname.startsWith('/research') ? 'text-primary bg-primary/10' : 'text-foreground hover:bg-accent'
+                  "flex items-center justify-between w-full px-4 py-3 transition-all duration-200 rounded-lg font-semibold min-h-[52px] active:scale-[0.98]",
+                  location.pathname.startsWith('/research') ? 'text-primary bg-primary/15 shadow-sm' : 'text-foreground hover:bg-accent'
                 )}
                 aria-expanded={expandedMobileSection === 'research'}
               >
                 <div className="flex items-center space-x-3">
-                  <Users className="h-5 w-5 flex-shrink-0" />
-                  <span className="text-base">Research</span>
+                  <div className={cn(
+                    "p-2 rounded-lg transition-colors",
+                    location.pathname.startsWith('/research') ? 'bg-primary/20 text-primary' : 'bg-muted text-foreground'
+                  )}>
+                    <Users className="h-5 w-5 flex-shrink-0" />
+                  </div>
+                  <div className="text-left">
+                    <div className="text-base font-semibold">Research</div>
+                    <div className="text-xs text-muted-foreground">Team & collaboration</div>
+                  </div>
                 </div>
                 <ChevronDown className={cn(
-                  "h-5 w-5 transition-transform duration-200",
+                  "h-5 w-5 transition-transform duration-300 flex-shrink-0",
                   expandedMobileSection === 'research' && "rotate-180"
                 )} />
               </button>
               
               <div className={cn(
                 "overflow-hidden transition-all duration-300 ease-in-out",
-                expandedMobileSection === 'research' ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+                expandedMobileSection === 'research' ? "max-h-96 opacity-100 mt-2" : "max-h-0 opacity-0"
               )}>
-                <div className="pl-6 pr-2 pt-1 space-y-1">
+                <div className="px-2 space-y-2 pb-2">
                   {researchSubsections.map((item) => {
                     const Icon = item.icon;
                     return (
@@ -340,16 +410,24 @@ const Header = () => {
                         key={item.label}
                         to={item.href}
                         className={cn(
-                          "flex items-center space-x-3 px-4 py-3 transition-all duration-200 rounded-lg min-h-[44px] active:scale-[0.98]",
+                          "flex items-start gap-3 p-4 transition-all duration-200 rounded-lg border min-h-[68px] active:scale-[0.98]",
                           isActive(item.href)
-                            ? 'text-primary bg-primary/10'
-                            : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                            ? 'bg-primary/10 border-primary/30 shadow-sm'
+                            : 'bg-card border-border/50 hover:border-border hover:shadow-md'
                         )}
                       >
-                        <Icon className="h-4 w-4 flex-shrink-0" />
+                        <div className={cn(
+                          "p-2 rounded-md flex-shrink-0 transition-colors",
+                          isActive(item.href) ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'
+                        )}>
+                          <Icon className="h-4 w-4" />
+                        </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium truncate">{item.label}</div>
-                          <div className="text-xs text-muted-foreground line-clamp-1">{item.description}</div>
+                          <div className={cn(
+                            "text-sm font-semibold mb-1 transition-colors",
+                            isActive(item.href) ? 'text-primary' : 'text-foreground'
+                          )}>{item.label}</div>
+                          <div className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{item.description}</div>
                         </div>
                       </Link>
                     );
@@ -358,31 +436,39 @@ const Header = () => {
               </div>
             </div>
               
-            {/* Data Download Subsection - Collapsible */}
+            {/* Data Download Subsection - Collapsible with Grid */}
             <div>
               <button
                 onClick={() => toggleMobileSection('download')}
                 className={cn(
-                  "flex items-center justify-between w-full px-4 py-3 transition-all duration-200 rounded-lg font-medium min-h-[48px] active:scale-[0.98]",
-                  location.pathname.startsWith('/download') || location.pathname.startsWith('/api') ? 'text-primary bg-primary/10' : 'text-foreground hover:bg-accent'
+                  "flex items-center justify-between w-full px-4 py-3 transition-all duration-200 rounded-lg font-semibold min-h-[52px] active:scale-[0.98]",
+                  location.pathname.startsWith('/download') || location.pathname.startsWith('/api') ? 'text-primary bg-primary/15 shadow-sm' : 'text-foreground hover:bg-accent'
                 )}
                 aria-expanded={expandedMobileSection === 'download'}
               >
                 <div className="flex items-center space-x-3">
-                  <Download className="h-5 w-5 flex-shrink-0" />
-                  <span className="text-base">Data Download</span>
+                  <div className={cn(
+                    "p-2 rounded-lg transition-colors",
+                    location.pathname.startsWith('/download') || location.pathname.startsWith('/api') ? 'bg-primary/20 text-primary' : 'bg-muted text-foreground'
+                  )}>
+                    <Download className="h-5 w-5 flex-shrink-0" />
+                  </div>
+                  <div className="text-left">
+                    <div className="text-base font-semibold">Data Access</div>
+                    <div className="text-xs text-muted-foreground">Downloads & API</div>
+                  </div>
                 </div>
                 <ChevronDown className={cn(
-                  "h-5 w-5 transition-transform duration-200",
+                  "h-5 w-5 transition-transform duration-300 flex-shrink-0",
                   expandedMobileSection === 'download' && "rotate-180"
                 )} />
               </button>
               
               <div className={cn(
                 "overflow-hidden transition-all duration-300 ease-in-out",
-                expandedMobileSection === 'download' ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+                expandedMobileSection === 'download' ? "max-h-[600px] opacity-100 mt-2" : "max-h-0 opacity-0"
               )}>
-                <div className="pl-6 pr-2 pt-1 space-y-1">
+                <div className="px-2 grid grid-cols-2 gap-2 pb-2">
                   {dataDownloadSubsections.map((item) => {
                     const Icon = item.icon;
                     return (
@@ -390,16 +476,24 @@ const Header = () => {
                         key={item.label}
                         to={item.href}
                         className={cn(
-                          "flex items-center space-x-3 px-4 py-3 transition-all duration-200 rounded-lg min-h-[44px] active:scale-[0.98]",
+                          "flex flex-col gap-2 p-3 transition-all duration-200 rounded-lg border min-h-[100px] active:scale-[0.98]",
                           isActive(item.href)
-                            ? 'text-primary bg-primary/10'
-                            : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                            ? 'bg-primary/10 border-primary/30 shadow-sm'
+                            : 'bg-card border-border/50 hover:border-border hover:shadow-md'
                         )}
                       >
-                        <Icon className="h-4 w-4 flex-shrink-0" />
+                        <div className={cn(
+                          "p-2 rounded-md w-fit transition-colors",
+                          isActive(item.href) ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'
+                        )}>
+                          <Icon className="h-4 w-4" />
+                        </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium truncate">{item.label}</div>
-                          <div className="text-xs text-muted-foreground line-clamp-1">{item.description}</div>
+                          <div className={cn(
+                            "text-xs font-semibold mb-1 line-clamp-2 leading-tight transition-colors",
+                            isActive(item.href) ? 'text-primary' : 'text-foreground'
+                          )}>{item.label}</div>
+                          <div className="text-[10px] text-muted-foreground line-clamp-2 leading-snug">{item.description}</div>
                         </div>
                       </Link>
                     );
@@ -413,26 +507,34 @@ const Header = () => {
               <button
                 onClick={() => toggleMobileSection('analytics')}
                 className={cn(
-                  "flex items-center justify-between w-full px-4 py-3 transition-all duration-200 rounded-lg font-medium min-h-[48px] active:scale-[0.98]",
-                  location.pathname.startsWith('/analytics') ? 'text-primary bg-primary/10' : 'text-foreground hover:bg-accent'
+                  "flex items-center justify-between w-full px-4 py-3 transition-all duration-200 rounded-lg font-semibold min-h-[52px] active:scale-[0.98]",
+                  location.pathname.startsWith('/analytics') ? 'text-primary bg-primary/15 shadow-sm' : 'text-foreground hover:bg-accent'
                 )}
                 aria-expanded={expandedMobileSection === 'analytics'}
               >
                 <div className="flex items-center space-x-3">
-                  <BarChart3 className="h-5 w-5 flex-shrink-0" />
-                  <span className="text-base">Analytics</span>
+                  <div className={cn(
+                    "p-2 rounded-lg transition-colors",
+                    location.pathname.startsWith('/analytics') ? 'bg-primary/20 text-primary' : 'bg-muted text-foreground'
+                  )}>
+                    <BarChart3 className="h-5 w-5 flex-shrink-0" />
+                  </div>
+                  <div className="text-left">
+                    <div className="text-base font-semibold">Analytics</div>
+                    <div className="text-xs text-muted-foreground">Data visualization</div>
+                  </div>
                 </div>
                 <ChevronDown className={cn(
-                  "h-5 w-5 transition-transform duration-200",
+                  "h-5 w-5 transition-transform duration-300 flex-shrink-0",
                   expandedMobileSection === 'analytics' && "rotate-180"
                 )} />
               </button>
               
               <div className={cn(
                 "overflow-hidden transition-all duration-300 ease-in-out",
-                expandedMobileSection === 'analytics' ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+                expandedMobileSection === 'analytics' ? "max-h-[500px] opacity-100 mt-2" : "max-h-0 opacity-0"
               )}>
-                <div className="pl-6 pr-2 pt-1 space-y-1">
+                <div className="px-2 space-y-2 pb-2">
                   {analyticsSubsections.map((item) => {
                     const Icon = item.icon;
                     return (
@@ -440,16 +542,24 @@ const Header = () => {
                         key={item.label}
                         to={item.href}
                         className={cn(
-                          "flex items-center space-x-3 px-4 py-3 transition-all duration-200 rounded-lg min-h-[44px] active:scale-[0.98]",
+                          "flex items-start gap-3 p-4 transition-all duration-200 rounded-lg border min-h-[68px] active:scale-[0.98]",
                           isActive(item.href)
-                            ? 'text-primary bg-primary/10'
-                            : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                            ? 'bg-primary/10 border-primary/30 shadow-sm'
+                            : 'bg-card border-border/50 hover:border-border hover:shadow-md'
                         )}
                       >
-                        <Icon className="h-4 w-4 flex-shrink-0" />
+                        <div className={cn(
+                          "p-2 rounded-md flex-shrink-0 transition-colors",
+                          isActive(item.href) ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'
+                        )}>
+                          <Icon className="h-4 w-4" />
+                        </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium truncate">{item.label}</div>
-                          <div className="text-xs text-muted-foreground line-clamp-1">{item.description}</div>
+                          <div className={cn(
+                            "text-sm font-semibold mb-1 transition-colors",
+                            isActive(item.href) ? 'text-primary' : 'text-foreground'
+                          )}>{item.label}</div>
+                          <div className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{item.description}</div>
                         </div>
                       </Link>
                     );
@@ -460,7 +570,7 @@ const Header = () => {
 
             {/* CTA Button - Mobile */}
             <div className="pt-4 pb-2 border-t border-border mt-4">
-              <Button className="btn-research w-full text-base py-6 min-h-[48px] shadow-lg">
+              <Button className="btn-research w-full text-base font-semibold py-7 min-h-[52px] shadow-lg hover:shadow-xl transition-all">
                 Access Live Data
               </Button>
             </div>
