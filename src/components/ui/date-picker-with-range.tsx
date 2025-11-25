@@ -99,25 +99,25 @@ export function DatePickerWithYearMonth({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
-        <div className="p-3 border-b">
-          <div className="flex items-center justify-between gap-2 mb-2">
+        <div className="p-3 border-b bg-background">
+          <div className="flex items-center justify-between gap-2">
             <Button
               variant="outline"
               size="icon"
-              className="h-7 w-7"
+              className="h-8 w-8 shrink-0"
               onClick={handlePreviousMonth}
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <div className="flex gap-2 flex-1">
+            <div className="flex gap-2 flex-1 min-w-0">
               <Select
                 value={month.getMonth().toString()}
                 onValueChange={handleMonthChange}
               >
-                <SelectTrigger className="h-7 text-xs">
+                <SelectTrigger className="h-8 text-sm flex-1">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[100] bg-background">
                   {months.map((monthName, index) => (
                     <SelectItem key={index} value={index.toString()}>
                       {monthName}
@@ -129,10 +129,10 @@ export function DatePickerWithYearMonth({
                 value={month.getFullYear().toString()}
                 onValueChange={handleYearChange}
               >
-                <SelectTrigger className="h-7 text-xs w-20">
+                <SelectTrigger className="h-8 text-sm w-24 shrink-0">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[100] bg-background max-h-[300px]">
                   {years.map((year) => (
                     <SelectItem key={year} value={year.toString()}>
                       {year}
@@ -144,7 +144,7 @@ export function DatePickerWithYearMonth({
             <Button
               variant="outline"
               size="icon"
-              className="h-7 w-7"
+              className="h-8 w-8 shrink-0"
               onClick={handleNextMonth}
             >
               <ChevronRight className="h-4 w-4" />
