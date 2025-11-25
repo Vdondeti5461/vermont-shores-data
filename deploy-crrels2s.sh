@@ -22,8 +22,8 @@ NC='\033[0m' # No Color
 
 # Pull latest changes from GitHub
 echo -e "${BLUE}🔄 Pulling latest changes from GitHub...${NC}"
-git stash
-git pull origin main
+git fetch origin main
+git reset --hard origin/main
 
 # Check if package.json changed and install dependencies if needed
 if git diff HEAD~1 HEAD --name-only | grep -q package.json 2>/dev/null || [ ! -d "node_modules" ]; then
