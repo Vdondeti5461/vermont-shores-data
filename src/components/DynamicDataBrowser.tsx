@@ -420,8 +420,8 @@ const DynamicDataBrowser = () => {
           if (!trimmed) continue;
           const cols = splitCsvLine(r);
           
-          // Filter columns first
-          const filteredCols = colIndices.map(idx => cols[idx] || '');
+          // Filter columns first - preserve NULL values
+          const filteredCols = colIndices.map(idx => cols[idx] !== undefined ? cols[idx] : '');
           
           // Normalize timestamp if exists
           if (tsIdx !== -1 && filteredCols[tsIdx] !== undefined) {
@@ -503,10 +503,37 @@ const DynamicDataBrowser = () => {
         throw new Error('No data found for the selected criteria');
       }
 
+      // Generate metadata header
+      const downloadTimestamp = format(new Date(), 'yyyy-MM-dd HH:mm:ss');
+      const locationsList = selectedLocations.length > 0 
+        ? selectedLocations.join(', ') 
+        : 'All locations';
+      const dateRangeStr = startDate && endDate
+        ? `${format(startDate, 'yyyy-MM-dd')} to ${format(endDate, 'yyyy-MM-dd')}`
+        : 'All dates';
+      const attributesList = selectedAttributes.length > 0
+        ? selectedAttributes.join(', ')
+        : 'All attributes';
+      
+      const metadata = [
+        `# Summit to Shore Environmental Data Export`,
+        `# Database: ${selectedDatabase}`,
+        `# Table: ${selectedTable}`,
+        `# Download Date: ${downloadTimestamp}`,
+        `# Date Range: ${dateRangeStr}`,
+        `# Locations: ${locationsList}`,
+        `# Selected Attributes: ${attributesList}`,
+        `# Total Rows: ${allRows.length}`,
+        `#`,
+      ].join('\n');
+
       // Combine, normalize timestamps, and filter to selected attributes
       const combinedCsv = [finalHeader, ...allRows].join('\n');
       const processedCsv = normalizeAndFilter(combinedCsv);
-      const blob = new Blob([processedCsv], { type: 'text/csv;charset=utf-8;' });
+      
+      // Prepend metadata to CSV
+      const csvWithMetadata = metadata + '\n' + processedCsv;
+      const blob = new Blob([csvWithMetadata], { type: 'text/csv;charset=utf-8;' });
 
       console.log('[Downloaded Blob Size]', blob.size, 'bytes');
       if (blob.size === 0) throw new Error('No data found for the selected criteria');
