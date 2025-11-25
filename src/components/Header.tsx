@@ -101,7 +101,7 @@ const Header = () => {
                     <span className="text-sm">Research</span>
                   </NavigationMenuTrigger>
                   <NavigationMenuContent>
-                    <ul className="grid w-[400px] gap-3 p-4 bg-popover">
+                    <ul className="grid w-full max-w-[400px] gap-3 p-4 bg-popover">
                       {researchSubsections.map((item) => {
                         const Icon = item.icon;
                         return (
@@ -146,7 +146,7 @@ const Header = () => {
                     <span className="text-sm">Data Download</span>
                   </NavigationMenuTrigger>
                   <NavigationMenuContent>
-                    <ul className="grid w-[400px] gap-3 p-4 bg-popover">
+                    <ul className="grid w-full max-w-[400px] gap-3 p-4 bg-popover">
                       {dataDownloadSubsections.map((item) => {
                         const Icon = item.icon;
                         return (
@@ -191,7 +191,7 @@ const Header = () => {
                     <span className="text-sm">Analytics</span>
                   </NavigationMenuTrigger>
                   <NavigationMenuContent>
-                    <ul className="grid w-[400px] gap-3 p-4 bg-popover">
+                    <ul className="grid w-full max-w-[400px] gap-3 p-4 bg-popover">
                       {analyticsSubsections.map((item) => {
                         const Icon = item.icon;
                         return (

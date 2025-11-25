@@ -169,6 +169,9 @@ All colors MUST be HSL. Scientific, professional theme with UVM branding.
     
     /* Better touch handling */
     touch-action: manipulation;
+    
+    /* Enable momentum scrolling on iOS */
+    -webkit-overflow-scrolling: touch;
   }
 
   /* iOS Safari specific fixes */
@@ -209,6 +212,24 @@ All colors MUST be HSL. Scientific, professional theme with UVM branding.
 
   ::-webkit-scrollbar-thumb:hover {
     @apply bg-muted-foreground/50;
+  }
+
+  /* Horizontal scroll containers - iOS touch friendly */
+  .overflow-x-auto,
+  .overflow-y-auto {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  /* Ensure dropdowns/popovers are visible on mobile */
+  @media (max-width: 768px) {
+    [role="dialog"],
+    [role="menu"],
+    [data-radix-popper-content-wrapper] > div {
+      max-width: calc(100vw - 2rem) !important;
+      background: hsl(var(--popover));
+      backdrop-filter: blur(8px);
+    }
   }
 }
 
