@@ -22,6 +22,7 @@ NC='\033[0m' # No Color
 
 # Pull latest changes from GitHub
 echo -e "${BLUE}🔄 Pulling latest changes from GitHub...${NC}"
+git stash
 git pull origin main
 
 # Check if package.json changed and install dependencies if needed
