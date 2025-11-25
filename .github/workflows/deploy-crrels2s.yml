@@ -19,5 +19,5 @@ jobs:
           port: 22
           script_stop: false
           script: |
-            cd ~/vermont-shores-data
+            cd /home/crrels2s/vermont-shores-data
             ./deploy-crrels2s.sh
