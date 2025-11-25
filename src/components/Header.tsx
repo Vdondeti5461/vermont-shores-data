@@ -319,8 +319,11 @@ const Header = () => {
 
           {/* CTA Button */}
           <div className="hidden lg:block">
-            <Button className="btn-research text-sm font-semibold px-5 py-2.5 shadow-md hover:shadow-lg transition-all">
-              Access Live Data
+            <Button 
+              asChild
+              className="btn-research text-sm font-semibold px-5 py-2.5 shadow-md hover:shadow-lg transition-all"
+            >
+              <Link to="/live-data">Access Live Data</Link>
             </Button>
           </div>
 
@@ -570,8 +573,11 @@ const Header = () => {
 
             {/* CTA Button - Mobile */}
             <div className="pt-4 pb-2 border-t border-border mt-4">
-              <Button className="btn-research w-full text-base font-semibold py-7 min-h-[52px] shadow-lg hover:shadow-xl transition-all">
-                Access Live Data
+              <Button 
+                asChild
+                className="btn-research w-full text-base font-semibold py-7 min-h-[52px] shadow-lg hover:shadow-xl transition-all"
+              >
+                <Link to="/live-data">Access Live Data</Link>
               </Button>
             </div>
           </nav>
