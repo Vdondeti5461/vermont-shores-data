@@ -78,7 +78,20 @@ This project is built with:
 
 ## Production Deployment
 
-Deploy to **crrels2s.w3.uvm.edu** with a single command:
+### Automated Deployment (Recommended)
+
+Changes pushed to the `main` branch automatically deploy to **crrels2s.w3.uvm.edu** via GitHub Actions.
+
+**Setup once:**
+1. Generate SSH key pair on server
+2. Add private key to GitHub Secrets as `SSH_PRIVATE_KEY`
+3. Done! Future pushes auto-deploy
+
+📖 **See [AUTOMATED_DEPLOYMENT.md](AUTOMATED_DEPLOYMENT.md) for setup instructions**
+
+### Manual Deployment
+
+Deploy manually with a single command:
 
 ```bash
 cd ~/vermont-shores-data
@@ -86,7 +99,7 @@ chmod +x deploy-crrels2s.sh
 ./deploy-crrels2s.sh
 ```
 
-This automated script:
+This script:
 - ✅ Pulls latest code from GitHub
 - ✅ Builds React frontend → deploys to `~/www-root/`
 - ✅ Updates Node.js backend → deploys to `~/api/`

@@ -17,9 +17,15 @@
 
 ## Quick Start
 
-### One-Command Deployment
+### Automated Deployment (Recommended)
 
-From your local machine or on the server:
+GitHub Actions automatically deploys when you push to the `main` branch.
+
+**Setup:** See [AUTOMATED_DEPLOYMENT.md](AUTOMATED_DEPLOYMENT.md) for one-time setup instructions.
+
+### Manual Deployment
+
+From the server:
 
 ```bash
 cd ~/vermont-shores-data

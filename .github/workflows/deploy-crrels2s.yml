@@ -1,0 +1,21 @@
+name: Deploy to crrels2s.w3.uvm.edu
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Deploy to crrels2s server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: crrels2s.w3.uvm.edu
+          username: crrels2s
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/vermont-shores-data
+            ./deploy-crrels2s.sh
