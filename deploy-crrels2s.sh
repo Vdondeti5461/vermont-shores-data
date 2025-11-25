@@ -6,6 +6,10 @@ set -e
 # 
 # Usage: ./deploy-crrels2s.sh
 
+# Load nvm for non-interactive shells (required for GitHub Actions SSH)
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
 echo "🚀 Starting deployment to crrels2s.w3.uvm.edu..."
 cd ~/vermont-shores-data
 
