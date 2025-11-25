@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { DateRangePicker } from '@/components/ui/date-picker-with-range';
+import { MultiSelect, MultiSelectOption } from '@/components/ui/multi-select';
 import { 
   Loader2, Download, Table, MapPin, Calendar as CalendarIcon, 
   Filter, CheckCircle2, Info, FileText, TrendingUp
@@ -213,12 +213,19 @@ const SeasonalDataDownload = () => {
 
   const selectedTableInfo = tables.find(t => t.name === selectedTable);
 
-  // Group attributes by category
-  const groupedAttributes = attributes.reduce((acc, attr) => {
-    if (!acc[attr.category]) acc[attr.category] = [];
-    acc[attr.category].push(attr);
-    return acc;
-  }, {} as Record<string, Attribute[]>);
+  // Convert locations to multi-select options
+  const locationOptions: MultiSelectOption[] = locations.map(loc => ({
+    value: loc.code,
+    label: loc.name,
+    description: `${loc.code} • ${loc.elevation}m elevation`
+  }));
+
+  // Group attributes by category for multi-select
+  const attributeOptions: MultiSelectOption[] = attributes.map(attr => ({
+    value: attr.name,
+    label: attr.name,
+    description: `${attr.unit} • ${attr.category}`
+  }));
 
   return (
     <div className="space-y-6">
@@ -302,86 +309,38 @@ const SeasonalDataDownload = () => {
       {/* Step 2: Filters */}
       {selectedTable && (
         <>
-          {/* Location Selection */}
+          {/* Location Selection - Dropdown */}
           <Card className="border-2">
             <CardHeader>
               <div className="flex items-center gap-2">
                 <div className="p-2 rounded-lg bg-primary/10">
                   <MapPin className="w-5 h-5 text-primary" />
                 </div>
-                <div>
+                <div className="flex-1">
                   <CardTitle>Select Monitoring Locations</CardTitle>
                   <CardDescription>Choose stations from the monitoring network</CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex flex-wrap gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setSelectedLocations(locations.map(l => l.code))}
-                  className="text-xs"
-                >
-                  Select All ({locations.length})
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setSelectedLocations([])}
-                  className="text-xs"
-                >
-                  Clear All
-                </Button>
-                {selectedLocations.length > 0 && (
-                  <Badge variant="default" className="ml-auto">
-                    {selectedLocations.length} selected
-                  </Badge>
-                )}
-              </div>
+              <MultiSelect
+                options={locationOptions}
+                selected={selectedLocations}
+                onChange={setSelectedLocations}
+                placeholder="Select locations..."
+                searchPlaceholder="Search locations..."
+                emptyText="No locations found"
+                maxDisplay={3}
+              />
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-80 overflow-y-auto p-1">
-                {locations.map((location) => (
-                  <Card
-                    key={location.code}
-                    className={cn(
-                      "cursor-pointer transition-all hover:shadow-md border",
-                      selectedLocations.includes(location.code) 
-                        ? "border-primary bg-primary/5" 
-                        : "border-border"
-                    )}
-                    onClick={() => {
-                      setSelectedLocations(prev =>
-                        prev.includes(location.code)
-                          ? prev.filter(l => l !== location.code)
-                          : [...prev, location.code]
-                      );
-                    }}
-                  >
-                    <CardContent className="p-3">
-                      <div className="flex items-start gap-2">
-                        <Checkbox 
-                          checked={selectedLocations.includes(location.code)}
-                          className="mt-1"
-                        />
-                        <div className="space-y-1 flex-1 min-w-0">
-                          <div className="font-medium text-sm truncate">{location.name}</div>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <Badge variant="outline" className="text-xs">
-                              {location.code}
-                            </Badge>
-                            {location.elevation && (
-                              <span className="text-xs text-muted-foreground">
-                                {location.elevation}m
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+              {selectedLocations.length > 0 && (
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertDescription>
+                    {selectedLocations.length} location(s) selected
+                  </AlertDescription>
+                </Alert>
+              )}
             </CardContent>
           </Card>
 
@@ -454,102 +413,6 @@ const SeasonalDataDownload = () => {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex flex-wrap gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setSelectedAttributes(attributes.map(a => a.name))}
-                  className="text-xs"
-                >
-                  Select All
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => {
-                    const primaryAttrs = attributes
-                      .filter(attr => attr.isPrimary)
-                      .map(attr => attr.name);
-                    setSelectedAttributes(primaryAttrs);
-                  }}
-                  className="text-xs"
-                >
-                  Primary Only
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setSelectedAttributes([])}
-                  className="text-xs"
-                >
-                  Clear All
-                </Button>
-                {selectedAttributes.length > 0 && (
-                  <Badge variant="default" className="ml-auto">
-                    {selectedAttributes.length} selected
-                  </Badge>
-                )}
-              </div>
-              
-              <div className="space-y-4 max-h-96 overflow-y-auto p-1">
-                {Object.entries(groupedAttributes).map(([category, attrs]) => (
-                  <div key={category} className="space-y-2">
-                    <div className="flex items-center gap-2 sticky top-0 bg-background py-1">
-                      <Badge className="text-xs">{category}</Badge>
-                      <Separator className="flex-1" />
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {attrs.map((attr) => (
-                        <Card
-                          key={attr.name}
-                          className={cn(
-                            "cursor-pointer transition-all hover:shadow-md border",
-                            selectedAttributes.includes(attr.name) 
-                              ? "border-primary bg-primary/5" 
-                              : "border-border",
-                            attr.isPrimary && "border-l-4 border-l-primary"
-                          )}
-                          onClick={() => {
-                            setSelectedAttributes(prev =>
-                              prev.includes(attr.name)
-                                ? prev.filter(a => a !== attr.name)
-                                : [...prev, attr.name]
-                            );
-                          }}
-                        >
-                          <CardContent className="p-3">
-                            <div className="flex items-start gap-2">
-                              <Checkbox 
-                                checked={selectedAttributes.includes(attr.name)}
-                                className="mt-1"
-                              />
-                              <div className="flex-1 space-y-1 min-w-0">
-                                <div className="flex items-center justify-between gap-2">
-                                  <span className="font-medium text-xs truncate">{attr.name}</span>
-                                  {attr.isPrimary && (
-                                    <Badge variant="outline" className="text-2xs">Key</Badge>
-                                  )}
-                                </div>
-                                <p className="text-2xs text-muted-foreground line-clamp-1">
-                                  {attr.description}
-                                </p>
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <Badge variant="secondary" className="text-2xs">
-                                    {attr.unit}
-                                  </Badge>
-                                  <span className="text-2xs text-muted-foreground">
-                                    {attr.measurementType}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
             </CardContent>
           </Card>
 
