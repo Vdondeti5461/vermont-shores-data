@@ -3,7 +3,8 @@ import Footer from '@/components/Footer';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Code, Database, FileText, Globe, Key } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Code, Database, FileText, Globe, Key, Info } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/apiConfig';
 
 const APIDocumentation = () => {
@@ -658,73 +659,24 @@ try {
                   </CardContent>
                 </Card>
               </TabsContent>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="p-4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
-                      <h4 className="font-semibold text-green-800 dark:text-green-200 mb-2">✅ Open Access: Seasonal QAQC Data</h4>
-                      <p className="text-green-700 dark:text-green-300 text-sm mb-2">
-                        The <strong>CRRELS2S_seasonal_qaqc_data</strong> database is openly accessible through our API and web interface for research and educational purposes.
-                      </p>
-                      <ul className="text-green-700 dark:text-green-300 text-sm list-disc list-inside space-y-1">
-                        <li>No API key required</li>
-                        <li>Direct download access via web interface</li>
-                        <li>Programmatic access via REST API</li>
-                        <li>Quality-assured seasonal datasets</li>
-                      </ul>
-                    </div>
 
-                    <div className="p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-                      <h4 className="font-semibold text-amber-800 dark:text-amber-200 mb-2">🔒 Restricted Access: Request Required</h4>
-                      <p className="text-amber-700 dark:text-amber-300 text-sm mb-2">
-                        The following databases require a bulk download request for access:
-                      </p>
-                      <ul className="text-amber-700 dark:text-amber-300 text-sm list-disc list-inside space-y-1">
-                        <li><strong>CRRELS2S_raw_data_ingestion:</strong> Unprocessed sensor data</li>
-                        <li><strong>CRRELS2S_stage_clean_data:</strong> Intermediate QC-filtered data</li>
-                        <li><strong>CRRELS2S_stage_qaqc_data:</strong> Advanced QAQC data</li>
-                      </ul>
-                      <p className="text-amber-700 dark:text-amber-300 text-sm mt-2">
-                        <strong>How to request access:</strong>
-                      </p>
-                      <ul className="text-amber-700 dark:text-amber-300 text-sm list-disc list-inside space-y-1 mt-1">
-                        <li>Submit a <a href="/bulk-request" className="underline font-medium">bulk download request form</a></li>
-                        <li>Email: <a href="mailto:{authInfo.contactEmail}" className="underline font-medium">{authInfo.contactEmail}</a></li>
-                        <li>Phone: {authInfo.contactPhone}</li>
-                        <li>Typical processing time: 2-5 business days</li>
-                      </ul>
-                    </div>
-
-                    <div className="p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                      <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">🗄️ Database Architecture</h4>
-                      <p className="text-blue-700 dark:text-blue-300 text-sm mb-3">
-                        Four-tier architecture for comprehensive environmental data management:
-                      </p>
-                      
-                      <div className="space-y-3">
-                        <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded">
-                          <h5 className="font-semibold text-blue-900 dark:text-blue-100 text-sm">1. CRRELS2S_raw_data_ingestion</h5>
-                          <p className="text-blue-800 dark:text-blue-200 text-xs mt-1">
-                            Raw sensor data directly from 22+ field loggers. Tables: raw_env_core_observations, raw_env_wind_observations, 
-                            raw_env_precipitation_observations, raw_env_snowpack_temperature_profile
-                          </p>
-                          <span className="inline-block mt-1 px-2 py-0.5 bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 text-xs rounded">Request Required</span>
-                        </div>
-
-                        <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded">
-                          <h5 className="font-semibold text-blue-900 dark:text-blue-100 text-sm">2. CRRELS2S_stage_clean_data</h5>
-                          <p className="text-blue-800 dark:text-blue-200 text-xs mt-1">
-                            Intermediate cleaned datasets using basic QC filters (range checks, spike detection, null filtering)
-                          </p>
-                          <span className="inline-block mt-1 px-2 py-0.5 bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 text-xs rounded">Request Required</span>
-                        </div>
-
-                        <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded">
-                          <h5 className="font-semibold text-blue-900 dark:text-blue-100 text-sm">3. CRRELS2S_stage_qaqc_data</h5>
-                          <p className="text-blue-800 dark:text-blue-200 text-xs mt-1">
-                            Advanced QAQC with sensor calibration, temporal validation, and derived metrics
-                          </p>
-                          <span className="inline-block mt-1 px-2 py-0.5 bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 text-xs rounded">Request Required</span>
-                        </div>
+              <TabsContent value="examples" className="mt-8">
+                <div className="space-y-6">
+                  {exampleRequests.map((example, index) => (
+                    <Card key={index}>
+                      <CardHeader>
+                        <CardTitle className="text-lg">{example.title}</CardTitle>
+                        <p className="text-sm text-muted-foreground">{example.description}</p>
+                      </CardHeader>
+                      <CardContent>
+                        <code className="block p-4 bg-muted rounded-lg text-sm break-all">
+                          {example.url}
+                        </code>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </TabsContent>
 
               <TabsContent value="authentication" className="mt-8">
                 <Card>
@@ -788,74 +740,6 @@ try {
                         Please implement caching and avoid excessive concurrent requests.
                       </AlertDescription>
                     </Alert>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
-                      <p className="text-indigo-700 dark:text-indigo-300 text-sm mb-2">
-                        Research networks and collaborating institutions can request dedicated API access:
-                      </p>
-                      <ul className="text-indigo-700 dark:text-indigo-300 text-sm list-disc list-inside space-y-1">
-                        <li>API keys for programmatic data integration</li>
-                        <li>Access to all four database tiers</li>
-                        <li>Real-time data streaming capabilities</li>
-                        <li>Cross-network data harmonization</li>
-                        <li>Custom endpoints for partner networks</li>
-                      </ul>
-                      <p className="text-indigo-700 dark:text-indigo-300 text-sm mt-2">
-                        Contact <a href="mailto:s2s@uvm.edu" className="underline font-medium">s2s@uvm.edu</a> to discuss partnership opportunities.
-                      </p>
-                    </div>
-
-                    <div className="p-4 bg-cyan-50 dark:bg-cyan-950/20 border border-cyan-200 dark:border-cyan-800 rounded-lg">
-                      <h4 className="font-semibold text-cyan-800 dark:text-cyan-200 mb-2">🚀 Planned Enhancements</h4>
-                      <ul className="text-cyan-700 dark:text-cyan-300 text-sm list-disc list-inside space-y-1">
-                        <li><strong>Authentication:</strong> OAuth2 and JWT for secure API access</li>
-                        <li><strong>Real-time Streaming:</strong> WebSocket endpoints for live data</li>
-                        <li><strong>Advanced Formats:</strong> NetCDF, Parquet, HDF5 exports</li>
-                        <li><strong>Geospatial Queries:</strong> Bounding box and region filtering</li>
-                        <li><strong>Rate Limiting:</strong> Fair-use policies and tiered access</li>
-                        <li><strong>Metadata Standards:</strong> CF-compliant metadata and DOI integration</li>
-                      </ul>
-                    </div>
-
-                    <div className="p-4 bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 rounded-lg">
-                      <h4 className="font-semibold text-purple-800 dark:text-purple-200 mb-2">📚 Data Citation</h4>
-                      <p className="text-purple-700 dark:text-purple-300 text-sm mb-2">
-                        When using Summit-to-Shore data, please cite:
-                      </p>
-                      <div className="bg-purple-100 dark:bg-purple-900/30 p-3 rounded text-purple-800 dark:text-purple-200 text-xs font-mono">
-                        "Summit-to-Shore Environmental Observatory, University of Vermont. 
-                        Accessed via API at https://crrels2s.w3.uvm.edu on {new Date().toISOString().split('T')[0]}."
-                      </div>
-                    </div>
-
-                    <div className="p-4 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                      <h4 className="font-semibold text-yellow-800 dark:text-yellow-200 mb-2">📋 Fair Use Guidelines</h4>
-                      <ul className="text-yellow-700 dark:text-yellow-300 text-sm list-disc list-inside space-y-1">
-                        <li>Check <code>/health</code> endpoint before bulk requests</li>
-                        <li>Implement request timeouts and error handling</li>
-                        <li>Cache responses to reduce repeated queries</li>
-                        <li>Use <code>limit</code> parameter for data preview</li>
-                        <li>Contact us for large bulk downloads: {authInfo.contactEmail}</li>
-                      </ul>
-                      <div className="mt-3 p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded">
-                        <p className="text-yellow-800 dark:text-yellow-200 text-sm font-medium">
-                          🌐 Production API: <code className="bg-yellow-200 dark:bg-yellow-800 px-1 rounded">https://crrels2s.w3.uvm.edu/api</code>
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="p-4 bg-slate-50 dark:bg-slate-900/20 border border-slate-200 dark:border-slate-800 rounded-lg">
-                      <h4 className="font-semibold text-slate-800 dark:text-slate-200 mb-2">💬 Support & Contact</h4>
-                      <ul className="text-slate-700 dark:text-slate-300 text-sm space-y-1">
-                        <li>📧 Email: <a href="mailto:s2s@uvm.edu" className="underline font-medium">s2s@uvm.edu</a></li>
-                        <li>📞 Phone: (802) 656-2215</li>
-                        <li>🔗 <a href="/bulk-request" className="underline font-medium">Submit Bulk Download Request</a></li>
-                        <li>🔗 <a href="/about" className="underline font-medium">Meet Our Team</a></li>
-                        <li>🔗 <a href="/documentation" className="underline font-medium">Full Documentation</a></li>
-                      </ul>
-                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>
