@@ -515,13 +515,23 @@ const DynamicDataBrowser = () => {
         ? selectedAttributes.join(', ')
         : 'All attributes';
       
+      // Get location details with coordinates and elevation
+      const locationDetails = selectedLocations.length > 0
+        ? selectedLocations.map(locName => {
+            const loc = locations.find(l => l.name === locName);
+            return loc 
+              ? `${loc.displayName} (Lat: ${loc.latitude}, Lon: ${loc.longitude}, Elev: ${loc.elevation}m)`
+              : locName;
+          }).join('; ')
+        : 'All locations';
+      
       const metadata = [
         `# Summit to Shore Environmental Data Export`,
         `# Database: ${selectedDatabase}`,
         `# Table: ${selectedTable}`,
         `# Download Date: ${downloadTimestamp}`,
         `# Date Range: ${dateRangeStr}`,
-        `# Locations: ${locationsList}`,
+        `# Locations: ${locationDetails}`,
         `# Selected Attributes: ${attributesList}`,
         `# Total Rows: ${allRows.length}`,
         `#`,
