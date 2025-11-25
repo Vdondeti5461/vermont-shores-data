@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Menu, X, MapPin, BarChart3, Download, Users, Info, Map, LineChart, Layers, FileText, Mail, Image } from 'lucide-react';
+import { Menu, X, MapPin, BarChart3, Download, Users, Info, Map, LineChart, Layers, FileText, Mail, Image, ChevronDown } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   NavigationMenu,
@@ -10,10 +10,44 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
+import { cn } from '@/lib/utils';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [expandedMobileSection, setExpandedMobileSection] = useState<string | null>(null);
+  const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setIsMenuOpen(false);
+    setExpandedMobileSection(null);
+  }, [location.pathname]);
+
+  // Handle scroll state for header shadow
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isMenuOpen]);
+
+  const toggleMobileSection = (section: string) => {
+    setExpandedMobileSection(expandedMobileSection === section ? null : section);
+  };
 
   const navItems = [
     { label: 'About', href: '/about', icon: Info },
@@ -41,7 +75,11 @@ const Header = () => {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-border shadow-sm pt-safe-top">
+    <>
+      <header className={cn(
+        "fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-border pt-safe-top transition-shadow duration-300",
+        isScrolled && "shadow-md"
+      )}>
       <div className="container mx-auto px-4 xs:px-3">
         <div className="flex items-center justify-between h-14 xs:h-12 md:h-16">
           
@@ -67,7 +105,7 @@ const Header = () => {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center space-x-6 xl:space-x-8">
+          <nav className="hidden lg:flex items-center space-x-4 xl:space-x-6">
             {navItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -232,123 +270,214 @@ const Header = () => {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="lg:hidden p-2 rounded-lg hover:bg-muted active:bg-muted/80 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+            className="lg:hidden p-2 rounded-lg hover:bg-accent transition-all min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-95"
             aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={isMenuOpen}
+            aria-controls="mobile-menu"
           >
-            {isMenuOpen ? <X className="h-5 w-5 md:h-6 md:w-6" /> : <Menu className="h-5 w-5 md:h-6 md:w-6" />}
+            {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
         </div>
 
         {/* Mobile Navigation */}
-        {isMenuOpen && (
-          <div className="lg:hidden border-t border-border bg-background/98 backdrop-blur-md animate-slide-up">
-            <nav className="py-3 space-y-1 pb-safe-bottom">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.label}
-                    to={item.href}
-                    onClick={() => setIsMenuOpen(false)}
-                    className={`flex items-center space-x-3 px-4 py-3 mx-2 transition-all duration-200 rounded-lg font-medium touch:active:scale-98 min-h-[48px] ${
-                      isActive(item.href)
-                        ? 'text-primary bg-primary/10 shadow-sm'
-                        : 'text-muted-foreground hover:text-primary hover:bg-primary/5 active:bg-primary/10'
-                    }`}
-                  >
-                    <Icon className="h-5 w-5 flex-shrink-0" />
-                    <span className="text-base">{item.label}</span>
-                  </Link>
-                );
-              })}
+        <div
+          id="mobile-menu"
+          className={cn(
+            "lg:hidden fixed inset-x-0 top-[56px] bottom-0 bg-background/98 backdrop-blur-md border-t border-border transform transition-transform duration-300 ease-in-out overflow-y-auto overscroll-contain",
+            isMenuOpen ? "translate-y-0" : "-translate-y-full pointer-events-none"
+          )}
+        >
+          <nav className="py-4 space-y-2 pb-safe-bottom container mx-auto px-4"  aria-label="Mobile navigation">
+            {/* Top-level nav items */}
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.label}
+                  to={item.href}
+                  className={cn(
+                    "flex items-center space-x-3 px-4 py-3 transition-all duration-200 rounded-lg font-medium min-h-[48px] active:scale-[0.98]",
+                    isActive(item.href)
+                      ? 'text-primary bg-primary/10'
+                      : 'text-foreground hover:bg-accent'
+                  )}
+                >
+                  <Icon className="h-5 w-5 flex-shrink-0" />
+                  <span className="text-base">{item.label}</span>
+                </Link>
+              );
+            })}
               
-              {/* Research Subsection - Mobile */}
-              <div className="px-2 pt-2">
-                <div className="px-2 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Research
+            {/* Research Subsection - Collapsible */}
+            <div className="border-t border-border pt-2">
+              <button
+                onClick={() => toggleMobileSection('research')}
+                className={cn(
+                  "flex items-center justify-between w-full px-4 py-3 transition-all duration-200 rounded-lg font-medium min-h-[48px] active:scale-[0.98]",
+                  location.pathname.startsWith('/research') ? 'text-primary bg-primary/10' : 'text-foreground hover:bg-accent'
+                )}
+                aria-expanded={expandedMobileSection === 'research'}
+              >
+                <div className="flex items-center space-x-3">
+                  <Users className="h-5 w-5 flex-shrink-0" />
+                  <span className="text-base">Research</span>
                 </div>
-                {researchSubsections.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <Link
-                      key={item.label}
-                      to={item.href}
-                      onClick={() => setIsMenuOpen(false)}
-                      className={`flex items-center space-x-3 px-4 py-3 mx-2 transition-all duration-200 rounded-lg font-medium touch:active:scale-98 min-h-[48px] ${
-                        isActive(item.href)
-                          ? 'text-primary bg-primary/10 shadow-sm'
-                          : 'text-muted-foreground hover:text-primary hover:bg-primary/5 active:bg-primary/10'
-                      }`}
-                    >
-                      <Icon className="h-5 w-5 flex-shrink-0" />
-                      <span className="text-base">{item.label}</span>
-                    </Link>
-                  );
-                })}
-              </div>
+                <ChevronDown className={cn(
+                  "h-5 w-5 transition-transform duration-200",
+                  expandedMobileSection === 'research' && "rotate-180"
+                )} />
+              </button>
               
-              {/* Data Download Subsection - Mobile */}
-              <div className="px-2 pt-2">
-                <div className="px-2 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Data Download
+              <div className={cn(
+                "overflow-hidden transition-all duration-300 ease-in-out",
+                expandedMobileSection === 'research' ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+              )}>
+                <div className="pl-6 pr-2 pt-1 space-y-1">
+                  {researchSubsections.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <Link
+                        key={item.label}
+                        to={item.href}
+                        className={cn(
+                          "flex items-center space-x-3 px-4 py-3 transition-all duration-200 rounded-lg min-h-[44px] active:scale-[0.98]",
+                          isActive(item.href)
+                            ? 'text-primary bg-primary/10'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                        )}
+                      >
+                        <Icon className="h-4 w-4 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium truncate">{item.label}</div>
+                          <div className="text-xs text-muted-foreground line-clamp-1">{item.description}</div>
+                        </div>
+                      </Link>
+                    );
+                  })}
                 </div>
-                {dataDownloadSubsections.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <Link
-                      key={item.label}
-                      to={item.href}
-                      onClick={() => setIsMenuOpen(false)}
-                      className={`flex items-center space-x-3 px-4 py-3 mx-2 transition-all duration-200 rounded-lg font-medium touch:active:scale-98 min-h-[48px] ${
-                        isActive(item.href)
-                          ? 'text-primary bg-primary/10 shadow-sm'
-                          : 'text-muted-foreground hover:text-primary hover:bg-primary/5 active:bg-primary/10'
-                      }`}
-                    >
-                      <Icon className="h-5 w-5 flex-shrink-0" />
-                      <span className="text-base">{item.label}</span>
-                    </Link>
-                  );
-                })}
               </div>
-
-              {/* Analytics Subsection - Mobile */}
-              <div className="px-2 pt-2">
-                <div className="px-2 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Analytics
+            </div>
+              
+            {/* Data Download Subsection - Collapsible */}
+            <div>
+              <button
+                onClick={() => toggleMobileSection('download')}
+                className={cn(
+                  "flex items-center justify-between w-full px-4 py-3 transition-all duration-200 rounded-lg font-medium min-h-[48px] active:scale-[0.98]",
+                  location.pathname.startsWith('/download') || location.pathname.startsWith('/api') ? 'text-primary bg-primary/10' : 'text-foreground hover:bg-accent'
+                )}
+                aria-expanded={expandedMobileSection === 'download'}
+              >
+                <div className="flex items-center space-x-3">
+                  <Download className="h-5 w-5 flex-shrink-0" />
+                  <span className="text-base">Data Download</span>
                 </div>
-                {analyticsSubsections.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <Link
-                      key={item.label}
-                      to={item.href}
-                      onClick={() => setIsMenuOpen(false)}
-                      className={`flex items-center space-x-3 px-4 py-3 mx-2 transition-all duration-200 rounded-lg font-medium touch:active:scale-98 min-h-[48px] ${
-                        isActive(item.href)
-                          ? 'text-primary bg-primary/10 shadow-sm'
-                          : 'text-muted-foreground hover:text-primary hover:bg-primary/5 active:bg-primary/10'
-                      }`}
-                    >
-                      <Icon className="h-5 w-5 flex-shrink-0" />
-                      <span className="text-base">{item.label}</span>
-                    </Link>
-                  );
-                })}
+                <ChevronDown className={cn(
+                  "h-5 w-5 transition-transform duration-200",
+                  expandedMobileSection === 'download' && "rotate-180"
+                )} />
+              </button>
+              
+              <div className={cn(
+                "overflow-hidden transition-all duration-300 ease-in-out",
+                expandedMobileSection === 'download' ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+              )}>
+                <div className="pl-6 pr-2 pt-1 space-y-1">
+                  {dataDownloadSubsections.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <Link
+                        key={item.label}
+                        to={item.href}
+                        className={cn(
+                          "flex items-center space-x-3 px-4 py-3 transition-all duration-200 rounded-lg min-h-[44px] active:scale-[0.98]",
+                          isActive(item.href)
+                            ? 'text-primary bg-primary/10'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                        )}
+                      >
+                        <Icon className="h-4 w-4 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium truncate">{item.label}</div>
+                          <div className="text-xs text-muted-foreground line-clamp-1">{item.description}</div>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
               </div>
+            </div>
 
-              {/* CTA Button - Mobile */}
-              <div className="px-4 pt-3 pb-2">
-                <Button className="btn-research w-full text-base py-6 min-h-[48px]">
-                  Access Live Data
-                </Button>
+            {/* Analytics Subsection - Collapsible */}
+            <div>
+              <button
+                onClick={() => toggleMobileSection('analytics')}
+                className={cn(
+                  "flex items-center justify-between w-full px-4 py-3 transition-all duration-200 rounded-lg font-medium min-h-[48px] active:scale-[0.98]",
+                  location.pathname.startsWith('/analytics') ? 'text-primary bg-primary/10' : 'text-foreground hover:bg-accent'
+                )}
+                aria-expanded={expandedMobileSection === 'analytics'}
+              >
+                <div className="flex items-center space-x-3">
+                  <BarChart3 className="h-5 w-5 flex-shrink-0" />
+                  <span className="text-base">Analytics</span>
+                </div>
+                <ChevronDown className={cn(
+                  "h-5 w-5 transition-transform duration-200",
+                  expandedMobileSection === 'analytics' && "rotate-180"
+                )} />
+              </button>
+              
+              <div className={cn(
+                "overflow-hidden transition-all duration-300 ease-in-out",
+                expandedMobileSection === 'analytics' ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+              )}>
+                <div className="pl-6 pr-2 pt-1 space-y-1">
+                  {analyticsSubsections.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <Link
+                        key={item.label}
+                        to={item.href}
+                        className={cn(
+                          "flex items-center space-x-3 px-4 py-3 transition-all duration-200 rounded-lg min-h-[44px] active:scale-[0.98]",
+                          isActive(item.href)
+                            ? 'text-primary bg-primary/10'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                        )}
+                      >
+                        <Icon className="h-4 w-4 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium truncate">{item.label}</div>
+                          <div className="text-xs text-muted-foreground line-clamp-1">{item.description}</div>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
               </div>
-            </nav>
-          </div>
-        )}
+            </div>
+
+            {/* CTA Button - Mobile */}
+            <div className="pt-4 pb-2 border-t border-border mt-4">
+              <Button className="btn-research w-full text-base py-6 min-h-[48px] shadow-lg">
+                Access Live Data
+              </Button>
+            </div>
+          </nav>
+        </div>
       </div>
     </header>
+
+    {/* Mobile Menu Backdrop */}
+    {isMenuOpen && (
+      <div
+        className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 lg:hidden"
+        onClick={() => setIsMenuOpen(false)}
+        aria-hidden="true"
+      />
+    )}
+    </>
   );
 };
 
