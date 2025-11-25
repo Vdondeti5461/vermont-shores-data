@@ -3,16 +3,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Download, Database, Table, MapPin, Calendar as CalendarIcon, AlertCircle, CheckCircle2, Info } from 'lucide-react';
+import { Loader2, Download, Database, Table, MapPin, Calendar as CalendarIcon, AlertCircle, CheckCircle2, Info, Filter } from 'lucide-react';
 import InteractiveMetadata from '@/components/InteractiveMetadata';
 import { EnhancedMetadataDisplay } from '@/components/EnhancedMetadataDisplay';
+import { MultiSelect, MultiSelectOption } from '@/components/ui/multi-select';
+import { DateRangePicker } from '@/components/ui/date-picker-with-range';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { API_BASE_URL } from '@/lib/apiConfig';
@@ -685,48 +683,41 @@ const DynamicDataBrowser = () => {
           {selectedDatabase && locations.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5" />
-                  Location Selection
-                  <Badge variant="secondary">{selectedLocations.length} selected</Badge>
-                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <MapPin className="w-5 h-5 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <CardTitle>Location Selection</CardTitle>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Choose monitoring stations from the network
+                    </p>
+                  </div>
+                </div>
               </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-60 overflow-y-auto">
-                  {locations.map((location) => (
-                    <div key={location.name} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={location.name}
-                        checked={selectedLocations.includes(location.name)}
-                        onCheckedChange={() => handleLocationToggle(location.name)}
-                      />
-                      <Label htmlFor={location.name} className="text-sm font-medium cursor-pointer">
-                        {location.name}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-                {locations.length > 8 && (
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Showing {locations.length} locations. Scroll to see all.
-                  </p>
+              <CardContent className="space-y-4">
+                <MultiSelect
+                  options={locations.map(loc => ({
+                    value: loc.name,
+                    label: loc.displayName || loc.name,
+                    description: `${loc.elevation}m elevation`
+                  }))}
+                  selected={selectedLocations}
+                  onChange={setSelectedLocations}
+                  placeholder="Select locations..."
+                  searchPlaceholder="Search locations..."
+                  emptyText="No locations found"
+                  maxDisplay={3}
+                />
+                
+                {selectedLocations.length > 0 && (
+                  <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertDescription>
+                      {selectedLocations.length} location(s) selected
+                    </AlertDescription>
+                  </Alert>
                 )}
-                <div className="mt-4 flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setSelectedLocations(locations.map(l => l.name))}
-                  >
-                    Select All
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setSelectedLocations([])}
-                  >
-                    Clear All
-                  </Button>
-                </div>
               </CardContent>
             </Card>
           )}
@@ -734,142 +725,70 @@ const DynamicDataBrowser = () => {
           {/* Date Range Selection */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CalendarIcon className="h-5 w-5" />
-                Date Range Selection
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Select date range or use quick presets. Timestamps will be preserved in original format.
-              </p>
-            </CardHeader>
-            <CardContent>
-              {/* Time Presets */}
-              <div className="mb-4">
-                <Label className="text-sm font-medium">Quick Presets</Label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setTimePreset('last_7_days')}
-                    className="text-xs"
-                  >
-                    Last 7 Days
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setTimePreset('last_30_days')}
-                    className="text-xs"
-                  >
-                    Last 30 Days
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setTimePreset('last_month')}
-                    className="text-xs"
-                  >
-                    Last Month
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setTimePreset('this_month')}
-                    className="text-xs"
-                  >
-                    This Month
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setTimePreset('last_year')}
-                    className="text-xs"
-                  >
-                    Last Year
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setTimePreset('this_year')}
-                    className="text-xs"
-                  >
-                    This Year
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setTimePreset('all_time')}
-                    className="text-xs"
-                  >
-                    All Time
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setStartDate(undefined);
-                      setEndDate(undefined);
-                    }}
-                    className="text-xs"
-                  >
-                    Clear
-                  </Button>
-                </div>
-              </div>
-
-              {/* Custom Date Selection */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>Start Date (Custom)</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full justify-start text-left font-normal">
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {startDate ? format(startDate, "PPP") : "Select start date"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 z-50" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={startDate}
-                        onSelect={setStartDate}
-                        initialFocus
-                        className="p-3 pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <CalendarIcon className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <Label>End Date (Custom)</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full justify-start text-left font-normal">
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {endDate ? format(endDate, "PPP") : "Select end date"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 z-50" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={endDate}
-                        onSelect={setEndDate}
-                        initialFocus
-                        className="p-3 pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
-
-              {/* Current Selection Display */}
-              {(startDate || endDate) && (
-                <div className="mt-4 p-3 bg-muted rounded-lg">
-                  <p className="text-sm">
-                    <strong>Selected Range:</strong>{' '}
-                    {startDate ? format(startDate, 'MMM d, yyyy') : 'Beginning'} -{' '}
-                    {endDate ? format(endDate, 'MMM d, yyyy') : 'Now'}
+                  <CardTitle>Date Range Selection</CardTitle>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Filter data by time period with easy year/month navigation
                   </p>
                 </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { label: 'Last 7 Days', value: 'last_7_days' },
+                  { label: 'Last 30 Days', value: 'last_30_days' },
+                  { label: 'Last Month', value: 'last_month' },
+                  { label: 'This Month', value: 'this_month' },
+                  { label: 'Last Year', value: 'last_year' },
+                  { label: 'This Year', value: 'this_year' },
+                  { label: 'All Time', value: 'all_time' },
+                ].map(preset => (
+                  <Button
+                    key={preset.value}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setTimePreset(preset.value)}
+                    className="text-xs"
+                  >
+                    {preset.label}
+                  </Button>
+                ))}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setStartDate(undefined);
+                    setEndDate(undefined);
+                  }}
+                  className="text-xs"
+                >
+                  Clear
+                </Button>
+              </div>
+              
+              <Separator />
+              
+              <DateRangePicker
+                startDate={startDate}
+                endDate={endDate}
+                onStartDateChange={setStartDate}
+                onEndDateChange={setEndDate}
+                minYear={2015}
+                maxYear={new Date().getFullYear() + 1}
+              />
+              
+              {startDate && endDate && (
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertDescription>
+                    Selected range: {format(startDate, 'PP')} to {format(endDate, 'PP')}
+                  </AlertDescription>
+                </Alert>
               )}
             </CardContent>
           </Card>
@@ -878,70 +797,41 @@ const DynamicDataBrowser = () => {
           {selectedTable && attributes.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>
-                  Attribute Selection
-                  <Badge variant="secondary" className="ml-2">{selectedAttributes.length} selected</Badge>
-                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Filter className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle>Attribute Selection</CardTitle>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Choose which measurements to include
+                    </p>
+                  </div>
+                </div>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4 max-h-96 overflow-y-auto">
-                  {Object.entries(attributesByCategory).map(([category, attrs]) => (
-                    <div key={category}>
-                      <h4 className="font-medium mb-2 text-sm text-muted-foreground uppercase tracking-wide">
-                        {category}
-                      </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
-                        {attrs.map((attr) => (
-                          <div key={attr.name} className="flex items-center space-x-2 p-2 rounded border">
-                            <Checkbox
-                              id={attr.name}
-                              checked={selectedAttributes.includes(attr.name)}
-                              onCheckedChange={() => handleAttributeToggle(attr.name)}
-                            />
-                            <div className="flex-1 min-w-0">
-                              <Label htmlFor={attr.name} className="text-sm font-medium cursor-pointer">
-                                {attr.name}
-                                {attr.isPrimary && <Badge variant="outline" className="ml-2 text-xs">Primary</Badge>}
-                              </Label>
-                              {attr.comment && (
-                                <p className="text-xs text-muted-foreground truncate">{attr.comment}</p>
-                              )}
-                              <p className="text-xs text-muted-foreground">
-                                {attr.unit} • {attr.measurementType}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-4 flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setSelectedAttributes(attributes.map(a => a.name))}
-                  >
-                    Select All
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const primaryAttrs = attributes.filter(attr => attr.isPrimary).map(attr => attr.name);
-                      setSelectedAttributes(primaryAttrs);
-                    }}
-                  >
-                    Primary Only
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setSelectedAttributes([])}
-                  >
-                    Clear All
-                  </Button>
-                </div>
+              <CardContent className="space-y-4">
+                <MultiSelect
+                  options={attributes.map(attr => ({
+                    value: attr.name,
+                    label: attr.name,
+                    description: `${attr.unit} • ${attr.category}${attr.isPrimary ? ' • Primary' : ''}`
+                  }))}
+                  selected={selectedAttributes}
+                  onChange={setSelectedAttributes}
+                  placeholder="Select attributes..."
+                  searchPlaceholder="Search attributes..."
+                  emptyText="No attributes found"
+                  maxDisplay={3}
+                />
+                
+                {selectedAttributes.length > 0 && (
+                  <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertDescription>
+                      {selectedAttributes.length} attribute(s) selected
+                    </AlertDescription>
+                  </Alert>
+                )}
               </CardContent>
             </Card>
           )}
