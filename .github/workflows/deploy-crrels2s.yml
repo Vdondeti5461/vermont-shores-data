@@ -16,6 +16,8 @@ jobs:
           host: crrels2s.w3.uvm.edu
           username: crrels2s
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script_stop: false
           script: |
             cd ~/vermont-shores-data
             ./deploy-crrels2s.sh
