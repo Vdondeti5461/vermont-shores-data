@@ -19,6 +19,7 @@ import NotFound from "./pages/NotFound";
 import BulkRequest from "./pages/BulkRequest";
 import Auth from "./pages/Auth";
 import APIKeys from "./pages/APIKeys";
+import LiveData from "./pages/LiveData";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +46,7 @@ const App = () => (
           <Route path="/download" element={<DataDownload />} />
           <Route path="/download/bulk-request" element={<BulkRequest />} />
           <Route path="/data-download" element={<DataDownload />} />
+          <Route path="/live-data" element={<LiveData />} />
           
           {/* Research Routes */}
           <Route path="/research" element={<Research />} />
