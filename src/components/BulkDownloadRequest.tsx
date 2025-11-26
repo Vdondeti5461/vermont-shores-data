@@ -129,26 +129,29 @@ const BulkDownloadRequest = () => {
         page_url: window.location.href
       };
 
-      // Send the request - this will now send emails to both s2s@uvm.edu and the user
-      const response = await fetch(`${API_BASE_URL}/api/bulk-download/request`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(submissionData),
+      // Call Supabase edge function to send emails
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data, error } = await supabase.functions.invoke('send-bulk-request', {
+        body: {
+          userName: requestData.name,
+          userEmail: requestData.email,
+          database: selectedDatabases.join(', ') || 'Seasonal QAQC Data',
+          table: selectedTables.join(', ') || 'All Tables',
+          locations: ['All Locations'],
+          attributes: ['All Attributes'],
+          startDate: requestData.date_range_start || 'Not specified',
+          endDate: requestData.date_range_end || 'Not specified',
+          additionalNotes: `Purpose: ${requestData.purpose}\nOrganization: ${requestData.organization}\nDescription: ${requestData.research_description}\nPreferred Format: ${requestData.preferred_format}`
+        }
       });
 
-      if (response.ok) {
-        const result = await response.json();
-        setIsSubmitted(true);
-        toast({
-          title: "Request Submitted Successfully",
-          description: `Your request has been forwarded to the S2S team. Request ID: ${result.request_id || 'BDR-' + Date.now()}`,
-        });
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${response.status}: Failed to submit request`);
-      }
+      if (error) throw error;
+
+      setIsSubmitted(true);
+      toast({
+        title: "Request Submitted Successfully",
+        description: data?.message || "Your request has been forwarded to the S2S team and confirmation sent to your email.",
+      });
     } catch (error) {
       console.error('Error submitting bulk download request:', error);
       toast({

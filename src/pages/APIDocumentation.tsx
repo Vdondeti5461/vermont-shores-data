@@ -12,11 +12,29 @@ const APIDocumentation = () => {
   
   // API Authentication Info
   const authInfo = {
-    currentAccess: 'Open Access - Seasonal QAQC Data Only',
-    restrictedData: ['Raw Data Ingestion', 'Stage Clean Data', 'Stage QAQC Data'],
-    requestProcess: 'Contact research team for bulk access to restricted datasets',
-    contactEmail: 's2s@uvm.edu',
-    contactPhone: '(802) 656-2215'
+    publicAccess: {
+      title: 'Public Access - No Authentication Required',
+      description: 'Seasonal QAQC data is available to all users without authentication',
+      databases: ['seasonal_qaqc_data'],
+      limitations: 'Rate limited to 100 requests per hour per IP address'
+    },
+    authenticatedAccess: {
+      title: 'Authenticated Access - API Key Required',
+      description: 'Additional databases and higher rate limits available with API key authentication',
+      databases: ['raw_data', 'stage_clean_data', 'stage_qaqc_data', 'seasonal_qaqc_data'],
+      benefits: [
+        'Access to raw and intermediate processing stages',
+        'Higher rate limits (1000 requests per hour)',
+        'Bulk download capabilities',
+        'Priority support'
+      ],
+      howToGetKey: 'Contact s2s@uvm.edu to request developer API access'
+    },
+    contactInfo: {
+      email: 's2s@uvm.edu',
+      phone: '(802) 656-2215',
+      website: 'https://crrels2s.w3.uvm.edu'
+    }
   };
 
   const endpoints = [
@@ -608,43 +626,50 @@ try {
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-6">
-                    <div>
-                      <h3 className="font-semibold mb-2">Public Access</h3>
-                      <Badge variant="secondary" className="text-base py-1">
-                        {authInfo.currentAccess}
-                      </Badge>
+                     <div>
+                      <h3 className="font-semibold mb-2">{authInfo.publicAccess.title}</h3>
                       <p className="text-sm text-muted-foreground mt-2">
-                        No API key required for accessing seasonal QAQC datasets. All endpoints are open for public use.
+                        {authInfo.publicAccess.description}
                       </p>
-                    </div>
-
-                    <div>
-                      <h3 className="font-semibold mb-2">Restricted Datasets</h3>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        The following datasets are currently restricted and require special authorization:
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {authInfo.restrictedData.map((dataset, idx) => (
-                          <Badge key={idx} variant="outline">
-                            {dataset}
-                          </Badge>
+                      <div className="flex gap-2 mt-2">
+                        {authInfo.publicAccess.databases.map((db, idx) => (
+                          <Badge key={idx} variant="secondary">{db}</Badge>
                         ))}
                       </div>
                     </div>
 
                     <div>
-                      <h3 className="font-semibold mb-2">Request Access to Restricted Data</h3>
+                      <h3 className="font-semibold mb-2">{authInfo.authenticatedAccess.title}</h3>
                       <p className="text-sm text-muted-foreground mb-3">
-                        {authInfo.requestProcess}
+                        {authInfo.authenticatedAccess.description}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {authInfo.authenticatedAccess.databases.map((db, idx) => (
+                          <Badge key={idx} variant="outline">
+                            {db}
+                          </Badge>
+                        ))}
+                      </div>
+                      <ul className="mt-3 space-y-1 text-sm text-muted-foreground">
+                        {authInfo.authenticatedAccess.benefits.map((benefit, idx) => (
+                          <li key={idx}>✓ {benefit}</li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div>
+                      <h3 className="font-semibold mb-2">Request API Access</h3>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        {authInfo.authenticatedAccess.howToGetKey}
                       </p>
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
                           <Badge variant="outline">Email</Badge>
-                          <code className="text-sm">{authInfo.contactEmail}</code>
+                          <code className="text-sm">{authInfo.contactInfo.email}</code>
                         </div>
                         <div className="flex items-center gap-2">
                           <Badge variant="outline">Phone</Badge>
-                          <code className="text-sm">{authInfo.contactPhone}</code>
+                          <code className="text-sm">{authInfo.contactInfo.phone}</code>
                         </div>
                       </div>
                     </div>
@@ -692,52 +717,68 @@ try {
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-6">
-                    <div>
-                      <h3 className="font-semibold mb-2">Public Access</h3>
-                      <Badge variant="secondary" className="text-base py-1">
-                        {authInfo.currentAccess}
-                      </Badge>
+                     <div>
+                      <h3 className="font-semibold mb-2">{authInfo.publicAccess.title}</h3>
                       <p className="text-sm text-muted-foreground mt-2">
-                        No API key required for accessing seasonal QAQC datasets. All endpoints are open for public use.
+                        {authInfo.publicAccess.description}
+                      </p>
+                      <div className="flex gap-2 mt-2">
+                        {authInfo.publicAccess.databases.map((db, idx) => (
+                          <Badge key={idx} variant="secondary">{db}</Badge>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        {authInfo.publicAccess.limitations}
                       </p>
                     </div>
 
                     <div>
-                      <h3 className="font-semibold mb-2">Restricted Datasets</h3>
+                      <h3 className="font-semibold mb-2">{authInfo.authenticatedAccess.title}</h3>
                       <p className="text-sm text-muted-foreground mb-3">
-                        The following datasets are currently restricted and require special authorization:
+                        {authInfo.authenticatedAccess.description}
                       </p>
-                      <div className="flex flex-wrap gap-2">
-                        {authInfo.restrictedData.map((dataset, idx) => (
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {authInfo.authenticatedAccess.databases.map((db, idx) => (
                           <Badge key={idx} variant="outline">
-                            {dataset}
+                            {db}
                           </Badge>
                         ))}
                       </div>
+                      <ul className="space-y-1 text-sm text-muted-foreground">
+                        {authInfo.authenticatedAccess.benefits.map((benefit, idx) => (
+                          <li key={idx}>✓ {benefit}</li>
+                        ))}
+                      </ul>
                     </div>
 
                     <div>
-                      <h3 className="font-semibold mb-2">Request Access to Restricted Data</h3>
+                      <h3 className="font-semibold mb-2">Request API Access</h3>
                       <p className="text-sm text-muted-foreground mb-3">
-                        {authInfo.requestProcess}
+                        {authInfo.authenticatedAccess.howToGetKey}
                       </p>
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
                           <Badge variant="outline">Email</Badge>
-                          <code className="text-sm">{authInfo.contactEmail}</code>
+                          <code className="text-sm">{authInfo.contactInfo.email}</code>
                         </div>
                         <div className="flex items-center gap-2">
                           <Badge variant="outline">Phone</Badge>
-                          <code className="text-sm">{authInfo.contactPhone}</code>
+                          <code className="text-sm">{authInfo.contactInfo.phone}</code>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">Website</Badge>
+                          <code className="text-sm">{authInfo.contactInfo.website}</code>
                         </div>
                       </div>
                     </div>
 
-                    <Alert>
-                      <Info className="h-4 w-4" />
+                    <Alert className="border-primary/20 bg-primary/5">
+                      <Key className="h-4 w-4 text-primary" />
                       <AlertDescription>
-                        All API requests are subject to rate limiting to ensure fair usage. 
-                        Please implement caching and avoid excessive concurrent requests.
+                        <strong>API Authentication:</strong> Include your API key in the <code>X-API-Key</code> header for authenticated requests.
+                        <pre className="mt-2 text-xs bg-background p-2 rounded">
+                          curl -H "X-API-Key: your_key" https://crrels2s.w3.uvm.edu/api/...
+                        </pre>
                       </AlertDescription>
                     </Alert>
                   </CardContent>
