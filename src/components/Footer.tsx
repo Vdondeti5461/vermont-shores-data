@@ -6,7 +6,7 @@ import uvmLogo from '@/assets/uvm-logo.png';
 
 const Footer = () => {
   const contactInfo = [
-    { icon: Mail, label: 's2s@uvm.edu', href: 'mailto:s2s@uvm.edu' },
+    { icon: Mail, label: 'crrels2s@uvm.edu', href: 'mailto:crrels2s@uvm.edu' },
     { icon: Phone, label: '(802) 656-2215', href: 'tel:8026562215' },
     { icon: MapPin, label: 'Burlington, VT 05405', href: '#' }
   ];
@@ -26,7 +26,7 @@ const Footer = () => {
     { label: 'Publications', href: '/research' },
     { label: 'Collaborations', href: '/about' },
     { label: 'News & Updates', href: '/about' },
-    { label: 'Support', href: 'mailto:s2s@uvm.edu' }
+    { label: 'Support', href: 'mailto:crrels2s@uvm.edu' }
   ];
 
   return (

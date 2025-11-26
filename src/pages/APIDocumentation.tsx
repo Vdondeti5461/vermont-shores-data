@@ -28,10 +28,10 @@ const APIDocumentation = () => {
         'Bulk download capabilities',
         'Priority support'
       ],
-      howToGetKey: 'Contact s2s@uvm.edu to request developer API access'
+      howToGetKey: 'Contact crrels2s@uvm.edu to request developer API access'
     },
     contactInfo: {
-      email: 's2s@uvm.edu',
+      email: 'crrels2s@uvm.edu',
       phone: '(802) 656-2215',
       website: 'https://crrels2s.w3.uvm.edu'
     }

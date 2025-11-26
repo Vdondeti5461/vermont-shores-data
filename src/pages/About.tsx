@@ -449,10 +449,10 @@ const About = () => {
                     please contact our communications team.
                   </p>
                   <a 
-                    href="mailto:s2s@uvm.edu"
+                    href="mailto:crrels2s@uvm.edu"
                     className="text-primary hover:underline text-sm font-medium"
                   >
-                    s2s@uvm.edu
+                    crrels2s@uvm.edu
                   </a>
                 </CardContent>
               </Card>
