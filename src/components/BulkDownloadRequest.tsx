@@ -60,20 +60,55 @@ const BulkDownloadRequest = () => {
 
     // Set comprehensive table list across all databases
     const tableDescriptions: Record<string, string> = {
-      'table1': 'Primary environmental data including temperature, humidity, soil conditions, and solar radiation',
-      'Wind': 'Wind speed and direction measurements from various monitoring sites',
-      'Precipitation': 'Precipitation measurements including rain and snow data',
-      'SnowpkTempProfile': 'Snow temperature profiles at various depths throughout the snowpack',
-      'raw_complete': 'Complete unprocessed sensor data with all original measurements',
-      'processed_complete': 'Quality-controlled and validated environmental data'
+      // Raw data tables
+      'raw_env_core_observations': 'Core environmental observations including temperature, humidity, soil conditions, and solar radiation',
+      'raw_env_precipitation_observations': 'Precipitation measurements including rain and snow data',
+      'raw_env_snowpack_temperature_profile_observations': 'Snow temperature profiles at various depths throughout the snowpack',
+      'raw_env_wind_observations': 'Wind speed and direction measurements from various monitoring sites',
+      
+      // Clean data tables
+      'clean_env_core_observations': 'Cleaned core environmental observations',
+      'clean_env_precipitation_observations': 'Cleaned precipitation measurements',
+      'clean_env_snowpack_temperature_profile_observations': 'Cleaned snow temperature profiles',
+      'clean_env_wind_observations': 'Cleaned wind speed and direction measurements',
+      
+      // QAQC data tables
+      'qaqc_env_core_observations': 'Quality-controlled core environmental observations',
+      'qaqc_env_precipitation_observations': 'Quality-controlled precipitation measurements',
+      'qaqc_env_snowpack_temperature_profile_observations': 'Quality-controlled snow temperature profiles',
+      'qaqc_env_wind_observations': 'Quality-controlled wind speed and direction measurements',
+      
+      // Seasonal QAQC (single core table)
+      'seasonal_qaqc_core': 'Seasonal quality-controlled core environmental data'
     };
 
-    const allTables = ['table1', 'Wind', 'Precipitation', 'SnowpkTempProfile', 'raw_complete', 'processed_complete'];
+    const allTables = [
+      // Raw data tables
+      'raw_env_core_observations',
+      'raw_env_precipitation_observations',
+      'raw_env_snowpack_temperature_profile_observations',
+      'raw_env_wind_observations',
+      
+      // Clean data tables
+      'clean_env_core_observations',
+      'clean_env_precipitation_observations',
+      'clean_env_snowpack_temperature_profile_observations',
+      'clean_env_wind_observations',
+      
+      // QAQC data tables
+      'qaqc_env_core_observations',
+      'qaqc_env_precipitation_observations',
+      'qaqc_env_snowpack_temperature_profile_observations',
+      'qaqc_env_wind_observations',
+      
+      // Seasonal QAQC
+      'seasonal_qaqc_core'
+    ];
     
     setAvailableTables(
       allTables.map(table => ({
         id: table,
-        name: table.split(/[_A-Z]/).filter(Boolean).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+        name: table.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
         description: tableDescriptions[table] || 'Environmental monitoring data'
       }))
     );
