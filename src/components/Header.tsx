@@ -343,7 +343,7 @@ const Header = () => {
         <div
           id="mobile-menu"
           className={cn(
-            "lg:hidden fixed inset-x-0 top-[56px] bottom-0 bg-background/98 backdrop-blur-md border-t border-border transform transition-transform duration-300 ease-in-out overflow-y-auto overscroll-contain",
+            "lg:hidden fixed inset-x-0 top-12 xs:top-12 md:top-16 bottom-0 bg-background/98 backdrop-blur-md border-t border-border transform transition-transform duration-300 ease-in-out overflow-y-auto overscroll-contain",
             isMenuOpen ? "translate-y-0" : "-translate-y-full pointer-events-none"
           )}
         >
