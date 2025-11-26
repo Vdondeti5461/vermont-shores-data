@@ -34,37 +34,49 @@ const BulkDownloadRequest = () => {
 
   // Fetch available databases and tables on mount
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const dbInfo = await LocalDatabaseService.getDatabasesInfo();
-        setDatabases(dbInfo.databases.map(db => ({
-          id: db.id,
-          name: db.name,
-          category: db.category || 'Environmental Data'
-        })));
-
-        // Set available tables based on the service
-        const tableDescriptions: Record<string, string> = {
-          'table1': 'Primary environmental data including temperature, humidity, soil conditions, and solar radiation',
-          'wind': 'Wind speed and direction measurements from various monitoring sites',
-          'precipitation': 'Precipitation measurements including rain and snow data',
-          'snow_temp': 'Snow temperature profiles at various depths throughout the snowpack',
-          'raw_complete': 'Complete unprocessed sensor data with all original measurements',
-          'processed_complete': 'Quality-controlled and validated environmental data'
-        };
-
-        setAvailableTables(
-          LocalDatabaseService.getAvailableTables().map(table => ({
-            id: table,
-            name: table.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
-            description: tableDescriptions[table] || 'Environmental monitoring data'
-          }))
-        );
-      } catch (error) {
-        console.error('Error loading database info:', error);
+    // Set all available databases for bulk request (not restricted to public only)
+    setDatabases([
+      {
+        id: 'raw_data',
+        name: 'Raw Environmental Data',
+        category: 'Unprocessed sensor data'
+      },
+      {
+        id: 'stage_clean_data',
+        name: 'Stage Clean Data',
+        category: 'Cleaned and processed data'
+      },
+      {
+        id: 'stage_qaqc_data',
+        name: 'Stage QAQC Data',
+        category: 'Quality-controlled data'
+      },
+      {
+        id: 'seasonal_qaqc_data',
+        name: 'Seasonal QAQC Data',
+        category: 'Seasonal quality-controlled data'
       }
+    ]);
+
+    // Set comprehensive table list across all databases
+    const tableDescriptions: Record<string, string> = {
+      'table1': 'Primary environmental data including temperature, humidity, soil conditions, and solar radiation',
+      'Wind': 'Wind speed and direction measurements from various monitoring sites',
+      'Precipitation': 'Precipitation measurements including rain and snow data',
+      'SnowpkTempProfile': 'Snow temperature profiles at various depths throughout the snowpack',
+      'raw_complete': 'Complete unprocessed sensor data with all original measurements',
+      'processed_complete': 'Quality-controlled and validated environmental data'
     };
-    loadData();
+
+    const allTables = ['table1', 'Wind', 'Precipitation', 'SnowpkTempProfile', 'raw_complete', 'processed_complete'];
+    
+    setAvailableTables(
+      allTables.map(table => ({
+        id: table,
+        name: table.split(/[_A-Z]/).filter(Boolean).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+        description: tableDescriptions[table] || 'Environmental monitoring data'
+      }))
+    );
   }, []);
 
   const purposeOptions = [
