@@ -76,10 +76,13 @@ const Header = () => {
 
   return (
     <>
-      <header className={cn(
-        "fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-border pt-safe-top transition-shadow duration-300",
-        isScrolled && "shadow-md"
-      )}>
+      <header 
+        id="main-header"
+        className={cn(
+          "fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-border pt-safe-top transition-shadow duration-300",
+          isScrolled && "shadow-md"
+        )}
+      >
       <div className="container mx-auto px-4 xs:px-3">
         <div className="flex items-center justify-between h-14 xs:h-12 md:h-16">
           
@@ -343,9 +346,12 @@ const Header = () => {
         <div
           id="mobile-menu"
           className={cn(
-            "lg:hidden fixed inset-x-0 top-12 xs:top-12 md:top-16 bottom-0 bg-background/98 backdrop-blur-md border-t border-border transform transition-transform duration-300 ease-in-out overflow-y-auto overscroll-contain z-50",
-            isMenuOpen ? "translate-y-0" : "-translate-y-full pointer-events-none"
+            "lg:hidden fixed inset-x-0 bottom-0 bg-background/98 backdrop-blur-md border-t border-border transition-all duration-300 ease-in-out overflow-y-auto overscroll-contain z-50",
+            isMenuOpen ? "top-[calc(3rem+env(safe-area-inset-top))] opacity-100" : "top-full opacity-0 pointer-events-none"
           )}
+          style={{ 
+            marginTop: isMenuOpen ? '0' : '-100vh'
+          }}
         >
           <nav className="py-4 space-y-2 pb-safe-bottom container mx-auto px-4"  aria-label="Mobile navigation">
             {/* Top-level nav items */}
