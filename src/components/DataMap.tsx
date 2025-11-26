@@ -124,12 +124,6 @@ const DataMap = () => {
 
           <TabsContent value="map" className="space-y-6">
             <InteractiveMap sites={allSites} onSiteClick={(site) => console.log('Site clicked:', site)} />
-            {locationsLoading && (
-              <div className="text-center py-4">
-                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                <p className="text-sm text-muted-foreground">Loading database locations...</p>
-              </div>
-            )}
           </TabsContent>
 
 
