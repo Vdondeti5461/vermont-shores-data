@@ -71,7 +71,7 @@ Date Range: ${requestData.startDate} to ${requestData.endDate}
 
 We will process your request and contact you at ${requestData.userEmail} when your data is ready.
 
-If you have any questions, please contact us at s2s@uvm.edu.
+If you have any questions, please contact us at crrels2s@uvm.edu.
 
 Best regards,
 Summit2Shore Team
@@ -80,14 +80,14 @@ Summit2Shore Team
 This is an automated confirmation from the Summit2Shore Data Portal.
     `.trim();
 
-    // Send email to admin (s2s@uvm.edu)
+    // Send email to admin (crrels2s@uvm.edu)
     const adminEmailResponse = await sendEmail(
       smtpHost,
       smtpPort,
       smtpUser,
       smtpPassword,
       smtpUser,
-      's2s@uvm.edu',
+      'crrels2s@uvm.edu',
       'New Bulk Download Request - Summit2Shore Data Portal',
       adminEmailBody
     );
