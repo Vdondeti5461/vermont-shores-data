@@ -103,11 +103,10 @@ const BulkDownloadRequest = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!requestData.name || !requestData.email || !requestData.purpose || 
-        (selectedDatabases.length === 0 && selectedTables.length === 0)) {
+    if (!requestData.name || !requestData.email || !requestData.purpose) {
       toast({
         title: "Missing Information",
-        description: "Please fill in all required fields and select at least one database or table",
+        description: "Please fill in all required fields (name, email, and research purpose)",
         variant: "destructive"
       });
       return;
@@ -306,6 +305,96 @@ const BulkDownloadRequest = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Data Selection (Optional) */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <DatabaseIcon className="h-5 w-5" />
+              Data Preferences (Optional)
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Select specific databases or tables if you have preferences. Leave blank to discuss requirements with the team.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label className="mb-3 block">Databases of Interest</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {databases.map((db) => (
+                  <div key={db.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`db-${db.id}`}
+                      checked={selectedDatabases.includes(db.id)}
+                      onCheckedChange={() => handleDatabaseToggle(db.id)}
+                    />
+                    <Label htmlFor={`db-${db.id}`} className="text-sm cursor-pointer">
+                      {db.name}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <Label className="mb-3 block">Tables of Interest</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {availableTables.map((table) => (
+                  <div key={table.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`table-${table.id}`}
+                      checked={selectedTables.includes(table.id)}
+                      onCheckedChange={() => handleTableToggle(table.id)}
+                    />
+                    <Label htmlFor={`table-${table.id}`} className="text-sm cursor-pointer">
+                      {table.name}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {(selectedDatabases.length > 0 || selectedTables.length > 0) && (
+              <div className="bg-primary/5 p-3 rounded-lg">
+                <p className="text-sm text-muted-foreground">
+                  Selected: {selectedDatabases.length} database(s), {selectedTables.length} table(s)
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Date Range (Optional) */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Date Range (Optional)</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Specify a date range if you only need data from a specific period
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="start_date">Start Date</Label>
+                <Input
+                  id="start_date"
+                  type="date"
+                  value={requestData.date_range_start}
+                  onChange={(e) => setRequestData(prev => ({ ...prev, date_range_start: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="end_date">End Date</Label>
+                <Input
+                  id="end_date"
+                  type="date"
+                  value={requestData.date_range_end}
+                  onChange={(e) => setRequestData(prev => ({ ...prev, date_range_end: e.target.value }))}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Format Selection */}
         <Card>
