@@ -202,7 +202,7 @@ const BulkDownloadRequest = () => {
       console.error('Error submitting bulk download request:', error);
       toast({
         title: "Submission Failed",
-        description: error instanceof Error ? error.message : "Failed to submit your bulk download request. Please try again or contact s2s@uvm.edu directly.",
+        description: error instanceof Error ? error.message : "Failed to submit your bulk download request. Please try again or contact crrels2s@uvm.edu directly.",
         variant: "destructive"
       });
     } finally {
@@ -221,17 +221,17 @@ const BulkDownloadRequest = () => {
           </CardHeader>
           <CardContent className="text-center space-y-4 px-4 sm:px-6">
           <p className="text-muted-foreground">
-            Your bulk download request has been successfully submitted and forwarded to the Summit-to-Shore team at s2s@uvm.edu.
+            Your bulk download request has been successfully submitted and forwarded to the Summit-to-Shore team at crrels2s@uvm.edu.
           </p>
           
           <div className="bg-muted/30 p-4 rounded-lg text-left">
             <h4 className="font-semibold mb-2">What happens next:</h4>
             <ul className="text-sm space-y-1 text-muted-foreground">
               <li>• ✅ Confirmation email sent to your inbox</li>
-              <li>• ✅ Request forwarded to S2S team at s2s@uvm.edu</li>
+              <li>• ✅ Request forwarded to S2S team at crrels2s@uvm.edu</li>
               <li>• ⏳ Data preparation begins (typically 2-5 business days)</li>
               <li>• 📧 Download links will be provided via email when ready</li>
-              <li>• ❓ For urgent requests or questions: s2s@uvm.edu or (802) 656-2215</li>
+              <li>• ❓ For urgent requests or questions: crrels2s@uvm.edu or (802) 656-2215</li>
             </ul>
           </div>
           
@@ -478,7 +478,7 @@ const BulkDownloadRequest = () => {
                   <li>• Large datasets may be provided as compressed archives</li>
                   <li>• Data is provided under UVM's data sharing agreement</li>
                   <li>• Please cite the CRREL S2S project in any publications</li>
-                  <li>• For questions, contact s2s@uvm.edu or (802) 656-2215</li>
+                  <li>• For questions, contact crrels2s@uvm.edu or (802) 656-2215</li>
                 </ul>
               </div>
             </div>
