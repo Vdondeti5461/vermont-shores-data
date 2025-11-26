@@ -342,18 +342,13 @@ const Header = () => {
           </button>
         </div>
 
-        {/* Mobile Navigation */}
-        <div
-          id="mobile-menu"
-          className={cn(
-            "lg:hidden fixed inset-x-0 bottom-0 bg-background/98 backdrop-blur-md border-t border-border transition-all duration-300 ease-in-out overflow-y-auto overscroll-contain z-50",
-            isMenuOpen ? "top-[calc(3rem+env(safe-area-inset-top))] opacity-100" : "top-full opacity-0 pointer-events-none"
-          )}
-          style={{ 
-            marginTop: isMenuOpen ? '0' : '-100vh'
-          }}
-        >
-          <nav className="py-4 space-y-2 pb-safe-bottom container mx-auto px-4"  aria-label="Mobile navigation">
+        {/* Mobile Navigation - Industry Standard Pattern */}
+        {isMenuOpen && (
+          <div 
+            id="mobile-menu"
+            className="lg:hidden border-t border-border bg-background"
+          >
+            <nav className="py-4 space-y-2 pb-safe-bottom px-4" aria-label="Mobile navigation">
             {/* Top-level nav items */}
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -588,13 +583,14 @@ const Header = () => {
             </div>
           </nav>
         </div>
+        )}
       </div>
     </header>
 
     {/* Mobile Menu Backdrop */}
     {isMenuOpen && (
       <div
-        className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 lg:hidden"
+        className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 lg:hidden top-14 xs:top-12 md:top-16"
         onClick={() => setIsMenuOpen(false)}
         aria-hidden="true"
       />
