@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { MapPin, Thermometer, Wind, CloudSnow, Droplets, Activity, CheckCircle, AlertCircle } from 'lucide-react';
 import { getSiteColorByCode } from '@/lib/siteColors';
+import networkElevationProfile from '@/assets/network-elevation-profile.png';
 
 const Network = () => {
   const monitoringTypes = [
@@ -338,6 +339,38 @@ const Network = () => {
                 </div>
               </TabsContent>
             </Tabs>
+          </div>
+        </section>
+
+        {/* Network Collaborations */}
+        <section className="py-16">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-12">
+              <Badge variant="outline" className="mb-4">
+                Network Collaborations
+              </Badge>
+              <h2 className="scientific-heading text-3xl md:text-4xl mb-6">
+                Regional <span className="text-primary">Observatory Network</span>
+              </h2>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                Our monitoring network collaborates with regional observatories across the Northeast, 
+                providing comprehensive environmental data from Lake Placid to Mount Washington
+              </p>
+            </div>
+
+            <Card className="overflow-hidden">
+              <CardContent className="p-6">
+                <img 
+                  src={networkElevationProfile} 
+                  alt="Network elevation profile showing monitoring stations from Whiteface to Mount Washington Observatory, including Mount Mansfield S2S collaboration stations"
+                  className="w-full h-auto"
+                />
+                <p className="text-sm text-muted-foreground text-center mt-4">
+                  Elevation transect showing collaborative monitoring stations across the region, 
+                  spanning from Lake Placid through Mount Mansfield to Mount Washington Observatory
+                </p>
+              </CardContent>
+            </Card>
           </div>
         </section>
 
