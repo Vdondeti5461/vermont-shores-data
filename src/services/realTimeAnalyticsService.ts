@@ -154,30 +154,21 @@ export const fetchTimeSeriesData = async (
     ...(endDate && { end_date: endDate }),
   });
 
+  console.log(`Fetching time series from: ${API_BASE_URL}/api/databases/${dbKey}/analytics/${table}?${params}`);
+  
   const response = await fetch(
-    `${API_BASE_URL}/api/databases/${dbKey}/download/${table}?${params}`
+    `${API_BASE_URL}/api/databases/${dbKey}/analytics/${table}?${params}`
   );
   
-  if (!response.ok) throw new Error('Failed to fetch time series data');
-  
-  // Parse CSV response
-  const csvText = await response.text();
-  const lines = csvText.trim().split('\n');
-  if (lines.length < 2) return [];
-  
-  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
-  const data: TimeSeriesDataPoint[] = [];
-  
-  for (let i = 1; i < lines.length; i++) {
-    const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
-    const row: any = {};
-    headers.forEach((header, index) => {
-      const value = values[index];
-      // Try to parse as number, otherwise keep as string
-      row[header] = !isNaN(Number(value)) && value !== '' ? Number(value) : value;
-    });
-    data.push(row);
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`Analytics fetch failed:`, errorText);
+    throw new Error('Failed to fetch time series data');
   }
+  
+  // Parse JSON response (analytics endpoint returns JSON, not CSV)
+  const data = await response.json();
+  console.log(`Received ${data.length} data points for ${database}/${table}`);
   
   return data;
 };
