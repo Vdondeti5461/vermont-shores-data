@@ -102,10 +102,10 @@ export const fetchLocations = async (
   const data = await response.json();
   // Handle both array response and object with locations array
   const locations = Array.isArray(data) ? data : (data.locations || []);
-  // Normalize location format
+  // Normalize location format - use 'code' for API queries
   return locations.map((loc: any, index: number) => ({
-    id: typeof loc === 'string' ? loc : (loc.name || loc.id || `loc_${index}`),
-    name: typeof loc === 'string' ? loc : (loc.displayName || loc.name || loc.id),
+    id: typeof loc === 'string' ? loc : (loc.code || loc.id || `loc_${index}`),
+    name: typeof loc === 'string' ? loc : (loc.displayName || loc.name || loc.code || loc.id),
     coordinates: loc.latitude && loc.longitude ? {
       lat: loc.latitude,
       lng: loc.longitude
