@@ -90,8 +90,11 @@ export const fetchLocations = async (
   database: DatabaseType,
   table: TableType
 ): Promise<Location[]> => {
-  // Extract database key from full database name
-  const dbKey = database.replace('CRRELS2S_', '').toLowerCase();
+  // Map full database name to backend API key
+  const dbKey = database
+    .replace('CRRELS2S_', '')
+    .replace('_ingestion', '')
+    .toLowerCase();
   const response = await fetch(
     `${API_BASE_URL}/api/databases/${dbKey}/tables/${table}/locations`
   );
@@ -115,8 +118,11 @@ export const fetchTableAttributes = async (
   database: DatabaseType,
   table: TableType
 ): Promise<TableAttribute[]> => {
-  // Extract database key from full database name
-  const dbKey = database.replace('CRRELS2S_', '').toLowerCase();
+  // Map full database name to backend API key
+  const dbKey = database
+    .replace('CRRELS2S_', '')
+    .replace('_ingestion', '')
+    .toLowerCase();
   const response = await fetch(
     `${API_BASE_URL}/api/databases/${dbKey}/tables/${table}/attributes`
   );
@@ -135,8 +141,11 @@ export const fetchTimeSeriesData = async (
   startDate?: string,
   endDate?: string
 ): Promise<TimeSeriesDataPoint[]> => {
-  // Extract database key from full database name
-  const dbKey = database.replace('CRRELS2S_', '').toLowerCase();
+  // Map full database name to backend API key
+  const dbKey = database
+    .replace('CRRELS2S_', '')
+    .replace('_ingestion', '')
+    .toLowerCase();
   
   const params = new URLSearchParams({
     location,
