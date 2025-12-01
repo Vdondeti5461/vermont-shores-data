@@ -1,6 +1,6 @@
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { Analytics } from '@/components/Analytics';
+import { RealTimeAnalytics } from '@/components/RealTimeAnalytics';
 import { Badge } from '@/components/ui/badge';
 import { Activity } from 'lucide-react';
 
@@ -31,7 +31,7 @@ const RealTime = () => {
 
         <section className="py-12 md:py-16">
           <div className="container mx-auto px-4">
-            <Analytics />
+            <RealTimeAnalytics />
           </div>
         </section>
       </main>
