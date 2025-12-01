@@ -14,25 +14,23 @@ const ATTRIBUTES = [
   { value: 'relative_humidity_percent', label: 'Relative Humidity', unit: '%' },
 ] as const;
 
-// Three databases for comparison (excluding seasonal)
+// Three databases for comparison - always fetch from all three for analytics
 const COMPARISON_DATABASES: DatabaseType[] = [
   'CRRELS2S_raw_data_ingestion',
   'CRRELS2S_stage_clean_data',
   'CRRELS2S_stage_qaqc_data',
 ];
 
-const DATABASE_COLORS: Record<DatabaseType, string> = {
-  'CRRELS2S_raw_data_ingestion': '#ef4444',
-  'CRRELS2S_stage_clean_data': '#3b82f6',
-  'CRRELS2S_stage_qaqc_data': '#22c55e',
-  'CRRELS2S_seasonal_qaqc_data': '#a855f7',
+const DATABASE_COLORS = {
+  'CRRELS2S_raw_data_ingestion': 'hsl(0, 84%, 60%)',    // Red
+  'CRRELS2S_stage_clean_data': 'hsl(217, 91%, 60%)',   // Blue
+  'CRRELS2S_stage_qaqc_data': 'hsl(142, 71%, 45%)',    // Green
 };
 
-const DATABASE_LABELS: Record<DatabaseType, string> = {
+const DATABASE_LABELS = {
   'CRRELS2S_raw_data_ingestion': 'Raw Data',
   'CRRELS2S_stage_clean_data': 'Clean Data',
   'CRRELS2S_stage_qaqc_data': 'QAQC Data',
-  'CRRELS2S_seasonal_qaqc_data': 'Seasonal QAQC',
 };
 
 export const RealTimeAnalytics = () => {
@@ -134,7 +132,7 @@ export const RealTimeAnalytics = () => {
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Time Series Analytics</h2>
           <p className="text-muted-foreground">
-            Compare environmental data across raw, clean, and QAQC quality levels
+            Compare environmental measurements across three data processing stages: raw sensor data, cleaned data, and quality-controlled data
           </p>
         </div>
       </div>
@@ -142,9 +140,9 @@ export const RealTimeAnalytics = () => {
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>Data Selection</CardTitle>
+          <CardTitle>Filter Options</CardTitle>
           <CardDescription>
-            Select location and attribute to view multi-quality comparison
+            Select a location and measurement attribute to compare data across all processing stages
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -194,19 +192,19 @@ export const RealTimeAnalytics = () => {
 
           {/* Info Display */}
           {selectedLocation && selectedAttribute && (
-            <div className="mt-4 p-4 bg-muted rounded-lg">
-              <p className="text-sm text-muted-foreground">
-                Comparing <span className="font-semibold text-foreground">{selectedAttributeInfo?.label}</span> at{' '}
+            <div className="mt-4 p-4 bg-muted/50 rounded-lg border border-border">
+              <p className="text-sm text-muted-foreground mb-3">
+                Displaying <span className="font-semibold text-foreground">{selectedAttributeInfo?.label}</span> time series for{' '}
                 <span className="font-semibold text-foreground">{locations.find(l => l.id === selectedLocation)?.name}</span>
               </p>
-              <div className="flex gap-4 mt-2">
+              <div className="flex flex-wrap gap-4">
                 {COMPARISON_DATABASES.map((db) => (
                   <div key={db} className="flex items-center gap-2">
                     <div 
                       className="w-3 h-3 rounded-full" 
                       style={{ backgroundColor: DATABASE_COLORS[db] }}
                     />
-                    <span className="text-xs">{DATABASE_LABELS[db]}</span>
+                    <span className="text-xs font-medium">{DATABASE_LABELS[db]}</span>
                   </div>
                 ))}
               </div>
@@ -229,10 +227,10 @@ export const RealTimeAnalytics = () => {
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl">
-              {selectedAttributeInfo?.label} - Multi-Quality Comparison
+              {selectedAttributeInfo?.label} Time Series Comparison
             </CardTitle>
             <CardDescription>
-              {locations.find(l => l.id === selectedLocation)?.name} | Comparing Raw, Clean, and QAQC Data
+              {locations.find(l => l.id === selectedLocation)?.name} | Three-stage data processing comparison
             </CardDescription>
           </CardHeader>
           <CardContent>
