@@ -95,6 +95,31 @@ async function getConnectionWithDB(databaseKey = 'raw_data') {
   return { connection, databaseName };
 }
 
+// Helper function to normalize location codes for lookup
+function normalizeLocationCode(code) {
+  if (!code) return null;
+  
+  // First try exact match
+  if (LOCATION_METADATA[code]) {
+    return code;
+  }
+  
+  // Try with dash inserted after 2-4 letter prefix (RB01 -> RB-01, SR01 -> SR-01)
+  const withDash = code.replace(/^([A-Z]{2,4})(\d+)$/, '$1-$2');
+  if (withDash !== code && LOCATION_METADATA[withDash]) {
+    return withDash;
+  }
+  
+  // Try without dash (RB-01 -> RB01)
+  const withoutDash = code.replace('-', '');
+  if (LOCATION_METADATA[withoutDash]) {
+    return withoutDash;
+  }
+  
+  // Return original code if no match found
+  return code;
+}
+
 // Location metadata with complete information (survey-accurate coordinates)
 const LOCATION_METADATA = {
   'SUMM': { name: 'Mansfield Summit', latitude: 44.5284, longitude: -72.8147, elevation: 1163 },
@@ -507,12 +532,13 @@ app.get('/api/seasonal/tables/:table/locations', async (req, res) => {
     
     const [rows] = await connection.execute(query);
 
-    // Enrich with metadata
+    // Enrich with metadata using normalized location codes
     const locations = rows.map(row => {
       const code = row.code;
-      const metadata = LOCATION_METADATA[code];
+      const normalizedCode = normalizeLocationCode(code);
+      const metadata = LOCATION_METADATA[normalizedCode];
       return {
-        code: code,
+        code: code, // Keep original database code for API queries
         name: metadata ? metadata.name : code,
         latitude: metadata ? metadata.latitude : null,
         longitude: metadata ? metadata.longitude : null,
@@ -761,12 +787,13 @@ app.get('/api/databases/:database/tables/:table/locations', async (req, res) => 
     const [rows] = await connection.execute(query);
     console.log(`📊 [QUERY RESULT] Found ${rows.length} locations:`, rows.map(r => r.code));
 
-    // Enrich with metadata from LOCATION_METADATA
+    // Enrich with metadata from LOCATION_METADATA using normalized codes
     const locations = rows.map(row => {
       const code = row.code;
-      const metadata = LOCATION_METADATA[code];
+      const normalizedCode = normalizeLocationCode(code);
+      const metadata = LOCATION_METADATA[normalizedCode];
       return {
-        code: code,
+        code: code, // Keep original database code for API queries
         name: metadata ? metadata.name : code,
         displayName: metadata ? metadata.name : code,
         latitude: metadata ? metadata.latitude : null,
@@ -830,12 +857,13 @@ app.get('/api/databases/:database/locations', async (req, res) => {
     const query = `SELECT DISTINCT name FROM (${unionQueries.join(' UNION ALL ')}) AS all_locations ORDER BY name`;
 
     const [rows] = await connection.execute(query);
-    // Use actual location metadata with proper coordinates
+    // Use actual location metadata with proper coordinates and normalized codes
     const locationsWithCoords = rows.map((loc, index) => {
-      const metadata = LOCATION_METADATA[loc.name];
+      const normalizedCode = normalizeLocationCode(loc.name);
+      const metadata = LOCATION_METADATA[normalizedCode];
       return {
         id: index + 1,
-        name: loc.name,
+        name: loc.name, // Keep original database code
         displayName: metadata ? metadata.name : loc.name,
         latitude: metadata ? metadata.latitude : 44.0 + (index * 0.01),
         longitude: metadata ? metadata.longitude : -72.5 - (index * 0.01),
