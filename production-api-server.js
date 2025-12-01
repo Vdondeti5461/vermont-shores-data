@@ -879,6 +879,96 @@ app.get('/api/databases/:database/locations', async (req, res) => {
   }
 });
 
+// Analytics endpoint for JSON time series data (used by Real-Time Analytics page)
+app.get('/api/databases/:database/analytics/:table', async (req, res) => {
+  try {
+    const { database, table } = req.params;
+    const { location, start_date, end_date, attributes } = req.query;
+    
+    console.log(`\n📊 [ANALYTICS] Fetching time series for ${database}/${table}`);
+    console.log(`   Location: ${location}`);
+    console.log(`   Attributes: ${attributes}`);
+    console.log(`   Date range: ${start_date} to ${end_date}`);
+    
+    const { connection, databaseName } = await getConnectionWithDB(database);
+
+    // Discover actual column names
+    const [colRows] = await connection.query(`SHOW COLUMNS FROM \`${table}\``);
+    const allCols = colRows.map((c) => c.Field);
+    const colMap = new Map(allCols.map((c) => [c.toLowerCase(), c]));
+    const tsCol = colMap.get('timestamp') || 'TIMESTAMP';
+    const locCol = colMap.get('location') || 'Location';
+
+    // Determine selected columns
+    let selected;
+    if (attributes) {
+      const requested = String(attributes)
+        .split(',')
+        .map((a) => a.trim())
+        .filter(Boolean);
+      const mapped = requested.map((a) => colMap.get(a.toLowerCase()) || a);
+      selected = Array.from(new Set([tsCol, locCol, ...mapped])).filter((c) => allCols.includes(c));
+    } else {
+      selected = allCols;
+    }
+
+    // Build SELECT with formatted timestamp for JSON
+    const selectList = selected
+      .map((c) => {
+        if (c.toLowerCase() === 'timestamp') {
+          return `DATE_FORMAT(\`${tsCol}\`, '%Y-%m-%d %H:%i:%s') AS timestamp`;
+        }
+        return `\`${c}\``;
+      })
+      .join(', ');
+
+    // Build query with filters
+    let query = `SELECT ${selectList} FROM \`${table}\` WHERE 1=1`;
+    const params = [];
+
+    // Location filter
+    if (location) {
+      const locations = location.split(',').map(l => l.trim()).filter(Boolean);
+      if (locations.length > 0) {
+        const locationPlaceholders = locations.map(() => '?').join(',');
+        query += ` AND \`${locCol}\` IN (${locationPlaceholders})`;
+        params.push(...locations);
+      }
+    }
+
+    // Date range filters
+    if (start_date) {
+      query += ` AND \`${tsCol}\` >= ?`;
+      params.push(start_date);
+    }
+
+    if (end_date) {
+      query += ` AND \`${tsCol}\` <= ?`;
+      params.push(end_date);
+    }
+
+    query += ` ORDER BY \`${tsCol}\` ASC`;
+
+    console.log(`🔍 [ANALYTICS] Executing query with ${params.length} parameters`);
+    const [rows] = await connection.execute(query, params);
+    console.log(`✅ [ANALYTICS] Retrieved ${rows.length} rows`);
+
+    connection.release();
+    
+    // Return JSON format for charting
+    res.json(rows);
+    
+  } catch (error) {
+    console.error('❌ [ANALYTICS] Error:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch analytics data',
+      details: error.message,
+      database: req.params.database,
+      table: req.params.table
+    });
+  }
+});
+
 // Download endpoint for CSV export with proper timestamp formatting
 app.get('/api/databases/:database/download/:table', async (req, res) => {
   try {
