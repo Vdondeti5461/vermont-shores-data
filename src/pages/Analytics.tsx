@@ -1,10 +1,9 @@
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { Analytics } from '@/components/Analytics';
+import { RealTimeAnalytics } from '@/components/RealTimeAnalytics';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Database, LineChart, TrendingUp, GitCompare, Layers } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -136,20 +135,7 @@ const AnalyticsPage = () => {
         {/* Main Analytics Interface */}
         <section id="analytics" className="py-16">
           <div className="container mx-auto px-4">
-            <div className="text-center mb-12">
-              <Badge variant="outline" className="mb-4">
-                Interactive Analysis
-              </Badge>
-              <h2 className="scientific-heading text-3xl md:text-4xl mb-6">
-                Multi-Quality <span className="text-primary">Data Comparison</span>
-              </h2>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Select from four observation tables and compare time series data across 
-                raw, clean, QAQC, and seasonal quality levels
-              </p>
-            </div>
-
-            <Analytics />
+            <RealTimeAnalytics />
           </div>
         </section>
 
