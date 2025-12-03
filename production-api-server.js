@@ -121,6 +121,7 @@ function normalizeLocationCode(code) {
 }
 
 // Location metadata with complete information (survey-accurate coordinates)
+// Includes both OLD names (SleepersMain_SR01, Sleepers_W1, Sleepers_R25) and NEW codes (SR01, SR11, SR25)
 const LOCATION_METADATA = {
   'SUMM': { name: 'Mansfield Summit', latitude: 44.52796261, longitude: -72.81496117, elevation: 1169 },
   'RB01': { name: 'Ranch Brook #1', latitude: 44.52322238, longitude: -72.80863215, elevation: 1075 },
@@ -131,19 +132,24 @@ const LOCATION_METADATA = {
   'UNDR': { name: 'Mansfield West SCAN', latitude: 44.53511455, longitude: -72.83462236, elevation: 698 },
   'RB04': { name: 'Ranch Brook #4', latitude: 44.51097861, longitude: -72.80281519, elevation: 640 },
   'RB07': { name: 'Ranch Brook #7', latitude: 44.51528492, longitude: -72.78513705, elevation: 613 },
-  'SR01': { name: 'Sleepers R3/Main', latitude: 44.48296257, longitude: -72.16464901, elevation: 553 },
   'RB05': { name: 'Ranch Brook #5', latitude: 44.5044967, longitude: -72.79947434, elevation: 505 },
   'RB08': { name: 'Ranch Brook #8', latitude: 44.50953955, longitude: -72.78220384, elevation: 472 },
   'PROC': { name: 'Mansfield West Proctor', latitude: 44.5285819, longitude: -72.866737, elevation: 418 },
   'RB06': { name: 'Ranch Brook #6', latitude: 44.50370285, longitude: -72.78352521, elevation: 414 },
   'RB11': { name: 'Ranch Brook #11', latitude: 44.50545202, longitude: -72.7713791, elevation: 388 },
-  'SR25': { name: 'Sleepers R25', latitude: 44.47682346, longitude: -72.12582909, elevation: 357 },
   'RB10': { name: 'Ranch Brook #10', latitude: 44.49505, longitude: -72.78639, elevation: 624 },
-  'SR11': { name: 'Sleepers W1/R11', latitude: 44.45002119, longitude: -72.06714939, elevation: 225 },
   'JRCL': { name: 'Jericho clearing', latitude: 44.447694, longitude: -73.00228357, elevation: 199 },
   'JRFO': { name: 'Jericho forest', latitude: 44.44780437, longitude: -73.00270872, elevation: 196 },
   'SPST': { name: 'Spear St', latitude: 44.45258109, longitude: -73.19181715, elevation: 87 },
-  'PTSH': { name: 'Potash Brook', latitude: 44.44489861, longitude: -73.21425398, elevation: 45 }
+  'PTSH': { name: 'Potash Brook', latitude: 44.44489861, longitude: -73.21425398, elevation: 45 },
+  // NEW Sleepers codes (what's now in database)
+  'SR01': { name: 'Sleepers R3/Main', latitude: 44.48296257, longitude: -72.16464901, elevation: 553 },
+  'SR25': { name: 'Sleepers R25', latitude: 44.47682346, longitude: -72.12582909, elevation: 357 },
+  'SR11': { name: 'Sleepers W1/R11', latitude: 44.45002119, longitude: -72.06714939, elevation: 225 },
+  // OLD Sleepers codes (for backward compatibility if old data still exists)
+  'SleepersMain_SR01': { name: 'Sleepers R3/Main', latitude: 44.48296257, longitude: -72.16464901, elevation: 553 },
+  'Sleepers_R25': { name: 'Sleepers R25', latitude: 44.47682346, longitude: -72.12582909, elevation: 357 },
+  'Sleepers_W1': { name: 'Sleepers W1/R11', latitude: 44.45002119, longitude: -72.06714939, elevation: 225 }
 };
 
 // Table metadata with detailed descriptions
