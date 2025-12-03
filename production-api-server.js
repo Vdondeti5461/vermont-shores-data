@@ -514,6 +514,9 @@ app.get('/api/seasonal/tables/:table/attributes', async (req, res) => {
   }
 });
 
+// Deprecated location codes to filter out (replaced by SR01, SR11, SR25)
+const DEPRECATED_LOCATION_CODES = ['SleepersMain_SR01', 'Sleepers_W1', 'Sleepers_R25'];
+
 // Get locations for a specific seasonal table
 app.get('/api/seasonal/tables/:table/locations', async (req, res) => {
   const { table } = req.params;
@@ -533,22 +536,24 @@ app.get('/api/seasonal/tables/:table/locations', async (req, res) => {
     
     const [rows] = await connection.execute(query);
 
-    // Enrich with metadata using normalized location codes
-    const locations = rows.map(row => {
-      const code = row.code;
-      const normalizedCode = normalizeLocationCode(code);
-      const metadata = LOCATION_METADATA[normalizedCode];
-      return {
-        code: code, // Keep original database code for API queries
-        name: metadata ? metadata.name : code,
-        latitude: metadata ? metadata.latitude : null,
-        longitude: metadata ? metadata.longitude : null,
-        elevation: metadata ? metadata.elevation : null
-      };
-    });
+    // Enrich with metadata and filter out deprecated location codes
+    const locations = rows
+      .filter(row => !DEPRECATED_LOCATION_CODES.includes(row.code)) // Exclude old location codes
+      .map(row => {
+        const code = row.code;
+        const normalizedCode = normalizeLocationCode(code);
+        const metadata = LOCATION_METADATA[normalizedCode];
+        return {
+          code: code,
+          name: metadata ? metadata.name : code,
+          latitude: metadata ? metadata.latitude : null,
+          longitude: metadata ? metadata.longitude : null,
+          elevation: metadata ? metadata.elevation : null
+        };
+      });
 
     connection.release();
-    console.log(`✅ [SEASONAL LOCATIONS] Found ${locations.length} locations`);
+    console.log(`✅ [SEASONAL LOCATIONS] Found ${locations.length} locations (filtered out deprecated codes)`);
     res.json(locations);
   } catch (error) {
     console.error('❌ [SEASONAL LOCATIONS] Error:', error);
