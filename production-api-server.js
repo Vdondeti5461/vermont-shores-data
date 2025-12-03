@@ -799,19 +799,22 @@ app.get('/api/databases/:database/tables/:table/locations', async (req, res) => 
     console.log(`📊 [QUERY RESULT] Found ${rows.length} locations:`, rows.map(r => r.code));
 
     // Enrich with metadata from LOCATION_METADATA using normalized codes
-    const locations = rows.map(row => {
-      const code = row.code;
-      const normalizedCode = normalizeLocationCode(code);
-      const metadata = LOCATION_METADATA[normalizedCode];
-      return {
-        code: code, // Keep original database code for API queries
-        name: metadata ? metadata.name : code,
-        displayName: metadata ? metadata.name : code,
-        latitude: metadata ? metadata.latitude : null,
-        longitude: metadata ? metadata.longitude : null,
-        elevation: metadata ? metadata.elevation : null
-      };
-    });
+    // Filter out deprecated location codes
+    const locations = rows
+      .filter(row => !DEPRECATED_LOCATION_CODES.includes(row.code))
+      .map(row => {
+        const code = row.code;
+        const normalizedCode = normalizeLocationCode(code);
+        const metadata = LOCATION_METADATA[normalizedCode];
+        return {
+          code: code, // Keep original database code for API queries
+          name: metadata ? metadata.name : code,
+          displayName: metadata ? metadata.name : code,
+          latitude: metadata ? metadata.latitude : null,
+          longitude: metadata ? metadata.longitude : null,
+          elevation: metadata ? metadata.elevation : null
+        };
+      });
 
     connection.release();
     console.log(`✅ [LOCATIONS ENDPOINT] Success - returning ${locations.length} mapped locations`);
@@ -869,18 +872,21 @@ app.get('/api/databases/:database/locations', async (req, res) => {
 
     const [rows] = await connection.execute(query);
     // Use actual location metadata with proper coordinates and normalized codes
-    const locationsWithCoords = rows.map((loc, index) => {
-      const normalizedCode = normalizeLocationCode(loc.name);
-      const metadata = LOCATION_METADATA[normalizedCode];
-      return {
-        id: index + 1,
-        name: loc.name, // Keep original database code
-        displayName: metadata ? metadata.name : loc.name,
-        latitude: metadata ? metadata.latitude : 44.0 + (index * 0.01),
-        longitude: metadata ? metadata.longitude : -72.5 - (index * 0.01),
-        elevation: metadata ? metadata.elevation : 1000 + (index * 10)
-      };
-    });
+    // Filter out deprecated location codes
+    const locationsWithCoords = rows
+      .filter(loc => !DEPRECATED_LOCATION_CODES.includes(loc.name))
+      .map((loc, index) => {
+        const normalizedCode = normalizeLocationCode(loc.name);
+        const metadata = LOCATION_METADATA[normalizedCode];
+        return {
+          id: index + 1,
+          name: loc.name, // Keep original database code
+          displayName: metadata ? metadata.name : loc.name,
+          latitude: metadata ? metadata.latitude : null,
+          longitude: metadata ? metadata.longitude : null,
+          elevation: metadata ? metadata.elevation : null
+        };
+      });
     
     connection.release();
     res.json(locationsWithCoords);
