@@ -139,7 +139,7 @@ const LOCATION_METADATA = {
   'RB-11': { name: 'Ranch Brook Site #11', latitude: 44.5055, longitude: -72.7714, elevation: 380 },
   'SR25': { name: 'Sleepers R25', latitude: 44.4767, longitude: -72.126, elevation: 360 },
   'RB-10': { name: 'Ranch Brook Site #10', latitude: 44.495, longitude: -72.7864, elevation: 324 },
-  'SI11': { name: 'Sleepers W1/R11', latitude: 44.4999, longitude: -72.0671, elevation: 226 },
+  'SR11': { name: 'Sleepers W1/R11', latitude: 44.4999, longitude: -72.0671, elevation: 226 },
   'JRCL': { name: 'Jericho (Clearing)', latitude: 44.4477, longitude: -73.0025, elevation: 198 },
   'JRFO': { name: 'Jericho (Forested)', latitude: 44.4478, longitude: -73.0027, elevation: 196 },
   'SPST': { name: 'Spear St', latitude: 44.4526, longitude: -73.1919, elevation: 86 },
