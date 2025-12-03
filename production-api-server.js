@@ -600,11 +600,16 @@ app.get('/api/seasonal/download/:table', async (req, res) => {
     // Location filter
     if (locations) {
       const locationList = locations.split(',').map(l => l.trim()).filter(Boolean);
+      console.log(`📍 [SEASONAL DOWNLOAD] Location filter - received codes:`, locationList);
       if (locationList.length > 0) {
         query += ` AND \`${locCol}\` IN (${locationList.map(() => '?').join(',')})`;
         params.push(...locationList);
       }
     }
+    
+    // Log the full query for debugging
+    console.log(`🔍 [SEASONAL DOWNLOAD] Query: ${query}`);
+    console.log(`🔍 [SEASONAL DOWNLOAD] Params:`, params);
 
     // Date range filters
     if (start_date) {
