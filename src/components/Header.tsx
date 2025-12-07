@@ -60,8 +60,8 @@ const Header = () => {
   ];
 
   const analyticsSubsections = [
-    { label: 'Real-Time Analysis', href: '/analytics', icon: LineChart, description: 'Compare data quality levels across observation tables' },
-    { label: 'Seasonal Analysis', href: '/analytics/seasonal', icon: Layers, description: 'Three seasons of quality-controlled data (2022-2025)' },
+    { label: 'Real-Time Analysis', href: '/analytics', icon: LineChart, description: 'Compare raw, clean, and QAQC data stages' },
+    { label: 'Snow Analytics', href: '/analytics/snow', icon: Layers, description: 'Snow depth, SWE, and density analysis with statistics' },
     { label: 'Advanced Analytics', href: '/analytics/advanced', icon: BarChart3, description: 'ML models and predictive analytics (coming soon)' }
   ];
 
