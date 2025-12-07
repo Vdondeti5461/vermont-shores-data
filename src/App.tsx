@@ -9,11 +9,12 @@ import About from "./pages/About";
 import Network from "./pages/Network";
 import Analytics from "./pages/Analytics";
 import RealTime from "./pages/analytics/RealTime";
+import SnowAnalyticsPage from "./pages/analytics/SnowAnalytics";
 import DataDownload from "./pages/DataDownload";
 import Research from "./pages/Research";
 import Gallery from "./pages/research/Gallery";
 import AdvancedAnalytics from "./pages/AdvancedAnalytics";
-import SnowAnalytics from "./pages/SnowAnalytics";
+
 import APIDocumentation from "./pages/APIDocumentation";
 import NotFound from "./pages/NotFound";
 import BulkRequest from "./pages/BulkRequest";
@@ -39,7 +40,8 @@ const App = () => (
           {/* Analytics Routes */}
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/analytics/realtime" element={<RealTime />} />
-          <Route path="/analytics/seasonal" element={<SnowAnalytics />} />
+          <Route path="/analytics/seasonal" element={<SnowAnalyticsPage />} />
+          <Route path="/analytics/snow" element={<SnowAnalyticsPage />} />
           <Route path="/analytics/advanced" element={<AdvancedAnalytics />} />
           
           {/* Data Download Routes */}
