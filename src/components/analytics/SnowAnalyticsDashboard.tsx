@@ -107,6 +107,13 @@ export const SnowAnalyticsDashboard = () => {
   // Abort controller for cancelling requests
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  // Map database to correct table name - each database may have different table naming conventions
+  const getTableForDatabase = useCallback((database: DatabaseType): TableType => {
+    // All databases use the same table structure: raw_env_core_observations
+    // This is the primary environmental observations table across all processing stages
+    return 'raw_env_core_observations';
+  }, []);
+
   const TABLE: TableType = 'raw_env_core_observations';
 
   // Function to load locations
@@ -206,11 +213,19 @@ export const SnowAnalyticsDashboard = () => {
           description: "No data found for the selected filters. Try a different date range.",
         });
       } else {
-        const hasEmptyDb = data.some(d => d.data.length === 0);
-        toast({
-          title: hasEmptyDb ? "Partial Data Loaded" : "Data Loaded",
-          description: `Loaded ${totalPoints.toLocaleString()} points. ${hasEmptyDb ? 'Some databases have no data for this location.' : ''}`,
-        });
+        const emptyDbs = data.filter(d => d.data.length === 0).map(d => DATABASE_LABELS[d.database]).join(', ');
+        const hasEmptyDb = emptyDbs.length > 0;
+        if (hasEmptyDb) {
+          toast({
+            title: "Partial Data Loaded",
+            description: `Loaded ${totalPoints.toLocaleString()} points. Missing: ${emptyDbs}. Check if location codes match across databases.`,
+          });
+        } else {
+          toast({
+            title: "Data Loaded",
+            description: `Loaded ${totalPoints.toLocaleString()} points across all databases.`,
+          });
+        }
       }
     } catch (err) {
       if ((err as Error).name !== 'AbortError') {

@@ -913,12 +913,28 @@ app.get('/api/databases/:database/analytics/:table', async (req, res) => {
     
     const { connection, databaseName } = await getConnectionWithDB(database);
 
+    // Check if table exists
+    const [tableCheck] = await connection.query(`SHOW TABLES LIKE ?`, [table]);
+    if (tableCheck.length === 0) {
+      console.log(`❌ [ANALYTICS] Table '${table}' does not exist in database '${databaseName}'`);
+      connection.release();
+      return res.json([]); // Return empty array instead of error
+    }
+
     // Discover actual column names
     const [colRows] = await connection.query(`SHOW COLUMNS FROM \`${table}\``);
     const allCols = colRows.map((c) => c.Field);
     const colMap = new Map(allCols.map((c) => [c.toLowerCase(), c]));
     const tsCol = colMap.get('timestamp') || 'TIMESTAMP';
     const locCol = colMap.get('location') || 'Location';
+
+    // Log available locations in this database for debugging
+    if (location) {
+      const [availableLocations] = await connection.query(
+        `SELECT DISTINCT \`${locCol}\` as loc FROM \`${table}\` LIMIT 50`
+      );
+      console.log(`📍 [ANALYTICS] Available locations in ${databaseName}/${table}: ${availableLocations.map(r => r.loc).join(', ')}`);
+    }
 
     // Determine selected columns
     let selected;
@@ -966,6 +982,7 @@ app.get('/api/databases/:database/analytics/:table', async (req, res) => {
           }
         });
         const uniqueLocations = [...new Set(expandedLocations)];
+        console.log(`📍 [ANALYTICS] Searching for locations: ${uniqueLocations.join(', ')}`);
         const locationPlaceholders = uniqueLocations.map(() => '?').join(',');
         query += ` AND \`${locCol}\` IN (${locationPlaceholders})`;
         params.push(...uniqueLocations);
@@ -989,7 +1006,11 @@ app.get('/api/databases/:database/analytics/:table', async (req, res) => {
     const startTime = Date.now();
     const [rows] = await connection.execute(query, params);
     const duration = Date.now() - startTime;
-    console.log(`✅ [ANALYTICS] Retrieved ${rows.length} rows in ${duration}ms`);
+    console.log(`✅ [ANALYTICS] Retrieved ${rows.length} rows from ${databaseName}/${table} in ${duration}ms`);
+    
+    if (rows.length === 0 && location) {
+      console.log(`⚠️ [ANALYTICS] No data found for location '${location}' in ${databaseName}/${table}`);
+    }
 
     connection.release();
     

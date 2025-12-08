@@ -234,19 +234,37 @@ export const fetchTimeSeriesData = async (
   const url = `${API_BASE_URL}/api/databases/${dbKey}/analytics/${table}?${params}`;
   console.log(`[Analytics] Fetching time series from: ${url}`);
   
-  const response = await fetch(url, { signal });
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`[Analytics] Time series fetch failed for ${dbKey}:`, errorText);
-    throw new Error(`Failed to fetch data from ${dbKey}: ${response.status}`);
+  try {
+    const response = await fetch(url, { signal });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`[Analytics] Time series fetch failed for ${dbKey}:`, response.status, errorText);
+      throw new Error(`Failed to fetch data from ${dbKey}: ${response.status}`);
+    }
+    
+    // Parse JSON response (analytics endpoint returns JSON, not CSV)
+    const data = await response.json();
+    console.log(`[Analytics] Received ${data.length} data points for ${dbKey}/${table}/${location}`);
+    
+    // Log sample of returned data for debugging
+    if (data.length > 0) {
+      console.log(`[Analytics] ${dbKey} sample keys:`, Object.keys(data[0]));
+      if (data.length === 0) {
+        console.warn(`[Analytics] ${dbKey}: No data found for location ${location}`);
+      }
+    } else {
+      console.warn(`[Analytics] ${dbKey}: Empty response - location '${location}' might not exist in this database`);
+    }
+    
+    return data;
+  } catch (error) {
+    if ((error as Error).name === 'AbortError') {
+      throw error; // Re-throw abort errors
+    }
+    console.error(`[Analytics] Error fetching ${dbKey}:`, error);
+    throw error;
   }
-  
-  // Parse JSON response (analytics endpoint returns JSON, not CSV)
-  const data = await response.json();
-  console.log(`[Analytics] Received ${data.length} data points for ${dbKey}/${table}/${location}`);
-  
-  return data;
 };
 
 // Fetch comparison data across multiple data quality levels (raw, clean, QAQC)
