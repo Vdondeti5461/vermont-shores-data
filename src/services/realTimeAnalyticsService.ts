@@ -51,6 +51,13 @@ export interface TimeSeriesDataPoint {
   [key: string]: string | number | null;
 }
 
+// Simple in-memory cache for locations (avoids repeated slow fetches)
+const locationsCache: Map<string, { data: Location[]; timestamp: number }> = new Map();
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+// Maximum rows per analytics query (prevents timeout on large date ranges)
+const MAX_ANALYTICS_ROWS = 10000;
+
 // Helper function to get the API database key from the full database type
 function getDatabaseKey(database: DatabaseType): string {
   const config = DATABASE_CONFIG[database];
@@ -98,38 +105,65 @@ export const fetchSeasons = async (): Promise<Season[]> => {
   return response.json();
 };
 
-// Fetch locations for a specific database and table
+// Fetch locations for a specific database and table - with caching
 export const fetchLocations = async (
   database: DatabaseType,
   table: TableType
 ): Promise<Location[]> => {
+  const cacheKey = `${database}:${table}`;
+  const cached = locationsCache.get(cacheKey);
+  
+  // Return cached data if still valid
+  if (cached && (Date.now() - cached.timestamp) < CACHE_TTL_MS) {
+    console.log(`[Analytics] Using cached locations for ${cacheKey}`);
+    return cached.data;
+  }
+
   const dbKey = getDatabaseKey(database);
   const url = `${API_BASE_URL}/api/databases/${dbKey}/tables/${table}/locations`;
   
   console.log(`[Analytics] Fetching locations from: ${url}`);
   
-  const response = await fetch(url);
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`[Analytics] Locations fetch failed:`, errorText);
-    throw new Error('Failed to fetch locations');
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+  
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`[Analytics] Locations fetch failed:`, errorText);
+      throw new Error('Failed to fetch locations');
+    }
+    
+    const data = await response.json();
+    console.log(`[Analytics] Received ${Array.isArray(data) ? data.length : 0} locations`);
+    
+    // Handle both array response and object with locations array
+    const rawLocations = Array.isArray(data) ? data : (data.locations || []);
+    
+    // Normalize location format - use 'code' for API queries, 'displayName' for UI
+    const locations = rawLocations.map((loc: any, index: number) => ({
+      id: typeof loc === 'string' ? loc : (loc.code || loc.name || loc.id || `loc_${index}`),
+      name: typeof loc === 'string' ? loc : (loc.displayName || loc.name || loc.code || loc.id),
+      coordinates: loc.latitude && loc.longitude ? {
+        lat: loc.latitude,
+        lng: loc.longitude
+      } : undefined
+    }));
+    
+    // Cache the results
+    locationsCache.set(cacheKey, { data: locations, timestamp: Date.now() });
+    
+    return locations;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if ((error as Error).name === 'AbortError') {
+      throw new Error('Location fetch timed out');
+    }
+    throw error;
   }
-  
-  const data = await response.json();
-  console.log(`[Analytics] Received ${Array.isArray(data) ? data.length : 0} locations`);
-  
-  // Handle both array response and object with locations array
-  const locations = Array.isArray(data) ? data : (data.locations || []);
-  
-  // Normalize location format - use 'code' for API queries, 'displayName' for UI
-  return locations.map((loc: any, index: number) => ({
-    id: typeof loc === 'string' ? loc : (loc.code || loc.id || `loc_${index}`),
-    name: typeof loc === 'string' ? loc : (loc.displayName || loc.name || loc.code || loc.id),
-    coordinates: loc.latitude && loc.longitude ? {
-      lat: loc.latitude,
-      lng: loc.longitude
-    } : undefined
-  }));
 };
 
 // Fetch attributes for a specific table
@@ -154,20 +188,22 @@ export const fetchTableAttributes = async (
   return Array.isArray(data) ? data : (data.attributes || []);
 };
 
-// Fetch time series data for a single database/table/location
+// Fetch time series data for a single database/table/location with row limit
 export const fetchTimeSeriesData = async (
   database: DatabaseType,
   table: TableType,
   location: string,
   attributes: string[],
   startDate?: string,
-  endDate?: string
+  endDate?: string,
+  signal?: AbortSignal
 ): Promise<TimeSeriesDataPoint[]> => {
   const dbKey = getDatabaseKey(database);
   
   const params = new URLSearchParams({
     location,
     attributes: attributes.join(','),
+    limit: String(MAX_ANALYTICS_ROWS),
     ...(startDate && { start_date: startDate }),
     ...(endDate && { end_date: endDate }),
   });
@@ -175,17 +211,17 @@ export const fetchTimeSeriesData = async (
   const url = `${API_BASE_URL}/api/databases/${dbKey}/analytics/${table}?${params}`;
   console.log(`[Analytics] Fetching time series from: ${url}`);
   
-  const response = await fetch(url);
+  const response = await fetch(url, { signal });
   
   if (!response.ok) {
     const errorText = await response.text();
-    console.error(`[Analytics] Time series fetch failed:`, errorText);
-    throw new Error('Failed to fetch time series data');
+    console.error(`[Analytics] Time series fetch failed for ${dbKey}:`, errorText);
+    throw new Error(`Failed to fetch data from ${dbKey}: ${response.status}`);
   }
   
   // Parse JSON response (analytics endpoint returns JSON, not CSV)
   const data = await response.json();
-  console.log(`[Analytics] Received ${data.length} data points for ${database}/${table}/${location}`);
+  console.log(`[Analytics] Received ${data.length} data points for ${dbKey}/${table}/${location}`);
   
   return data;
 };
@@ -197,25 +233,37 @@ export const fetchMultiQualityComparison = async (
   location: string,
   attributes: string[],
   startDate?: string,
-  endDate?: string
+  endDate?: string,
+  signal?: AbortSignal
 ): Promise<{ database: DatabaseType; data: TimeSeriesDataPoint[] }[]> => {
   console.log(`[Analytics] Fetching multi-quality comparison for ${databases.length} databases`);
   console.log(`[Analytics] Location: ${location}, Attributes: ${attributes.join(', ')}`);
+  console.log(`[Analytics] Date range: ${startDate || 'none'} to ${endDate || 'none'}`);
   
-  const results = await Promise.all(
+  const results = await Promise.allSettled(
     databases.map(async (db) => {
-      try {
-        const data = await fetchTimeSeriesData(db, table, location, attributes, startDate, endDate);
-        return { database: db, data };
-      } catch (error) {
-        console.error(`[Analytics] Error fetching data for ${db}:`, error);
-        return { database: db, data: [] };
-      }
+      const data = await fetchTimeSeriesData(db, table, location, attributes, startDate, endDate, signal);
+      return { database: db, data };
     })
   );
   
-  const totalPoints = results.reduce((sum, r) => sum + r.data.length, 0);
+  // Process results - include both successful and failed (with empty data)
+  const processed = results.map((result, index) => {
+    if (result.status === 'fulfilled') {
+      return result.value;
+    } else {
+      console.warn(`[Analytics] Failed to fetch ${databases[index]}:`, result.reason?.message);
+      return { database: databases[index], data: [] };
+    }
+  });
+  
+  const totalPoints = processed.reduce((sum, r) => sum + r.data.length, 0);
   console.log(`[Analytics] Total data points across all databases: ${totalPoints}`);
   
-  return results;
+  // Log per-database counts for debugging
+  processed.forEach(({ database, data }) => {
+    console.log(`[Analytics] ${database}: ${data.length} points`);
+  });
+  
+  return processed;
 };

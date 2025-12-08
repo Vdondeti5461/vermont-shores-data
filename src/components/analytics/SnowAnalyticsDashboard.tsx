@@ -111,25 +111,35 @@ export const SnowAnalyticsDashboard = () => {
 
   // Fetch locations on mount - uses raw_data database to get location list
   useEffect(() => {
+    let isMounted = true;
+    
     const loadLocations = async () => {
       setIsLocationsLoading(true);
       try {
         const locs = await fetchLocations('CRRELS2S_raw_data_ingestion', TABLE);
-        setLocations(locs);
-        setError(null);
+        if (isMounted) {
+          setLocations(locs);
+          setError(null);
+        }
       } catch (err) {
-        console.error('[SnowAnalytics] Error loading locations:', err);
-        setError('Failed to connect to data server. Please try again later.');
-        toast({
-          title: "Connection Error",
-          description: "Failed to load locations. Please check API connection.",
-          variant: "destructive",
-        });
+        if (isMounted) {
+          console.error('[SnowAnalytics] Error loading locations:', err);
+          setError('Failed to connect to data server. Please try again later.');
+          toast({
+            title: "Connection Error",
+            description: "Failed to load locations. Please check API connection.",
+            variant: "destructive",
+          });
+        }
       } finally {
-        setIsLocationsLoading(false);
+        if (isMounted) {
+          setIsLocationsLoading(false);
+        }
       }
     };
     loadLocations();
+    
+    return () => { isMounted = false; };
   }, [toast]);
 
   // Load data function - called explicitly by user
@@ -148,48 +158,61 @@ export const SnowAnalyticsDashboard = () => {
       abortControllerRef.current.abort();
     }
     abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
 
     setIsLoading(true);
     setZoomedData(null);
     setError(null);
     
     try {
+      console.log(`[SnowAnalytics] Loading data for location: ${selectedLocation}, attribute: ${selectedAttribute}`);
+      console.log(`[SnowAnalytics] Date range: ${startDate || 'none'} - ${endDate || 'none'}`);
+      
       const data = await fetchMultiQualityComparison(
         COMPARISON_DATABASES,
         TABLE,
         selectedLocation,
         [selectedAttribute],
         startDate || undefined,
-        endDate || undefined
+        endDate || undefined,
+        signal
       );
+      
+      if (signal.aborted) return;
       
       setComparisonData(data);
       setHasLoadedData(true);
       
       const totalPoints = data.reduce((sum, d) => sum + d.data.length, 0);
+      const dbCounts = data.map(d => `${d.database.replace('CRRELS2S_', '').replace('_ingestion', '')}: ${d.data.length}`).join(', ');
+      console.log(`[SnowAnalytics] Data loaded: ${dbCounts}`);
+      
       if (totalPoints === 0) {
         toast({
           title: "No Data",
-          description: "No data found for the selected filters.",
+          description: "No data found for the selected filters. Try a different date range.",
         });
       } else {
+        const hasEmptyDb = data.some(d => d.data.length === 0);
         toast({
-          title: "Data Loaded",
-          description: `Loaded ${totalPoints} data points across ${data.length} databases.`,
+          title: hasEmptyDb ? "Partial Data Loaded" : "Data Loaded",
+          description: `Loaded ${totalPoints.toLocaleString()} points. ${hasEmptyDb ? 'Some databases have no data for this location.' : ''}`,
         });
       }
     } catch (err) {
       if ((err as Error).name !== 'AbortError') {
         console.error('[SnowAnalytics] Error loading data:', err);
-        setError('Failed to load time series data.');
+        setError('Failed to load time series data. Please try again.');
         toast({
           title: "Data Error",
-          description: "Failed to load time series data.",
+          description: "Failed to load time series data. The server may be busy.",
           variant: "destructive",
         });
       }
     } finally {
-      setIsLoading(false);
+      if (!signal.aborted) {
+        setIsLoading(false);
+      }
     }
   }, [selectedLocation, selectedAttribute, startDate, endDate, toast]);
 
