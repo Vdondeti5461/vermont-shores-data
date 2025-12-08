@@ -13,7 +13,7 @@ import {
 } from 'recharts';
 import { 
   MapPin, Download, Settings2, Eye, EyeOff, 
-  ZoomOut, Calendar, Snowflake, Droplets, Scale, Play, AlertCircle
+  ZoomOut, Calendar, Snowflake, Droplets, Scale, Play, AlertCircle, RotateCcw
 } from 'lucide-react';
 import { DatabaseType, TableType, TimeSeriesDataPoint, fetchLocations, fetchMultiQualityComparison } from '@/services/realTimeAnalyticsService';
 import { useToast } from '@/hooks/use-toast';
@@ -239,8 +239,12 @@ export const SnowAnalyticsDashboard = () => {
       console.log(`  ${database}: ${data.length} points`);
       if (data.length > 0) {
         const sample = data[0];
-        console.log(`    Sample keys: ${Object.keys(sample).join(', ')}`);
-        console.log(`    Sample ${selectedAttribute}: ${sample[selectedAttribute]}`);
+        const keys = Object.keys(sample);
+        console.log(`    Sample keys: ${keys.join(', ')}`);
+        // Try to find the attribute - case insensitive match
+        const attrKey = keys.find(k => k.toLowerCase() === selectedAttribute.toLowerCase()) || selectedAttribute;
+        console.log(`    Looking for: ${selectedAttribute}, found key: ${attrKey}`);
+        console.log(`    Sample value: ${sample[attrKey]}`);
       }
     });
 
@@ -268,9 +272,11 @@ export const SnowAnalyticsDashboard = () => {
       comparisonData.forEach(({ database, data }) => {
         const dataPoint = data.find((d) => d.timestamp === timestamp);
         if (dataPoint) {
-          // Get the attribute value - handle both direct attribute and nested
-          const value = dataPoint[selectedAttribute];
-          point[database] = value !== undefined && value !== null ? Number(value) : null;
+          // Get the attribute value - try case-insensitive match first
+          const keys = Object.keys(dataPoint);
+          const attrKey = keys.find(k => k.toLowerCase() === selectedAttribute.toLowerCase()) || selectedAttribute;
+          const value = dataPoint[attrKey];
+          point[database] = value !== undefined && value !== null && value !== '' ? Number(value) : null;
         } else {
           point[database] = null;
         }
@@ -281,7 +287,7 @@ export const SnowAnalyticsDashboard = () => {
 
     // Debug: Check how many non-null values per database
     COMPARISON_DATABASES.forEach(db => {
-      const nonNullCount = fullData.filter(p => p[db] !== null).length;
+      const nonNullCount = fullData.filter(p => p[db] !== null && !isNaN(p[db] as number)).length;
       console.log(`[SnowAnalytics] ${db}: ${nonNullCount} non-null values out of ${fullData.length}`);
     });
 
@@ -346,6 +352,27 @@ export const SnowAnalyticsDashboard = () => {
   const resetZoom = () => {
     setZoomedData(null);
   };
+
+  // Reset all selections
+  const resetAll = useCallback(() => {
+    // Cancel any pending request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    setSelectedLocation('');
+    setSelectedAttribute('snow_depth_cm');
+    setStartDate('');
+    setEndDate('');
+    setComparisonData([]);
+    setHasLoadedData(false);
+    setZoomedData(null);
+    setVisibleDatabases(new Set(COMPARISON_DATABASES));
+    setError(null);
+    toast({
+      title: "Reset Complete",
+      description: "All selections have been cleared.",
+    });
+  }, [toast]);
 
   // Export chart as PNG
   const exportChart = useCallback(() => {
@@ -441,23 +468,33 @@ export const SnowAnalyticsDashboard = () => {
                 />
               </div>
 
-              {/* Load Button */}
+              {/* Action Buttons */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium opacity-0">Action</Label>
-                <Button 
-                  onClick={loadData} 
-                  disabled={!selectedLocation || isLoading}
-                  className="w-full"
-                >
-                  {isLoading ? (
-                    <>Loading...</>
-                  ) : (
-                    <>
-                      <Play className="w-4 h-4 mr-2" />
-                      Load Data
-                    </>
-                  )}
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={loadData} 
+                    disabled={!selectedLocation || isLoading}
+                    className="flex-1"
+                  >
+                    {isLoading ? (
+                      <>Loading...</>
+                    ) : (
+                      <>
+                        <Play className="w-4 h-4 mr-2" />
+                        Load Data
+                      </>
+                    )}
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={resetAll}
+                    disabled={isLoading}
+                    title="Reset all selections"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
             </div>
           </CardContent>
