@@ -45,6 +45,65 @@ export interface DownloadFilters {
   limit?: number;
 }
 
+// Simple fetch with timeout and retry
+async function fetchWithRetry<T>(
+  url: string,
+  options: RequestInit = {},
+  retries = 2,
+  timeoutMs = 30000
+): Promise<T> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    
+    try {
+      console.log(`[API Call] ${url.split('/').slice(-2).join('/')}: ${url}`);
+      const response = await fetch(url, { 
+        ...options, 
+        signal: controller.signal,
+        headers: { ...options.headers, 'Cache-Control': 'no-cache' }
+      });
+      clearTimeout(timeoutId);
+      
+      console.log(`[API Response] ${url.split('/').slice(-2).join('/')}: ${response.status}`);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+      
+      const data = await response.json();
+      console.log(`[API Data] ${url.split('/').slice(-2).join('/')}:`, data);
+      return data;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      lastError = error as Error;
+      
+      // Don't retry on abort
+      if (lastError.name === 'AbortError') {
+        throw new Error('Request timed out. Please try again.');
+      }
+      
+      // Retry on network errors or 502/503/504
+      const isRetryable = lastError.message.includes('HTTP 502') || 
+                         lastError.message.includes('HTTP 503') ||
+                         lastError.message.includes('HTTP 504') ||
+                         lastError.message.includes('Failed to fetch');
+      
+      if (attempt < retries && isRetryable) {
+        const delay = 500 * Math.pow(2, attempt);
+        console.warn(`[API Retry] ${attempt + 1}/${retries} in ${delay}ms: ${lastError.message}`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+    }
+  }
+  
+  throw lastError || new Error('Request failed');
+}
+
 export class DataDownloadService {
   private static get baseUrl() {
     return API_BASE_URL;
@@ -53,24 +112,11 @@ export class DataDownloadService {
   // Get all available databases
   static async getDatabases(): Promise<DatabaseInfo[]> {
     try {
-      console.log('📊 Fetching databases from:', `${this.baseUrl}/api/databases`);
-      const response = await fetch(`${this.baseUrl}/api/databases`);
-      console.log('📊 Database response status:', response.status);
+      const url = `${this.baseUrl}/api/databases`;
+      const data = await fetchWithRetry<any>(url);
       
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('📊 Database fetch error:', errorText);
-        throw new Error(`Failed to fetch databases: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      console.log('📊 Raw database response:', data);
-      
-      // Handle both array response and object with databases array
       const rawDatabases = Array.isArray(data) ? data : (data.databases || []);
-      console.log('📊 Processed databases:', rawDatabases);
       
-      // Transform the response to match our interface
       const databases: DatabaseInfo[] = rawDatabases.map((db: any, index: number) => ({
         id: db.key || db.id || `db_${index}`,
         name: db.displayName || db.display_name || db.name || db.key || `Database ${index + 1}`,
@@ -80,23 +126,19 @@ export class DataDownloadService {
         order: db.order || index
       }));
 
-      console.log('📊 Transformed databases:', databases);
       return databases.sort((a, b) => (a.order || 0) - (b.order || 0));
     } catch (error) {
-      console.error('📊 Error fetching databases:', error);
-      throw new Error('Failed to load available databases');
+      console.error('Error fetching databases:', error);
+      throw new Error('Failed to load databases. Please try again.');
     }
   }
 
   // Get tables for a specific database
   static async getTables(databaseId: string): Promise<TableInfo[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/databases/${databaseId}/tables`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch tables: ${response.statusText}`);
-      }
+      const url = `${this.baseUrl}/api/databases/${databaseId}/tables`;
+      const data = await fetchWithRetry<any>(url);
       
-      const data = await response.json();
       const tables = Array.isArray(data) ? data : data.tables || [];
       
       return tables.map((table: any) => ({
@@ -107,19 +149,16 @@ export class DataDownloadService {
       }));
     } catch (error) {
       console.error(`Error fetching tables for ${databaseId}:`, error);
-      throw new Error(`Failed to load tables for ${databaseId}`);
+      throw new Error('Failed to load tables. Please try again.');
     }
   }
 
   // Get locations for a specific database
   static async getLocations(databaseId: string): Promise<LocationInfo[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/databases/${databaseId}/locations`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch locations: ${response.statusText}`);
-      }
+      const url = `${this.baseUrl}/api/databases/${databaseId}/locations`;
+      const data = await fetchWithRetry<any>(url);
       
-      const data = await response.json();
       const locations = Array.isArray(data) ? data : data.locations || [];
       
       return locations.map((location: any) => ({
@@ -132,19 +171,16 @@ export class DataDownloadService {
       }));
     } catch (error) {
       console.error(`Error fetching locations for ${databaseId}:`, error);
-      throw new Error(`Failed to load locations for ${databaseId}`);
+      throw new Error('Failed to load locations. Please try again.');
     }
   }
 
   // Get attributes/columns for a specific table
   static async getTableAttributes(databaseId: string, tableName: string): Promise<AttributeInfo[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/databases/${databaseId}/tables/${tableName}/attributes`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch attributes: ${response.statusText}`);
-      }
+      const url = `${this.baseUrl}/api/databases/${databaseId}/tables/${tableName}/attributes`;
+      const data = await fetchWithRetry<any>(url);
       
-      const data = await response.json();
       const attributes = Array.isArray(data) ? data : data.attributes || data.columns || [];
       
       return attributes.map((attr: any) => ({
@@ -157,7 +193,7 @@ export class DataDownloadService {
       }));
     } catch (error) {
       console.error(`Error fetching attributes for ${databaseId}.${tableName}:`, error);
-      throw new Error(`Failed to load attributes for ${tableName}`);
+      throw new Error('Failed to load attributes. Please try again.');
     }
   }
 
