@@ -53,18 +53,33 @@ export interface TimeSeriesDataPoint {
 
 // Simple in-memory cache for locations (avoids repeated slow fetches)
 const locationsCache: Map<string, { data: Location[]; timestamp: number }> = new Map();
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes - shorter cache to pick up database updates
+const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes cache
 
 // Maximum rows per analytics query - increased for comprehensive data
 // Backend can handle 100k rows efficiently with proper indexing
 const MAX_ANALYTICS_ROWS = 100000;
 
-// Retry configuration for resilient connections
+// Retry configuration for resilient connections - more aggressive
 const RETRY_CONFIG = {
-  maxRetries: 3,
-  baseDelayMs: 1000,
-  maxDelayMs: 10000,
-  timeoutMs: 30000, // 30s timeout per request
+  maxRetries: 4,
+  baseDelayMs: 500,
+  maxDelayMs: 8000,
+  timeoutMs: 45000, // 45s timeout per request (increased for slow connections)
+};
+
+// Track connection health for proactive refresh
+let lastSuccessfulFetch: number = Date.now();
+let connectionHealthy = true;
+
+// Get connection health status
+export const isConnectionHealthy = (): boolean => connectionHealthy;
+
+// Mark connection as healthy/unhealthy
+const updateConnectionHealth = (healthy: boolean) => {
+  connectionHealthy = healthy;
+  if (healthy) {
+    lastSuccessfulFetch = Date.now();
+  }
 };
 
 // Statistics computed server-side from full dataset
@@ -104,7 +119,15 @@ async function fetchWithRetry<T>(
       : controller.signal;
     
     try {
-      const response = await fetch(url, { ...options, signal });
+      const response = await fetch(url, { 
+        ...options, 
+        signal,
+        // Add cache control to prevent stale cached responses
+        headers: {
+          ...options.headers,
+          'Cache-Control': 'no-cache',
+        }
+      });
       clearTimeout(timeoutId);
       
       if (!response.ok) {
@@ -112,7 +135,9 @@ async function fetchWithRetry<T>(
         throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
       
-      return await response.json();
+      const data = await response.json();
+      updateConnectionHealth(true);
+      return data;
     } catch (error) {
       clearTimeout(timeoutId);
       lastError = error as Error;
@@ -124,19 +149,26 @@ async function fetchWithRetry<T>(
       
       const isNetworkError = lastError.name === 'AbortError' || 
                             lastError.message.includes('fetch') ||
-                            lastError.message.includes('network');
+                            lastError.message.includes('network') ||
+                            lastError.message.includes('Failed to fetch');
       
-      if (attempt < retries && isNetworkError) {
-        const delay = Math.min(
-          RETRY_CONFIG.baseDelayMs * Math.pow(2, attempt),
-          RETRY_CONFIG.maxDelayMs
-        );
-        console.warn(`[Analytics] Request failed, retrying in ${delay}ms (attempt ${attempt + 1}/${retries}):`, lastError.message);
-        await new Promise(resolve => setTimeout(resolve, delay));
+      if (attempt < retries) {
+        // Retry on network errors OR server errors (5xx)
+        const isServerError = lastError.message.includes('HTTP 5');
+        if (isNetworkError || isServerError) {
+          const delay = Math.min(
+            RETRY_CONFIG.baseDelayMs * Math.pow(2, attempt),
+            RETRY_CONFIG.maxDelayMs
+          );
+          console.warn(`[Analytics] Request failed, retrying in ${delay}ms (attempt ${attempt + 1}/${retries}):`, lastError.message);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        }
       }
     }
   }
   
+  updateConnectionHealth(false);
   throw new Error(`Failed to connect to data server after ${retries} retries: ${lastError?.message}`);
 }
 
@@ -158,7 +190,29 @@ function combineAbortSignals(signal1: AbortSignal, signal2: AbortSignal): AbortS
 // Clear cache function for when database is updated
 export const clearLocationsCache = () => {
   locationsCache.clear();
+  pendingFetches.clear();
   console.log('[Analytics] Location cache cleared');
+};
+
+// Warm up the cache proactively - call this when app becomes visible
+export const warmUpLocationsCache = async (
+  database: DatabaseType = 'CRRELS2S_raw_data_ingestion',
+  table: TableType = 'raw_env_core_observations'
+): Promise<void> => {
+  const cacheKey = `${database}:${table}`;
+  const cached = locationsCache.get(cacheKey);
+  
+  // Only warm up if cache is expired or about to expire (within 2 minutes)
+  const cacheStale = !cached || (Date.now() - cached.timestamp) > (CACHE_TTL_MS - 2 * 60 * 1000);
+  
+  if (cacheStale) {
+    console.log('[Analytics] Warming up locations cache proactively');
+    try {
+      await fetchLocations(database, table);
+    } catch (error) {
+      console.warn('[Analytics] Cache warm-up failed:', error);
+    }
+  }
 };
 
 // Helper function to get the API database key from the full database type

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   fetchDatabases,
   fetchSeasons,
@@ -7,6 +7,7 @@ import {
   fetchTableAttributes,
   fetchTimeSeriesData,
   fetchMultiQualityComparison,
+  warmUpLocationsCache,
   Database,
   DatabaseType,
   TableType,
@@ -34,13 +35,30 @@ export const useSeasons = () => {
   });
 };
 
-// Hook to fetch locations
+// Hook to fetch locations with visibility-aware caching
 export const useLocations = (database?: DatabaseType, table?: TableType) => {
+  // Handle visibility change to warm up cache
+  useEffect(() => {
+    if (!database || !table) return;
+    
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        warmUpLocationsCache(database, table);
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [database, table]);
+
   return useQuery({
     queryKey: ['locations', database, table],
     queryFn: () => database && table ? fetchLocations(database, table) : Promise.resolve([]),
     enabled: !!database && !!table,
-    staleTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 8 * 60 * 1000, // 8 minutes - slightly less than cache TTL
+    gcTime: 15 * 60 * 1000, // Keep in garbage collection for 15 minutes
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
   });
 };
 
