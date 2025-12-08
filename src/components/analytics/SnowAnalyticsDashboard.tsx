@@ -107,14 +107,10 @@ export const SnowAnalyticsDashboard = () => {
   // Abort controller for cancelling requests
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Map database to correct table name - each database may have different table naming conventions
-  const getTableForDatabase = useCallback((database: DatabaseType): TableType => {
-    // All databases use the same table structure: raw_env_core_observations
-    // This is the primary environmental observations table across all processing stages
-    return 'raw_env_core_observations';
-  }, []);
-
-  const TABLE: TableType = 'raw_env_core_observations';
+  // Base table name used across all databases (each has different prefix)
+  const BASE_TABLE = 'env_core_observations';
+  // Raw table for location loading (locations are same across all databases)
+  const RAW_TABLE: TableType = 'raw_env_core_observations';
 
   // Function to load locations
   const loadLocations = useCallback(async (forceRefresh = false) => {
@@ -131,7 +127,7 @@ export const SnowAnalyticsDashboard = () => {
     while (retryCount <= maxRetries) {
       try {
         console.log(`[SnowAnalytics] Loading locations (attempt ${retryCount + 1})${forceRefresh ? ' - forced refresh' : ''}`);
-        const locs = await fetchLocations('CRRELS2S_raw_data_ingestion', TABLE);
+        const locs = await fetchLocations('CRRELS2S_raw_data_ingestion', RAW_TABLE);
         console.log(`[SnowAnalytics] Loaded ${locs.length} locations:`, locs.map(l => `${l.id} (${l.name})`).slice(0, 5));
         setLocations(locs);
         setError(null);
@@ -190,7 +186,7 @@ export const SnowAnalyticsDashboard = () => {
       
       const data = await fetchMultiQualityComparison(
         COMPARISON_DATABASES,
-        TABLE,
+        BASE_TABLE,
         selectedLocation,
         [selectedAttribute],
         startDate || undefined,

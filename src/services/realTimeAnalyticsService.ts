@@ -214,7 +214,7 @@ export const fetchTableAttributes = async (
 // Fetch time series data for a single database/table/location with row limit
 export const fetchTimeSeriesData = async (
   database: DatabaseType,
-  table: TableType,
+  table: string, // Accept any table name (raw_, clean_, qaqc_ prefixed)
   location: string,
   attributes: string[],
   startDate?: string,
@@ -267,10 +267,29 @@ export const fetchTimeSeriesData = async (
   }
 };
 
+// Get the correct table name for each database (different naming conventions)
+export const getTableNameForDatabase = (database: DatabaseType, baseTable: string): string => {
+  // Each database uses a different prefix for the same observation type
+  const tablePrefix = baseTable.replace(/^(raw_|clean_|qaqc_)/, '');
+  
+  switch (database) {
+    case 'CRRELS2S_raw_data_ingestion':
+      return `raw_${tablePrefix}`;
+    case 'CRRELS2S_stage_clean_data':
+      return `clean_${tablePrefix}`;
+    case 'CRRELS2S_stage_qaqc_data':
+      return `qaqc_${tablePrefix}`;
+    case 'CRRELS2S_seasonal_qaqc_data':
+      return `seasonal_${tablePrefix}`;
+    default:
+      return baseTable;
+  }
+};
+
 // Fetch comparison data across multiple data quality levels (raw, clean, QAQC)
 export const fetchMultiQualityComparison = async (
   databases: DatabaseType[],
-  table: TableType,
+  baseTable: string, // e.g., 'env_core_observations' or 'raw_env_core_observations'
   location: string,
   attributes: string[],
   startDate?: string,
@@ -283,7 +302,10 @@ export const fetchMultiQualityComparison = async (
   
   const results = await Promise.allSettled(
     databases.map(async (db) => {
-      const data = await fetchTimeSeriesData(db, table, location, attributes, startDate, endDate, signal);
+      // Get the correct table name for this specific database
+      const tableForDb = getTableNameForDatabase(db, baseTable);
+      console.log(`[Analytics] Fetching ${db} with table: ${tableForDb}`);
+      const data = await fetchTimeSeriesData(db, tableForDb as TableType, location, attributes, startDate, endDate, signal);
       return { database: db, data };
     })
   );
