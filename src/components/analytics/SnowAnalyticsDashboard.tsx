@@ -13,9 +13,9 @@ import {
 } from 'recharts';
 import { 
   MapPin, Download, Settings2, Eye, EyeOff, 
-  ZoomOut, Calendar, Snowflake, Droplets, Scale, Play, AlertCircle, RotateCcw, TrendingUp, Loader2, RefreshCw
+  ZoomOut, Calendar, Snowflake, Droplets, Scale, Play, AlertCircle, RotateCcw, TrendingUp, Loader2
 } from 'lucide-react';
-import { DatabaseType, TimeSeriesDataPoint, ServerStatistics, fetchMultiQualityComparison, fetchMultiDatabaseStatistics, fetchLocations } from '@/services/realTimeAnalyticsService';
+import { DatabaseType, TimeSeriesDataPoint, ServerStatistics, fetchMultiQualityComparison, fetchMultiDatabaseStatistics } from '@/services/realTimeAnalyticsService';
 import { useToast } from '@/hooks/use-toast';
 import { AnalyticsStatisticsPanel } from './AnalyticsStatisticsPanel';
 import { DateRangeFilter } from './DateRangeFilter';
@@ -73,9 +73,10 @@ export const SnowAnalyticsDashboard = () => {
   const { toast } = useToast();
   const { sampleAsync, isProcessing: isSampling } = useLttbWorker();
   
-  // Location state - fetch from API
-  const [locations, setLocations] = useState<Array<{ id: string; name: string }>>([]);
-  const [isLoadingLocations, setIsLoadingLocations] = useState(true);
+  // Use static locations - reliable and instant (no API dependency)
+  const locations = useMemo(() => 
+    MONITORING_LOCATIONS.map(loc => ({ id: loc.id, name: loc.displayName })), 
+  []);
   
   // State
   const [selectedLocation, setSelectedLocation] = useState<string>('');
@@ -108,48 +109,6 @@ export const SnowAnalyticsDashboard = () => {
 
   // Base table name used across all databases (each has different prefix)
   const BASE_TABLE = 'env_core_observations';
-
-  // Fetch locations from API on mount
-  const loadLocations = useCallback(async () => {
-    setIsLoadingLocations(true);
-    try {
-      // Fetch from raw_data database as primary source
-      const apiLocations = await fetchLocations(
-        'CRRELS2S_raw_data_ingestion',
-        'raw_env_core_observations'
-      );
-      
-      if (apiLocations && apiLocations.length > 0) {
-        // Map to simple format for dropdown
-        const mapped = apiLocations.map(loc => ({
-          id: loc.id,
-          name: loc.name || loc.id
-        }));
-        setLocations(mapped);
-        console.log(`[SnowAnalytics] Loaded ${mapped.length} locations from API`);
-      } else {
-        // Fallback to static data if API fails
-        console.warn('[SnowAnalytics] API returned no locations, using static fallback');
-        setLocations(MONITORING_LOCATIONS.map(loc => ({ id: loc.id, name: loc.displayName })));
-      }
-    } catch (err) {
-      console.error('[SnowAnalytics] Failed to load locations:', err);
-      // Fallback to static data
-      setLocations(MONITORING_LOCATIONS.map(loc => ({ id: loc.id, name: loc.displayName })));
-      toast({
-        title: "Location Load Warning",
-        description: "Using cached locations. Some may not have data.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoadingLocations(false);
-    }
-  }, [toast]);
-
-  // Load locations on mount
-  useEffect(() => {
-    loadLocations();
-  }, [loadLocations]);
 
   // Load data function - called explicitly by user
   const loadData = useCallback(async () => {
@@ -501,33 +460,19 @@ export const SnowAnalyticsDashboard = () => {
                 <Label className="flex items-center gap-2 text-sm font-medium">
                   <MapPin className="h-4 w-4 text-primary" />
                   Location
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-5 w-5 p-0 ml-auto"
-                    onClick={loadLocations}
-                    disabled={isLoadingLocations}
-                    title="Refresh locations"
-                  >
-                    <RefreshCw className={`h-3 w-3 ${isLoadingLocations ? 'animate-spin' : ''}`} />
-                  </Button>
                 </Label>
-                {isLoadingLocations ? (
-                  <Skeleton className="h-10 w-full" />
-                ) : (
-                  <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select location" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {locations.map((loc) => (
-                        <SelectItem key={loc.id} value={loc.id}>
-                          {loc.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
+                <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select location" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {locations.map((loc) => (
+                      <SelectItem key={loc.id} value={loc.id}>
+                        {loc.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Attribute */}
