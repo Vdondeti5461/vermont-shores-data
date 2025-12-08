@@ -83,18 +83,21 @@ export const SnowAnalyticsDashboard = () => {
 
   const TABLE: TableType = 'raw_env_core_observations';
 
-  // Fetch locations on mount
+  // Fetch locations on mount - uses raw_data database to get location list
   useEffect(() => {
     const loadLocations = async () => {
+      console.log('[SnowAnalytics] Loading locations from raw_data database...');
       try {
         const locs = await fetchLocations('CRRELS2S_raw_data_ingestion', TABLE);
+        console.log(`[SnowAnalytics] Loaded ${locs.length} locations:`, locs.map(l => l.id));
         setLocations(locs);
         // Auto-select first location if available
         if (locs.length > 0 && !selectedLocation) {
+          console.log(`[SnowAnalytics] Auto-selecting first location: ${locs[0].id}`);
           setSelectedLocation(locs[0].id);
         }
       } catch (error) {
-        console.error('Error loading locations:', error);
+        console.error('[SnowAnalytics] Error loading locations:', error);
         toast({
           title: "Connection Error",
           description: "Failed to load locations. Please check API connection.",
@@ -107,11 +110,21 @@ export const SnowAnalyticsDashboard = () => {
 
   // Fetch comparison data when filters change
   useEffect(() => {
-    if (!selectedLocation || !selectedAttribute) return;
+    if (!selectedLocation || !selectedAttribute) {
+      console.log('[SnowAnalytics] Skipping data fetch - missing location or attribute');
+      return;
+    }
 
     const loadComparisonData = async () => {
       setIsLoading(true);
       setZoomedData(null); // Reset zoom on new data
+      
+      console.log(`[SnowAnalytics] Fetching comparison data for:`);
+      console.log(`  Location: ${selectedLocation}`);
+      console.log(`  Attribute: ${selectedAttribute}`);
+      console.log(`  Date range: ${startDate || 'all'} to ${endDate || 'all'}`);
+      console.log(`  Databases: ${COMPARISON_DATABASES.join(', ')}`);
+      
       try {
         const data = await fetchMultiQualityComparison(
           COMPARISON_DATABASES,
@@ -121,9 +134,14 @@ export const SnowAnalyticsDashboard = () => {
           startDate || undefined,
           endDate || undefined
         );
+        
+        const totalPoints = data.reduce((sum, d) => sum + d.data.length, 0);
+        console.log(`[SnowAnalytics] Received ${totalPoints} total data points across ${data.length} databases`);
+        data.forEach(d => console.log(`  ${d.database}: ${d.data.length} points`));
+        
         setComparisonData(data);
       } catch (error) {
-        console.error('Error loading comparison data:', error);
+        console.error('[SnowAnalytics] Error loading comparison data:', error);
         toast({
           title: "Data Error",
           description: "Failed to load time series data.",

@@ -1,4 +1,4 @@
-import { API_BASE_URL } from '@/lib/apiConfig';
+import { API_BASE_URL, DATABASE_CONFIG } from '@/lib/apiConfig';
 
 // Database types matching your 4 databases
 export type DatabaseType = 
@@ -51,6 +51,19 @@ export interface TimeSeriesDataPoint {
   [key: string]: string | number | null;
 }
 
+// Helper function to get the API database key from the full database type
+function getDatabaseKey(database: DatabaseType): string {
+  const config = DATABASE_CONFIG[database];
+  if (config) {
+    return config.key;
+  }
+  // Fallback: manual conversion
+  return database
+    .replace('CRRELS2S_', '')
+    .replace('_ingestion', '')
+    .toLowerCase();
+}
+
 // Fetch available databases - returns your 4 databases
 export const fetchDatabases = async (): Promise<Database[]> => {
   try {
@@ -90,19 +103,25 @@ export const fetchLocations = async (
   database: DatabaseType,
   table: TableType
 ): Promise<Location[]> => {
-  // Map full database name to backend API key
-  const dbKey = database
-    .replace('CRRELS2S_', '')
-    .replace('_ingestion', '')
-    .toLowerCase();
-  const response = await fetch(
-    `${API_BASE_URL}/api/databases/${dbKey}/tables/${table}/locations`
-  );
-  if (!response.ok) throw new Error('Failed to fetch locations');
+  const dbKey = getDatabaseKey(database);
+  const url = `${API_BASE_URL}/api/databases/${dbKey}/tables/${table}/locations`;
+  
+  console.log(`[Analytics] Fetching locations from: ${url}`);
+  
+  const response = await fetch(url);
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`[Analytics] Locations fetch failed:`, errorText);
+    throw new Error('Failed to fetch locations');
+  }
+  
   const data = await response.json();
+  console.log(`[Analytics] Received ${Array.isArray(data) ? data.length : 0} locations`);
+  
   // Handle both array response and object with locations array
   const locations = Array.isArray(data) ? data : (data.locations || []);
-  // Normalize location format - use 'code' for API queries
+  
+  // Normalize location format - use 'code' for API queries, 'displayName' for UI
   return locations.map((loc: any, index: number) => ({
     id: typeof loc === 'string' ? loc : (loc.code || loc.id || `loc_${index}`),
     name: typeof loc === 'string' ? loc : (loc.displayName || loc.name || loc.code || loc.id),
@@ -118,15 +137,18 @@ export const fetchTableAttributes = async (
   database: DatabaseType,
   table: TableType
 ): Promise<TableAttribute[]> => {
-  // Map full database name to backend API key
-  const dbKey = database
-    .replace('CRRELS2S_', '')
-    .replace('_ingestion', '')
-    .toLowerCase();
-  const response = await fetch(
-    `${API_BASE_URL}/api/databases/${dbKey}/tables/${table}/attributes`
-  );
-  if (!response.ok) throw new Error('Failed to fetch attributes');
+  const dbKey = getDatabaseKey(database);
+  const url = `${API_BASE_URL}/api/databases/${dbKey}/tables/${table}/attributes`;
+  
+  console.log(`[Analytics] Fetching attributes from: ${url}`);
+  
+  const response = await fetch(url);
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`[Analytics] Attributes fetch failed:`, errorText);
+    throw new Error('Failed to fetch attributes');
+  }
+  
   const data = await response.json();
   // Handle both array response and object with attributes array
   return Array.isArray(data) ? data : (data.attributes || []);
@@ -141,11 +163,7 @@ export const fetchTimeSeriesData = async (
   startDate?: string,
   endDate?: string
 ): Promise<TimeSeriesDataPoint[]> => {
-  // Map full database name to backend API key
-  const dbKey = database
-    .replace('CRRELS2S_', '')
-    .replace('_ingestion', '')
-    .toLowerCase();
+  const dbKey = getDatabaseKey(database);
   
   const params = new URLSearchParams({
     location,
@@ -154,21 +172,20 @@ export const fetchTimeSeriesData = async (
     ...(endDate && { end_date: endDate }),
   });
 
-  console.log(`Fetching time series from: ${API_BASE_URL}/api/databases/${dbKey}/analytics/${table}?${params}`);
+  const url = `${API_BASE_URL}/api/databases/${dbKey}/analytics/${table}?${params}`;
+  console.log(`[Analytics] Fetching time series from: ${url}`);
   
-  const response = await fetch(
-    `${API_BASE_URL}/api/databases/${dbKey}/analytics/${table}?${params}`
-  );
+  const response = await fetch(url);
   
   if (!response.ok) {
     const errorText = await response.text();
-    console.error(`Analytics fetch failed:`, errorText);
+    console.error(`[Analytics] Time series fetch failed:`, errorText);
     throw new Error('Failed to fetch time series data');
   }
   
   // Parse JSON response (analytics endpoint returns JSON, not CSV)
   const data = await response.json();
-  console.log(`Received ${data.length} data points for ${database}/${table}`);
+  console.log(`[Analytics] Received ${data.length} data points for ${database}/${table}/${location}`);
   
   return data;
 };
@@ -182,11 +199,23 @@ export const fetchMultiQualityComparison = async (
   startDate?: string,
   endDate?: string
 ): Promise<{ database: DatabaseType; data: TimeSeriesDataPoint[] }[]> => {
+  console.log(`[Analytics] Fetching multi-quality comparison for ${databases.length} databases`);
+  console.log(`[Analytics] Location: ${location}, Attributes: ${attributes.join(', ')}`);
+  
   const results = await Promise.all(
     databases.map(async (db) => {
-      const data = await fetchTimeSeriesData(db, table, location, attributes, startDate, endDate);
-      return { database: db, data };
+      try {
+        const data = await fetchTimeSeriesData(db, table, location, attributes, startDate, endDate);
+        return { database: db, data };
+      } catch (error) {
+        console.error(`[Analytics] Error fetching data for ${db}:`, error);
+        return { database: db, data: [] };
+      }
     })
   );
+  
+  const totalPoints = results.reduce((sum, r) => sum + r.data.length, 0);
+  console.log(`[Analytics] Total data points across all databases: ${totalPoints}`);
+  
   return results;
 };
