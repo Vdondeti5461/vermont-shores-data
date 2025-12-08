@@ -13,9 +13,9 @@ import {
 } from 'recharts';
 import { 
   MapPin, Download, Settings2, Eye, EyeOff, 
-  ZoomOut, Calendar, Snowflake, Droplets, Scale, Play, AlertCircle, RotateCcw
+  ZoomOut, Calendar, Snowflake, Droplets, Scale, Play, AlertCircle, RotateCcw, RefreshCw
 } from 'lucide-react';
-import { DatabaseType, TableType, TimeSeriesDataPoint, fetchLocations, fetchMultiQualityComparison } from '@/services/realTimeAnalyticsService';
+import { DatabaseType, TableType, TimeSeriesDataPoint, fetchLocations, fetchMultiQualityComparison, clearLocationsCache } from '@/services/realTimeAnalyticsService';
 import { useToast } from '@/hooks/use-toast';
 import { AnalyticsStatisticsPanel } from './AnalyticsStatisticsPanel';
 import { DateRangeFilter } from './DateRangeFilter';
@@ -109,51 +109,51 @@ export const SnowAnalyticsDashboard = () => {
 
   const TABLE: TableType = 'raw_env_core_observations';
 
-  // Fetch locations on mount - uses raw_data database to get location list
-  useEffect(() => {
-    let isMounted = true;
+  // Function to load locations
+  const loadLocations = useCallback(async (forceRefresh = false) => {
+    setIsLocationsLoading(true);
+    setError(null);
+    
+    if (forceRefresh) {
+      clearLocationsCache();
+    }
+    
     let retryCount = 0;
     const maxRetries = 2;
     
-    const loadLocations = async () => {
-      setIsLocationsLoading(true);
-      setError(null);
-      
-      while (retryCount <= maxRetries && isMounted) {
-        try {
-          console.log(`[SnowAnalytics] Loading locations (attempt ${retryCount + 1})`);
-          const locs = await fetchLocations('CRRELS2S_raw_data_ingestion', TABLE);
-          if (isMounted) {
-            console.log(`[SnowAnalytics] Loaded ${locs.length} locations`);
-            setLocations(locs);
-            setError(null);
-            setIsLocationsLoading(false);
-            return; // Success, exit retry loop
-          }
-        } catch (err) {
-          retryCount++;
-          console.error(`[SnowAnalytics] Location load attempt ${retryCount} failed:`, err);
-          
-          if (retryCount > maxRetries && isMounted) {
-            setError('Failed to connect to data server. Please try again later.');
-            toast({
-              title: "Connection Error",
-              description: "Failed to load locations. Please refresh the page.",
-              variant: "destructive",
-            });
-            setIsLocationsLoading(false);
-          } else if (isMounted) {
-            // Wait before retry
-            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
-          }
+    while (retryCount <= maxRetries) {
+      try {
+        console.log(`[SnowAnalytics] Loading locations (attempt ${retryCount + 1})${forceRefresh ? ' - forced refresh' : ''}`);
+        const locs = await fetchLocations('CRRELS2S_raw_data_ingestion', TABLE);
+        console.log(`[SnowAnalytics] Loaded ${locs.length} locations:`, locs.map(l => `${l.id} (${l.name})`).slice(0, 5));
+        setLocations(locs);
+        setError(null);
+        setIsLocationsLoading(false);
+        return; // Success
+      } catch (err) {
+        retryCount++;
+        console.error(`[SnowAnalytics] Location load attempt ${retryCount} failed:`, err);
+        
+        if (retryCount > maxRetries) {
+          setError('Failed to connect to data server. Please try again later.');
+          toast({
+            title: "Connection Error",
+            description: "Failed to load locations. Please try the refresh button.",
+            variant: "destructive",
+          });
+          setIsLocationsLoading(false);
+        } else {
+          // Wait before retry
+          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
         }
       }
-    };
-    
-    loadLocations();
-    
-    return () => { isMounted = false; };
+    }
   }, [toast]);
+
+  // Fetch locations on mount
+  useEffect(() => {
+    loadLocations();
+  }, [loadLocations]);
 
   // Load data function - called explicitly by user
   const loadData = useCallback(async () => {
@@ -359,6 +359,8 @@ export const SnowAnalyticsDashboard = () => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
+    // Clear cache and reload locations
+    clearLocationsCache();
     setSelectedLocation('');
     setSelectedAttribute('snow_depth_cm');
     setStartDate('');
@@ -368,11 +370,13 @@ export const SnowAnalyticsDashboard = () => {
     setZoomedData(null);
     setVisibleDatabases(new Set(COMPARISON_DATABASES));
     setError(null);
+    // Reload locations with fresh data
+    loadLocations(true);
     toast({
       title: "Reset Complete",
-      description: "All selections have been cleared.",
+      description: "All selections cleared and locations refreshed.",
     });
-  }, [toast]);
+  }, [toast, loadLocations]);
 
   // Export chart as PNG
   const exportChart = useCallback(() => {
@@ -415,6 +419,16 @@ export const SnowAnalyticsDashboard = () => {
                 <Label className="flex items-center gap-2 text-sm font-medium">
                   <MapPin className="h-4 w-4 text-primary" />
                   Location
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-4 w-4 p-0 ml-1" 
+                    onClick={() => loadLocations(true)}
+                    disabled={isLocationsLoading}
+                    title="Refresh locations"
+                  >
+                    <RefreshCw className={`h-3 w-3 ${isLocationsLoading ? 'animate-spin' : ''}`} />
+                  </Button>
                 </Label>
                 {isLocationsLoading ? (
                   <Skeleton className="h-10 w-full" />
