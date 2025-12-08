@@ -8,8 +8,10 @@ export const useDatabases = () => {
   return useQuery({
     queryKey: ['databases'],
     queryFn: DataDownloadService.getDatabases,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(500 * 2 ** attemptIndex, 4000),
   });
 };
 
@@ -21,6 +23,8 @@ export const useTables = (databaseId: string | undefined) => {
     enabled: !!databaseId,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(500 * 2 ** attemptIndex, 4000),
   });
 };
 
@@ -32,6 +36,8 @@ export const useLocations = (databaseId: string | undefined) => {
     enabled: !!databaseId,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(500 * 2 ** attemptIndex, 4000),
   });
 };
 
@@ -41,8 +47,10 @@ export const useTableAttributes = (databaseId: string | undefined, tableName: st
     queryKey: ['attributes', databaseId, tableName],
     queryFn: () => DataDownloadService.getTableAttributes(databaseId!, tableName!),
     enabled: !!(databaseId && tableName),
-    staleTime: 10 * 60 * 1000, // 10 minutes - attributes change rarely
+    staleTime: 10 * 60 * 1000,
     gcTime: 15 * 60 * 1000,
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(500 * 2 ** attemptIndex, 4000),
   });
 };
 
