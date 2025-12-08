@@ -148,6 +148,7 @@ const LOCATION_METADATA = {
 };
 
 // Table metadata with detailed descriptions
+// Works for raw_, clean_, and qaqc_ prefixed tables (same structure)
 const TABLE_METADATA = {
   'raw_env_core_observations': {
     displayName: 'Core Environmental Observations',
@@ -212,46 +213,22 @@ const TABLE_METADATA = {
       'load_temperature_c': { description: 'Load sensor temperature', unit: 'Deg C', measurement_type: 'Sample', category: 'Temperature' }
     }
   },
-  'raw_env_snowpack_temperature_profile': {
+  'raw_env_snowpack_temperature_profile_observations': {
     displayName: 'Snowpack Temperature Profile',
     description: 'Temperature measurements at multiple depths within snowpack from 0cm to 290cm',
     attributes: {
       'id': { description: 'Unique row identifier', unit: 'No Unit', measurement_type: 'Identifier', category: 'System' },
       'timestamp': { description: 'Observation timestamp', unit: 'DateTime', measurement_type: 'No Unit', category: 'Time' },
-      'location': { description: 'Logger/site ID', unit: 'LOC', measurement_type: 'No Unit', category: 'Location' },
-      'snow_temp_0cm_avg': { description: 'Snow temperature at 0cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
-      'snow_temp_10cm_avg': { description: 'Snow temperature at 10cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
-      'snow_temp_20cm_avg': { description: 'Snow temperature at 20cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
-      'snow_temp_30cm_avg': { description: 'Snow temperature at 30cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
-      'snow_temp_40cm_avg': { description: 'Snow temperature at 40cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
-      'snow_temp_50cm_avg': { description: 'Snow temperature at 50cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
-      'snow_temp_60cm_avg': { description: 'Snow temperature at 60cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
-      'snow_temp_70cm_avg': { description: 'Snow temperature at 70cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
-      'snow_temp_80cm_avg': { description: 'Snow temperature at 80cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
-      'snow_temp_90cm_avg': { description: 'Snow temperature at 90cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
-      'snow_temp_100cm_avg': { description: 'Snow temperature at 100cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
-      'snow_temp_110cm_avg': { description: 'Snow temperature at 110cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
-      'snow_temp_120cm_avg': { description: 'Snow temperature at 120cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
-      'snow_temp_130cm_avg': { description: 'Snow temperature at 130cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
-      'snow_temp_140cm_avg': { description: 'Snow temperature at 140cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
-      'snow_temp_150cm_avg': { description: 'Snow temperature at 150cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
-      'snow_temp_160cm_avg': { description: 'Snow temperature at 160cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
-      'snow_temp_170cm_avg': { description: 'Snow temperature at 170cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
-      'snow_temp_180cm_avg': { description: 'Snow temperature at 180cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
-      'snow_temp_190cm_avg': { description: 'Snow temperature at 190cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
-      'snow_temp_200cm_avg': { description: 'Snow temperature at 200cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
-      'snow_temp_210cm_avg': { description: 'Snow temperature at 210cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
-      'snow_temp_220cm_avg': { description: 'Snow temperature at 220cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
-      'snow_temp_230cm_avg': { description: 'Snow temperature at 230cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
-      'snow_temp_240cm_avg': { description: 'Snow temperature at 240cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
-      'snow_temp_250cm_avg': { description: 'Snow temperature at 250cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
-      'snow_temp_260cm_avg': { description: 'Snow temperature at 260cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
-      'snow_temp_270cm_avg': { description: 'Snow temperature at 270cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
-      'snow_temp_280cm_avg': { description: 'Snow temperature at 280cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' },
-      'snow_temp_290cm_avg': { description: 'Snow temperature at 290cm depth', unit: 'Deg C', measurement_type: 'Avg', category: 'Temperature' }
+      'location': { description: 'Logger/site ID', unit: 'LOC', measurement_type: 'No Unit', category: 'Location' }
     }
   }
 };
+
+// Helper to get table metadata regardless of prefix (raw_, clean_, qaqc_)
+function getTableMetadata(tableName) {
+  const normalized = tableName.replace(/^(raw_|clean_|qaqc_|seasonal_)/, 'raw_');
+  return TABLE_METADATA[normalized] || TABLE_METADATA[tableName];
+}
 
 
 // Database metadata configuration
@@ -735,8 +712,8 @@ app.get('/api/databases/:database/tables/:table/attributes', async (req, res) =>
       ORDER BY ORDINAL_POSITION
     `, [databaseName, table]);
     
-    const tableKey = table.toLowerCase();
-    const tableMetadata = TABLE_METADATA[tableKey];
+    // Use the helper to get metadata regardless of prefix (raw_, clean_, qaqc_)
+    const tableMetadata = getTableMetadata(table);
 
     const attributes = columns.map(col => {
       const attrMetadata = tableMetadata?.attributes?.[col.COLUMN_NAME] || {};
