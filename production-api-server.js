@@ -900,12 +900,16 @@ app.get('/api/databases/:database/locations', async (req, res) => {
 app.get('/api/databases/:database/analytics/:table', async (req, res) => {
   try {
     const { database, table } = req.params;
-    const { location, start_date, end_date, attributes } = req.query;
+    const { location, start_date, end_date, attributes, limit } = req.query;
+    
+    // Default and max limit to prevent timeout
+    const rowLimit = Math.min(parseInt(limit) || 10000, 50000);
     
     console.log(`\n📊 [ANALYTICS] Fetching time series for ${database}/${table}`);
     console.log(`   Location: ${location}`);
     console.log(`   Attributes: ${attributes}`);
     console.log(`   Date range: ${start_date} to ${end_date}`);
+    console.log(`   Row limit: ${rowLimit}`);
     
     const { connection, databaseName } = await getConnectionWithDB(database);
 
@@ -943,13 +947,28 @@ app.get('/api/databases/:database/analytics/:table', async (req, res) => {
     let query = `SELECT ${selectList} FROM \`${table}\` WHERE 1=1`;
     const params = [];
 
-    // Location filter
+    // Location filter - try both with and without dash for better matching
     if (location) {
       const locations = location.split(',').map(l => l.trim()).filter(Boolean);
       if (locations.length > 0) {
-        const locationPlaceholders = locations.map(() => '?').join(',');
+        // Add variations of location codes for flexible matching
+        const expandedLocations = [];
+        locations.forEach(loc => {
+          expandedLocations.push(loc);
+          // Add with-dash version if doesn't have dash
+          if (!loc.includes('-')) {
+            const withDash = loc.replace(/^([A-Z]{2,4})(\d+)$/, '$1-$2');
+            if (withDash !== loc) expandedLocations.push(withDash);
+          }
+          // Add without-dash version if has dash
+          if (loc.includes('-')) {
+            expandedLocations.push(loc.replace('-', ''));
+          }
+        });
+        const uniqueLocations = [...new Set(expandedLocations)];
+        const locationPlaceholders = uniqueLocations.map(() => '?').join(',');
         query += ` AND \`${locCol}\` IN (${locationPlaceholders})`;
-        params.push(...locations);
+        params.push(...uniqueLocations);
       }
     }
 
@@ -964,11 +983,13 @@ app.get('/api/databases/:database/analytics/:table', async (req, res) => {
       params.push(end_date);
     }
 
-    query += ` ORDER BY \`${tsCol}\` ASC`;
+    query += ` ORDER BY \`${tsCol}\` ASC LIMIT ${rowLimit}`;
 
-    console.log(`🔍 [ANALYTICS] Executing query with ${params.length} parameters`);
+    console.log(`🔍 [ANALYTICS] Executing query with ${params.length} parameters, limit ${rowLimit}`);
+    const startTime = Date.now();
     const [rows] = await connection.execute(query, params);
-    console.log(`✅ [ANALYTICS] Retrieved ${rows.length} rows`);
+    const duration = Date.now() - startTime;
+    console.log(`✅ [ANALYTICS] Retrieved ${rows.length} rows in ${duration}ms`);
 
     connection.release();
     
