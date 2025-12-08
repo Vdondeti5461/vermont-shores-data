@@ -365,22 +365,62 @@ export const fetchTimeSeriesData = async (
   }
 };
 
-// Get the correct table name for each database (different naming conventions)
+// Get the correct table name for each database based on actual database structure
+// Based on actual tables:
+// - CRRELS2S_raw_data_ingestion: raw_env_core_observations, raw_env_precipitation_observations, raw_env_snowpack_temperature_profile_observations, raw_env_wind_observations
+// - CRRELS2S_stage_clean_data: clean_env_core_observations, clean_env_precipitation_observations, clean_env_snowpack_temperature_profile_observations, clean_env_wind_observations
+// - CRRELS2S_stage_qaqc_data: core_env_observations_qaqc (NOT qaqc_env_core_observations)
+// - CRRELS2S_seasonal_qaqc_data: core_observations_YYYY_YYYY_qaqc
 export const getTableNameForDatabase = (database: DatabaseType, baseTable: string): string => {
-  // Each database uses a different prefix for the same observation type
-  const tablePrefix = baseTable.replace(/^(raw_|clean_|qaqc_)/, '');
+  // Extract the core table type from any prefixed name
+  // Handle common patterns: raw_env_core_observations, clean_env_core_observations, env_core_observations
+  const coreMatch = baseTable.match(/(env_core_observations|env_precipitation_observations|env_snowpack_temperature_profile_observations|env_wind_observations)/i);
+  
+  if (!coreMatch) {
+    // Not a standard observations table, return as-is
+    return baseTable;
+  }
+  
+  const tableType = coreMatch[1];
   
   switch (database) {
     case 'CRRELS2S_raw_data_ingestion':
-      return `raw_${tablePrefix}`;
+      return `raw_${tableType}`;
     case 'CRRELS2S_stage_clean_data':
-      return `clean_${tablePrefix}`;
+      return `clean_${tableType}`;
     case 'CRRELS2S_stage_qaqc_data':
-      return `qaqc_${tablePrefix}`;
+      // QAQC uses different naming: core_env_observations_qaqc instead of qaqc_env_core_observations
+      if (tableType === 'env_core_observations') {
+        return 'core_env_observations_qaqc';
+      }
+      // For other types, they may not exist in qaqc - return pattern that might work
+      return tableType.replace('env_', '') + '_qaqc';
     case 'CRRELS2S_seasonal_qaqc_data':
-      return `seasonal_${tablePrefix}`;
+      // Seasonal uses specific season tables, not generic pattern
+      // Return base table as-is since caller should specify exact table
+      return baseTable;
     default:
       return baseTable;
+  }
+};
+
+// Fetch tables dynamically from database
+export const fetchDatabaseTables = async (
+  database: DatabaseType
+): Promise<{ name: string; displayName: string; rowCount: number }[]> => {
+  const dbKey = getDatabaseKey(database);
+  const url = `${API_BASE_URL}/api/databases/${dbKey}/tables`;
+  
+  console.log(`[Analytics] Fetching tables from: ${url}`);
+  
+  try {
+    const data = await fetchWithRetry<any>(url);
+    const tables = Array.isArray(data) ? data : (data.tables || []);
+    console.log(`[Analytics] Found ${tables.length} tables in ${dbKey}`);
+    return tables;
+  } catch (error) {
+    console.error(`[Analytics] Error fetching tables for ${dbKey}:`, error);
+    throw error;
   }
 };
 
