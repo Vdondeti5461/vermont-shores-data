@@ -1,9 +1,10 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DatabaseType } from '@/services/realTimeAnalyticsService';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { TrendingUp, TrendingDown, Minus, Database, BarChart3 } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
+import { TrendingUp, TrendingDown, Minus, Database, BarChart3, CheckCircle2, AlertTriangle } from 'lucide-react';
 
 interface StatisticsData {
   mean: number;
@@ -12,6 +13,8 @@ interface StatisticsData {
   stdDev: number;
   count: number;
   completeness: number;
+  isServerComputed?: boolean;
+  totalRecords?: number;
 }
 
 interface AnalyticsStatisticsPanelProps {
@@ -23,6 +26,7 @@ interface AnalyticsStatisticsPanelProps {
   };
   locationName: string;
   visibleDatabases: Set<DatabaseType>;
+  sampledPointsCount?: number;
 }
 
 const DATABASE_COLORS: Record<DatabaseType, string> = {
@@ -50,8 +54,17 @@ export const AnalyticsStatisticsPanel = ({
   attributeInfo,
   locationName,
   visibleDatabases,
+  sampledPointsCount,
 }: AnalyticsStatisticsPanelProps) => {
   const visibleDbs = DATABASE_ORDER.filter(db => visibleDatabases.has(db));
+  
+  // Calculate total records from server stats
+  const totalServerRecords = visibleDbs.reduce((sum, db) => {
+    const stats = statistics[db];
+    return sum + (stats?.isServerComputed ? stats.count : 0);
+  }, 0);
+  
+  const hasServerStats = visibleDbs.some(db => statistics[db]?.isServerComputed);
 
   // Prepare bar chart data
   const barChartData = visibleDbs.map(db => ({
@@ -81,15 +94,36 @@ export const AnalyticsStatisticsPanel = ({
 
   return (
     <div className="space-y-6">
-      {/* Overview Header */}
+      {/* Overview Header with Data Source Indicator */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-primary" />
             Statistical Summary
+            {hasServerStats && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Badge variant="outline" className="ml-2 gap-1 text-xs bg-green-50 text-green-700 border-green-200">
+                      <CheckCircle2 className="w-3 h-3" />
+                      Full Dataset
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Statistics computed from all {totalServerRecords.toLocaleString()} records</p>
+                    <p className="text-xs text-muted-foreground">Not affected by chart sampling</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
           </CardTitle>
-          <CardDescription>
-            {attributeInfo?.label} at {locationName} | {attributeInfo?.unit}
+          <CardDescription className="flex items-center gap-2 flex-wrap">
+            <span>{attributeInfo?.label} at {locationName} | {attributeInfo?.unit}</span>
+            {sampledPointsCount && hasServerStats && (
+              <span className="text-xs text-muted-foreground">
+                (Chart shows {sampledPointsCount.toLocaleString()} sampled points)
+              </span>
+            )}
           </CardDescription>
         </CardHeader>
       </Card>
@@ -107,9 +141,34 @@ export const AnalyticsStatisticsPanel = ({
                 style={{ backgroundColor: DATABASE_COLORS[db] }}
               />
               <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Database className="w-4 h-4" style={{ color: DATABASE_COLORS[db] }} />
-                  {DATABASE_LABELS[db]}
+                <CardTitle className="text-base flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Database className="w-4 h-4" style={{ color: DATABASE_COLORS[db] }} />
+                    {DATABASE_LABELS[db]}
+                  </div>
+                  {stats.isServerComputed ? (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Computed from {stats.totalRecords?.toLocaleString()} records</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  ) : (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <AlertTriangle className="w-4 h-4 text-amber-500" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Computed from sampled data only</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -180,7 +239,7 @@ export const AnalyticsStatisticsPanel = ({
                     style: { fontSize: 12 }
                   }}
                 />
-                <Tooltip 
+                <RechartsTooltip 
                   formatter={(value: any) => [`${value.toFixed(2)} ${attributeInfo?.unit}`, 'Mean']}
                   contentStyle={{
                     backgroundColor: 'hsl(var(--card))',

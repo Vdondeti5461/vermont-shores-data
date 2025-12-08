@@ -15,7 +15,7 @@ import {
   MapPin, Download, Settings2, Eye, EyeOff, 
   ZoomOut, Calendar, Snowflake, Droplets, Scale, Play, AlertCircle, RotateCcw, RefreshCw
 } from 'lucide-react';
-import { DatabaseType, TableType, TimeSeriesDataPoint, fetchLocations, fetchMultiQualityComparison, clearLocationsCache } from '@/services/realTimeAnalyticsService';
+import { DatabaseType, TableType, TimeSeriesDataPoint, ServerStatistics, fetchLocations, fetchMultiQualityComparison, fetchMultiDatabaseStatistics, clearLocationsCache } from '@/services/realTimeAnalyticsService';
 import { useToast } from '@/hooks/use-toast';
 import { AnalyticsStatisticsPanel } from './AnalyticsStatisticsPanel';
 import { DateRangeFilter } from './DateRangeFilter';
@@ -88,6 +88,7 @@ export const SnowAnalyticsDashboard = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isLocationsLoading, setIsLocationsLoading] = useState(true);
   const [comparisonData, setComparisonData] = useState<{ database: DatabaseType; data: TimeSeriesDataPoint[] }[]>([]);
+  const [serverStatistics, setServerStatistics] = useState<Record<DatabaseType, ServerStatistics | null>>({} as any);
   const [hasLoadedData, setHasLoadedData] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -184,24 +185,46 @@ export const SnowAnalyticsDashboard = () => {
       console.log(`[SnowAnalytics] Loading data for location: ${selectedLocation}, attribute: ${selectedAttribute}`);
       console.log(`[SnowAnalytics] Date range: ${startDate || 'none'} - ${endDate || 'none'}`);
       
-      const data = await fetchMultiQualityComparison(
-        COMPARISON_DATABASES,
-        BASE_TABLE,
-        selectedLocation,
-        [selectedAttribute],
-        startDate || undefined,
-        endDate || undefined,
-        signal
-      );
+      // Fetch both time series data AND server-side statistics in parallel
+      const [data, statsResults] = await Promise.all([
+        fetchMultiQualityComparison(
+          COMPARISON_DATABASES,
+          BASE_TABLE,
+          selectedLocation,
+          [selectedAttribute],
+          startDate || undefined,
+          endDate || undefined,
+          signal
+        ),
+        fetchMultiDatabaseStatistics(
+          COMPARISON_DATABASES,
+          BASE_TABLE,
+          selectedLocation,
+          selectedAttribute,
+          startDate || undefined,
+          endDate || undefined,
+          signal
+        )
+      ]);
       
       if (signal.aborted) return;
       
       setComparisonData(data);
+      
+      // Store server-side statistics (computed from FULL dataset)
+      const statsMap: Record<DatabaseType, ServerStatistics | null> = {} as any;
+      statsResults.forEach(({ database, stats }) => {
+        statsMap[database] = stats;
+      });
+      setServerStatistics(statsMap);
+      
       setHasLoadedData(true);
       
       const totalPoints = data.reduce((sum, d) => sum + d.data.length, 0);
+      const totalServerPoints = statsResults.reduce((sum, r) => sum + (r.stats?.count || 0), 0);
       const dbCounts = data.map(d => `${d.database.replace('CRRELS2S_', '').replace('_ingestion', '')}: ${d.data.length}`).join(', ');
       console.log(`[SnowAnalytics] Data loaded: ${dbCounts}`);
+      console.log(`[SnowAnalytics] Server statistics computed from ${totalServerPoints.toLocaleString()} total points`);
       
       if (totalPoints === 0) {
         toast({
@@ -214,12 +237,12 @@ export const SnowAnalyticsDashboard = () => {
         if (hasEmptyDb) {
           toast({
             title: "Partial Data Loaded",
-            description: `Loaded ${totalPoints.toLocaleString()} points. Missing: ${emptyDbs}. Check if location codes match across databases.`,
+            description: `Loaded ${totalPoints.toLocaleString()} points. Missing: ${emptyDbs}`,
           });
         } else {
           toast({
             title: "Data Loaded",
-            description: `Loaded ${totalPoints.toLocaleString()} points across all databases.`,
+            description: `Stats from ${totalServerPoints.toLocaleString()} points. Chart sampled to ${totalPoints.toLocaleString()}.`,
           });
         }
       }
@@ -314,7 +337,7 @@ export const SnowAnalyticsDashboard = () => {
     return comparisonData.reduce((sum, d) => sum + d.data.length, 0);
   }, [comparisonData]);
 
-  // Calculate statistics
+  // Calculate statistics - USE SERVER-SIDE stats for accuracy, fallback to client-side
   const statistics = useMemo(() => {
     const stats: Record<DatabaseType, {
       mean: number;
@@ -323,29 +346,53 @@ export const SnowAnalyticsDashboard = () => {
       stdDev: number;
       count: number;
       completeness: number;
+      isServerComputed: boolean;
+      totalRecords: number;
     }> = {} as any;
 
     COMPARISON_DATABASES.forEach((db) => {
-      const values = displayData
-        .map(d => d[db] as number)
-        .filter(v => v !== null && v !== undefined && !isNaN(v));
+      const serverStats = serverStatistics[db];
       
-      const count = values.length;
-      const total = displayData.length;
-      const mean = count > 0 ? values.reduce((a, b) => a + b, 0) / count : 0;
-      const min = count > 0 ? Math.min(...values) : 0;
-      const max = count > 0 ? Math.max(...values) : 0;
-      const variance = count > 0 
-        ? values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / count 
-        : 0;
-      const stdDev = Math.sqrt(variance);
-      const completeness = total > 0 ? (count / total) * 100 : 0;
+      if (serverStats && serverStats.count > 0) {
+        // Use server-side statistics (computed from FULL dataset)
+        stats[db] = {
+          mean: serverStats.mean ?? 0,
+          min: serverStats.min ?? 0,
+          max: serverStats.max ?? 0,
+          stdDev: serverStats.stdDev ?? 0,
+          count: serverStats.count,
+          completeness: serverStats.completeness,
+          isServerComputed: true,
+          totalRecords: serverStats.total,
+        };
+      } else {
+        // Fallback to client-side (sampled data) - mark clearly
+        const values = displayData
+          .map(d => d[db] as number)
+          .filter(v => v !== null && v !== undefined && !isNaN(v));
+        
+        const count = values.length;
+        const total = displayData.length;
+        const mean = count > 0 ? values.reduce((a, b) => a + b, 0) / count : 0;
+        const min = count > 0 ? Math.min(...values) : 0;
+        const max = count > 0 ? Math.max(...values) : 0;
+        const variance = count > 0 
+          ? values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / count 
+          : 0;
+        const stdDev = Math.sqrt(variance);
+        const completeness = total > 0 ? (count / total) * 100 : 0;
 
-      stats[db] = { mean, min, max, stdDev, count, completeness };
+        stats[db] = { 
+          mean, min, max, stdDev, count, completeness, 
+          isServerComputed: false,
+          totalRecords: count
+        };
+      }
     });
 
     return stats;
-  }, [displayData]);
+  }, [displayData, serverStatistics]);
+  
 
   // Toggle database visibility
   const toggleDatabase = (db: DatabaseType) => {
@@ -755,6 +802,7 @@ export const SnowAnalyticsDashboard = () => {
               attributeInfo={selectedAttributeInfo}
               locationName={locationName}
               visibleDatabases={visibleDatabases}
+              sampledPointsCount={displayData.length}
             />
           ) : (
             <Card>

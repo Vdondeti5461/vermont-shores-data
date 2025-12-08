@@ -873,6 +873,115 @@ app.get('/api/databases/:database/locations', async (req, res) => {
   }
 });
 
+// Statistics endpoint - calculates statistics from FULL dataset (not sampled)
+// Critical for scientific accuracy - stats must be computed server-side
+app.get('/api/databases/:database/statistics/:table', async (req, res) => {
+  try {
+    const { database, table } = req.params;
+    const { location, start_date, end_date, attribute } = req.query;
+    
+    if (!location || !attribute) {
+      return res.status(400).json({ error: 'Location and attribute are required' });
+    }
+    
+    console.log(`\n📊 [STATISTICS] Computing stats for ${database}/${table}`);
+    console.log(`   Location: ${location}, Attribute: ${attribute}`);
+    console.log(`   Date range: ${start_date || 'all'} to ${end_date || 'all'}`);
+    
+    const { connection, databaseName } = await getConnectionWithDB(database);
+    
+    // Discover actual column names
+    const [colRows] = await connection.query(`SHOW COLUMNS FROM \`${table}\``);
+    const allCols = colRows.map((c) => c.Field);
+    const colMap = new Map(allCols.map((c) => [c.toLowerCase(), c]));
+    const tsCol = colMap.get('timestamp') || 'TIMESTAMP';
+    const locCol = colMap.get('location') || 'Location';
+    const attrCol = colMap.get(attribute.toLowerCase()) || attribute;
+    
+    // Check if attribute column exists
+    if (!allCols.includes(attrCol)) {
+      connection.release();
+      return res.json({
+        count: 0, total: 0, mean: null, min: null, max: null, stdDev: null, 
+        completeness: 0, dateRange: { start: null, end: null }
+      });
+    }
+    
+    // Build query for statistics from FULL dataset
+    let query = `
+      SELECT 
+        COUNT(*) as total_rows,
+        COUNT(\`${attrCol}\`) as valid_count,
+        AVG(\`${attrCol}\`) as mean_value,
+        MIN(\`${attrCol}\`) as min_value,
+        MAX(\`${attrCol}\`) as max_value,
+        STDDEV_SAMP(\`${attrCol}\`) as std_dev,
+        MIN(\`${tsCol}\`) as min_date,
+        MAX(\`${tsCol}\`) as max_date
+      FROM \`${table}\`
+      WHERE 1=1
+    `;
+    const params = [];
+    
+    // Location filter with variations
+    if (location) {
+      const locations = [location];
+      if (!location.includes('-')) {
+        const withDash = location.replace(/^([A-Z]{2,4})(\d+)$/, '$1-$2');
+        if (withDash !== location) locations.push(withDash);
+      }
+      if (location.includes('-')) {
+        locations.push(location.replace('-', ''));
+      }
+      const placeholders = locations.map(() => '?').join(',');
+      query += ` AND \`${locCol}\` IN (${placeholders})`;
+      params.push(...locations);
+    }
+    
+    // Date filters
+    if (start_date) {
+      query += ` AND \`${tsCol}\` >= ?`;
+      params.push(start_date);
+    }
+    if (end_date) {
+      query += ` AND \`${tsCol}\` <= ?`;
+      params.push(end_date);
+    }
+    
+    const startTime = Date.now();
+    const [rows] = await connection.execute(query, params);
+    const duration = Date.now() - startTime;
+    
+    const result = rows[0];
+    const totalRows = Number(result.total_rows) || 0;
+    const validCount = Number(result.valid_count) || 0;
+    const completeness = totalRows > 0 ? (validCount / totalRows) * 100 : 0;
+    
+    console.log(`✅ [STATISTICS] Computed from ${totalRows} total rows (${validCount} valid) in ${duration}ms`);
+    
+    connection.release();
+    
+    res.json({
+      count: validCount,
+      total: totalRows,
+      mean: result.mean_value !== null ? Number(result.mean_value) : null,
+      min: result.min_value !== null ? Number(result.min_value) : null,
+      max: result.max_value !== null ? Number(result.max_value) : null,
+      stdDev: result.std_dev !== null ? Number(result.std_dev) : null,
+      completeness: completeness,
+      dateRange: {
+        start: result.min_date,
+        end: result.max_date
+      },
+      computedAt: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ [STATISTICS] Error:', error);
+    res.status(500).json({ error: 'Failed to compute statistics', details: error.message });
+  }
+});
+
 // Analytics endpoint for JSON time series data (used by Real-Time Analytics page)
 app.get('/api/databases/:database/analytics/:table', async (req, res) => {
   try {
