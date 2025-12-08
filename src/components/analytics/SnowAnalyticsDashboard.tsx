@@ -13,13 +13,13 @@ import {
 } from 'recharts';
 import { 
   MapPin, Download, Settings2, Eye, EyeOff, 
-  ZoomOut, Calendar, Snowflake, Droplets, Scale, Play, AlertCircle, RotateCcw, RefreshCw, TrendingUp
+  ZoomOut, Calendar, Snowflake, Droplets, Scale, Play, AlertCircle, RotateCcw, RefreshCw, TrendingUp, Loader2
 } from 'lucide-react';
 import { DatabaseType, TableType, TimeSeriesDataPoint, ServerStatistics, fetchLocations, fetchMultiQualityComparison, fetchMultiDatabaseStatistics, clearLocationsCache, warmUpLocationsCache, isConnectionHealthy } from '@/services/realTimeAnalyticsService';
 import { useToast } from '@/hooks/use-toast';
 import { AnalyticsStatisticsPanel } from './AnalyticsStatisticsPanel';
 import { DateRangeFilter } from './DateRangeFilter';
-import { lttbDownsample } from '@/utils/lttbSampling';
+import { useLttbWorker } from '@/hooks/useLttbWorker';
 
 // Snow-specific attributes with metadata
 const SNOW_ATTRIBUTES = [
@@ -68,20 +68,9 @@ interface ChartDataPoint {
   [key: string]: string | number | null;
 }
 
-// LTTB-based sampling for chart performance - preserves visual shape
-function sampleDataLTTB<T extends { timestamp: string; [key: string]: any }>(
-  data: T[], 
-  maxPoints: number,
-  valueKey: string
-): T[] {
-  if (data.length <= maxPoints || maxPoints === Infinity) return data;
-  
-  // Use LTTB algorithm for visually accurate downsampling
-  return lttbDownsample(data, maxPoints, valueKey) as T[];
-}
-
 export const SnowAnalyticsDashboard = () => {
   const { toast } = useToast();
+  const { sampleAsync, isProcessing: isSampling } = useLttbWorker();
   
   // State
   const [locations, setLocations] = useState<Array<{ id: string; name: string }>>([]);
@@ -107,6 +96,9 @@ export const SnowAnalyticsDashboard = () => {
   
   // Zoom state for interactive mode
   const [zoomedData, setZoomedData] = useState<ChartDataPoint[] | null>(null);
+  
+  // Sampled chart data (processed async in worker)
+  const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   
   // Abort controller for cancelling requests
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -305,83 +297,96 @@ export const SnowAnalyticsDashboard = () => {
     }
   }, [selectedLocation, selectedAttribute, startDate, endDate, toast]);
 
-  // Prepare chart data with sampling for performance
-  const chartData = useMemo(() => {
-    if (!comparisonData || comparisonData.length === 0) return [];
+  // Prepare chart data with async LTTB sampling in Web Worker (non-blocking)
+  useEffect(() => {
+    if (!comparisonData || comparisonData.length === 0) {
+      setChartData([]);
+      return;
+    }
 
-    // Debug: log what data we have for each database
-    console.log('[SnowAnalytics] Processing comparison data:');
-    comparisonData.forEach(({ database, data }) => {
-      console.log(`  ${database}: ${data.length} points`);
-      if (data.length > 0) {
-        const sample = data[0];
-        const keys = Object.keys(sample);
-        console.log(`    Sample keys: ${keys.join(', ')}`);
-        // Try to find the attribute - case insensitive match
-        const attrKey = keys.find(k => k.toLowerCase() === selectedAttribute.toLowerCase()) || selectedAttribute;
-        console.log(`    Looking for: ${selectedAttribute}, found key: ${attrKey}`);
-        console.log(`    Sample value: ${sample[attrKey]}`);
-      }
-    });
-
-    const allTimestamps = new Set<string>();
-    comparisonData.forEach(({ data }) => {
-      data.forEach((point) => allTimestamps.add(point.timestamp));
-    });
-
-    const sortedTimestamps = Array.from(allTimestamps).sort();
-    console.log(`[SnowAnalytics] Total unique timestamps: ${sortedTimestamps.length}`);
-    
-    const fullData = sortedTimestamps.map((timestamp) => {
-      const date = new Date(timestamp);
-      const point: ChartDataPoint = { 
-        timestamp,
-        displayTime: viewMode === 'scientific' 
-          ? date.toISOString().split('T')[0]
-          : date.toLocaleString('en-US', { 
-              month: 'short', 
-              day: 'numeric',
-              hour: '2-digit',
-            })
-      };
-      
+    const processData = async () => {
+      // Debug: log what data we have for each database
+      console.log('[SnowAnalytics] Processing comparison data:');
       comparisonData.forEach(({ database, data }) => {
-        const dataPoint = data.find((d) => d.timestamp === timestamp);
-        if (dataPoint) {
-          // Get the attribute value - try case-insensitive match first
-          const keys = Object.keys(dataPoint);
-          const attrKey = keys.find(k => k.toLowerCase() === selectedAttribute.toLowerCase()) || selectedAttribute;
-          const value = dataPoint[attrKey];
-          point[database] = value !== undefined && value !== null && value !== '' ? Number(value) : null;
-        } else {
-          point[database] = null;
-        }
+        console.log(`  ${database}: ${data.length} points`);
       });
+
+      const allTimestamps = new Set<string>();
+      comparisonData.forEach(({ data }) => {
+        data.forEach((point) => allTimestamps.add(point.timestamp));
+      });
+
+      const sortedTimestamps = Array.from(allTimestamps).sort();
+      console.log(`[SnowAnalytics] Total unique timestamps: ${sortedTimestamps.length}`);
       
-      return point;
-    });
+      // Process in chunks to avoid blocking UI
+      const CHUNK_SIZE = 10000;
+      const fullData: ChartDataPoint[] = [];
+      
+      for (let i = 0; i < sortedTimestamps.length; i += CHUNK_SIZE) {
+        const chunk = sortedTimestamps.slice(i, i + CHUNK_SIZE);
+        
+        const chunkData = chunk.map((timestamp) => {
+          const date = new Date(timestamp);
+          const point: ChartDataPoint = { 
+            timestamp,
+            displayTime: viewMode === 'scientific' 
+              ? date.toISOString().split('T')[0]
+              : date.toLocaleString('en-US', { 
+                  month: 'short', 
+                  day: 'numeric',
+                  hour: '2-digit',
+                })
+          };
+          
+          comparisonData.forEach(({ database, data }) => {
+            const dataPoint = data.find((d) => d.timestamp === timestamp);
+            if (dataPoint) {
+              const keys = Object.keys(dataPoint);
+              const attrKey = keys.find(k => k.toLowerCase() === selectedAttribute.toLowerCase()) || selectedAttribute;
+              const value = dataPoint[attrKey];
+              point[database] = value !== undefined && value !== null && value !== '' ? Number(value) : null;
+            } else {
+              point[database] = null;
+            }
+          });
+          
+          return point;
+        });
+        
+        fullData.push(...chunkData);
+        
+        // Yield to main thread between chunks
+        if (i + CHUNK_SIZE < sortedTimestamps.length) {
+          await new Promise(resolve => setTimeout(resolve, 0));
+        }
+      }
 
-    // Debug: Check how many non-null values per database
-    COMPARISON_DATABASES.forEach(db => {
-      const nonNullCount = fullData.filter(p => p[db] !== null && !isNaN(p[db] as number)).length;
-      console.log(`[SnowAnalytics] ${db}: ${nonNullCount} non-null values out of ${fullData.length}`);
-    });
+      // Debug: Check how many non-null values per database
+      COMPARISON_DATABASES.forEach(db => {
+        const nonNullCount = fullData.filter(p => p[db] !== null && !isNaN(p[db] as number)).length;
+        console.log(`[SnowAnalytics] ${db}: ${nonNullCount} non-null values out of ${fullData.length}`);
+      });
 
-    // Use LTTB sampling based on selected mode
-    const maxPoints = SAMPLING_PRESETS[samplingMode].points;
-    
-    // Find the primary database with most data for LTTB reference
-    const primaryDb = COMPARISON_DATABASES.reduce((max, db) => {
-      const count = fullData.filter(p => p[db] !== null && !isNaN(p[db] as number)).length;
-      const maxCount = fullData.filter(p => p[max] !== null && !isNaN(p[max] as number)).length;
-      return count > maxCount ? db : max;
-    }, COMPARISON_DATABASES[0]);
-    
-    const sampled = sampleDataLTTB(fullData, maxPoints, primaryDb);
-    console.log(`[SnowAnalytics] LTTB sampled from ${fullData.length} to ${sampled.length} points (mode: ${samplingMode})`);
-    
-    return sampled;
-  }, [comparisonData, selectedAttribute, viewMode, samplingMode]);
+      // Use LTTB sampling based on selected mode - async in Web Worker
+      const maxPoints = SAMPLING_PRESETS[samplingMode].points;
+      
+      // Find the primary database with most data for LTTB reference
+      const primaryDb = COMPARISON_DATABASES.reduce((max, db) => {
+        const count = fullData.filter(p => p[db] !== null && !isNaN(p[db] as number)).length;
+        const maxCount = fullData.filter(p => p[max] !== null && !isNaN(p[max] as number)).length;
+        return count > maxCount ? db : max;
+      }, COMPARISON_DATABASES[0]);
+      
+      // Run LTTB in Web Worker to avoid blocking UI
+      const sampled = await sampleAsync(fullData, maxPoints, primaryDb);
+      console.log(`[SnowAnalytics] LTTB sampled from ${fullData.length} to ${sampled.length} points (mode: ${samplingMode})`);
+      
+      setChartData(sampled);
+    };
+
+    processData();
+  }, [comparisonData, selectedAttribute, viewMode, samplingMode, sampleAsync]);
 
   // Get data to display (zoomed or full)
   const displayData = zoomedData || chartData;
@@ -478,6 +483,7 @@ export const SnowAnalyticsDashboard = () => {
     setStartDate('');
     setEndDate('');
     setComparisonData([]);
+    setChartData([]);
     setHasLoadedData(false);
     setZoomedData(null);
     setVisibleDatabases(new Set(COMPARISON_DATABASES));
@@ -738,19 +744,25 @@ export const SnowAnalyticsDashboard = () => {
 
         <TabsContent value="chart" className="space-y-4">
           {/* Loading State */}
-          {isLoading && (
+          {(isLoading || isSampling) && (
             <Card>
               <CardContent className="p-6">
                 <div className="space-y-4">
-                  <Skeleton className="h-8 w-64" />
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                    <span className="text-sm text-muted-foreground">
+                      {isSampling ? 'Processing data for visualization...' : 'Loading data from server...'}
+                    </span>
+                  </div>
                   <Skeleton className="h-[400px] w-full" />
                 </div>
               </CardContent>
             </Card>
           )}
 
+
           {/* Chart Display */}
-          {!isLoading && hasLoadedData && displayData.length > 0 && (
+          {!isLoading && !isSampling && hasLoadedData && displayData.length > 0 && (
             <Card className={viewMode === 'scientific' ? 'bg-white dark:bg-card' : ''}>
               <CardHeader>
                 <div className="flex items-center justify-between flex-wrap gap-2">
