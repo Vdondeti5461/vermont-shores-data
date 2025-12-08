@@ -15,7 +15,7 @@ import {
   MapPin, Download, Settings2, Eye, EyeOff, 
   ZoomOut, Calendar, Snowflake, Droplets, Scale, Play, AlertCircle, RotateCcw, RefreshCw, TrendingUp
 } from 'lucide-react';
-import { DatabaseType, TableType, TimeSeriesDataPoint, ServerStatistics, fetchLocations, fetchMultiQualityComparison, fetchMultiDatabaseStatistics, clearLocationsCache } from '@/services/realTimeAnalyticsService';
+import { DatabaseType, TableType, TimeSeriesDataPoint, ServerStatistics, fetchLocations, fetchMultiQualityComparison, fetchMultiDatabaseStatistics, clearLocationsCache, warmUpLocationsCache, isConnectionHealthy } from '@/services/realTimeAnalyticsService';
 import { useToast } from '@/hooks/use-toast';
 import { AnalyticsStatisticsPanel } from './AnalyticsStatisticsPanel';
 import { DateRangeFilter } from './DateRangeFilter';
@@ -157,9 +157,40 @@ export const SnowAnalyticsDashboard = () => {
     }
   }, [toast]);
 
-  // Fetch locations on mount
+  // Fetch locations on mount and handle visibility changes
   useEffect(() => {
     loadLocations();
+    
+    // Handle visibility change - refresh locations when user returns to tab
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('[SnowAnalytics] Tab became visible - warming up cache');
+        warmUpLocationsCache('CRRELS2S_raw_data_ingestion', RAW_TABLE);
+      }
+    };
+    
+    // Handle online/offline events
+    const handleOnline = () => {
+      console.log('[SnowAnalytics] Connection restored - refreshing locations');
+      loadLocations(true);
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('online', handleOnline);
+    
+    // Periodic cache refresh every 8 minutes to prevent stale connections
+    const refreshInterval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        console.log('[SnowAnalytics] Periodic cache refresh');
+        warmUpLocationsCache('CRRELS2S_raw_data_ingestion', RAW_TABLE);
+      }
+    }, 8 * 60 * 1000);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('online', handleOnline);
+      clearInterval(refreshInterval);
+    };
   }, [loadLocations]);
 
   // Load data function - called explicitly by user
