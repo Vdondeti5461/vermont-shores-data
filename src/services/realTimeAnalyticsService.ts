@@ -53,10 +53,13 @@ export interface TimeSeriesDataPoint {
 
 // Simple in-memory cache for locations (avoids repeated slow fetches)
 const locationsCache: Map<string, { data: Location[]; timestamp: number }> = new Map();
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes - longer cache to survive tab switches
 
 // Maximum rows per analytics query (prevents timeout on large date ranges)
 const MAX_ANALYTICS_ROWS = 10000;
+
+// Track if we're currently fetching locations to prevent duplicate requests
+const pendingFetches: Map<string, Promise<Location[]>> = new Map();
 
 // Helper function to get the API database key from the full database type
 function getDatabaseKey(database: DatabaseType): string {
@@ -105,7 +108,7 @@ export const fetchSeasons = async (): Promise<Season[]> => {
   return response.json();
 };
 
-// Fetch locations for a specific database and table - with caching
+// Fetch locations for a specific database and table - with caching and deduplication
 export const fetchLocations = async (
   database: DatabaseType,
   table: TableType
@@ -119,51 +122,65 @@ export const fetchLocations = async (
     return cached.data;
   }
 
+  // If there's already a pending fetch for this key, wait for it
+  const pending = pendingFetches.get(cacheKey);
+  if (pending) {
+    console.log(`[Analytics] Waiting for pending fetch: ${cacheKey}`);
+    return pending;
+  }
+
   const dbKey = getDatabaseKey(database);
   const url = `${API_BASE_URL}/api/databases/${dbKey}/tables/${table}/locations`;
   
   console.log(`[Analytics] Fetching locations from: ${url}`);
   
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
-  
-  try {
-    const response = await fetch(url, { signal: controller.signal });
-    clearTimeout(timeoutId);
+  const fetchPromise = (async (): Promise<Location[]> => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s timeout
     
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[Analytics] Locations fetch failed:`, errorText);
-      throw new Error('Failed to fetch locations');
+    try {
+      const response = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[Analytics] Locations fetch failed:`, errorText);
+        throw new Error('Failed to fetch locations');
+      }
+      
+      const data = await response.json();
+      console.log(`[Analytics] Received ${Array.isArray(data) ? data.length : 0} locations`);
+      
+      // Handle both array response and object with locations array
+      const rawLocations = Array.isArray(data) ? data : (data.locations || []);
+      
+      // Normalize location format - use 'code' for API queries, 'displayName' for UI
+      const locations = rawLocations.map((loc: any, index: number) => ({
+        id: typeof loc === 'string' ? loc : (loc.code || loc.name || loc.id || `loc_${index}`),
+        name: typeof loc === 'string' ? loc : (loc.displayName || loc.name || loc.code || loc.id),
+        coordinates: loc.latitude && loc.longitude ? {
+          lat: loc.latitude,
+          lng: loc.longitude
+        } : undefined
+      }));
+      
+      // Cache the results
+      locationsCache.set(cacheKey, { data: locations, timestamp: Date.now() });
+      
+      return locations;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if ((error as Error).name === 'AbortError') {
+        throw new Error('Location fetch timed out');
+      }
+      throw error;
+    } finally {
+      pendingFetches.delete(cacheKey);
     }
-    
-    const data = await response.json();
-    console.log(`[Analytics] Received ${Array.isArray(data) ? data.length : 0} locations`);
-    
-    // Handle both array response and object with locations array
-    const rawLocations = Array.isArray(data) ? data : (data.locations || []);
-    
-    // Normalize location format - use 'code' for API queries, 'displayName' for UI
-    const locations = rawLocations.map((loc: any, index: number) => ({
-      id: typeof loc === 'string' ? loc : (loc.code || loc.name || loc.id || `loc_${index}`),
-      name: typeof loc === 'string' ? loc : (loc.displayName || loc.name || loc.code || loc.id),
-      coordinates: loc.latitude && loc.longitude ? {
-        lat: loc.latitude,
-        lng: loc.longitude
-      } : undefined
-    }));
-    
-    // Cache the results
-    locationsCache.set(cacheKey, { data: locations, timestamp: Date.now() });
-    
-    return locations;
-  } catch (error) {
-    clearTimeout(timeoutId);
-    if ((error as Error).name === 'AbortError') {
-      throw new Error('Location fetch timed out');
-    }
-    throw error;
-  }
+  })();
+
+  pendingFetches.set(cacheKey, fetchPromise);
+  return fetchPromise;
 };
 
 // Fetch attributes for a specific table

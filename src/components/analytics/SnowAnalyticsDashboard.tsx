@@ -112,31 +112,44 @@ export const SnowAnalyticsDashboard = () => {
   // Fetch locations on mount - uses raw_data database to get location list
   useEffect(() => {
     let isMounted = true;
+    let retryCount = 0;
+    const maxRetries = 2;
     
     const loadLocations = async () => {
       setIsLocationsLoading(true);
-      try {
-        const locs = await fetchLocations('CRRELS2S_raw_data_ingestion', TABLE);
-        if (isMounted) {
-          setLocations(locs);
-          setError(null);
-        }
-      } catch (err) {
-        if (isMounted) {
-          console.error('[SnowAnalytics] Error loading locations:', err);
-          setError('Failed to connect to data server. Please try again later.');
-          toast({
-            title: "Connection Error",
-            description: "Failed to load locations. Please check API connection.",
-            variant: "destructive",
-          });
-        }
-      } finally {
-        if (isMounted) {
-          setIsLocationsLoading(false);
+      setError(null);
+      
+      while (retryCount <= maxRetries && isMounted) {
+        try {
+          console.log(`[SnowAnalytics] Loading locations (attempt ${retryCount + 1})`);
+          const locs = await fetchLocations('CRRELS2S_raw_data_ingestion', TABLE);
+          if (isMounted) {
+            console.log(`[SnowAnalytics] Loaded ${locs.length} locations`);
+            setLocations(locs);
+            setError(null);
+            setIsLocationsLoading(false);
+            return; // Success, exit retry loop
+          }
+        } catch (err) {
+          retryCount++;
+          console.error(`[SnowAnalytics] Location load attempt ${retryCount} failed:`, err);
+          
+          if (retryCount > maxRetries && isMounted) {
+            setError('Failed to connect to data server. Please try again later.');
+            toast({
+              title: "Connection Error",
+              description: "Failed to load locations. Please refresh the page.",
+              variant: "destructive",
+            });
+            setIsLocationsLoading(false);
+          } else if (isMounted) {
+            // Wait before retry
+            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+          }
         }
       }
     };
+    
     loadLocations();
     
     return () => { isMounted = false; };
@@ -220,12 +233,24 @@ export const SnowAnalyticsDashboard = () => {
   const chartData = useMemo(() => {
     if (!comparisonData || comparisonData.length === 0) return [];
 
+    // Debug: log what data we have for each database
+    console.log('[SnowAnalytics] Processing comparison data:');
+    comparisonData.forEach(({ database, data }) => {
+      console.log(`  ${database}: ${data.length} points`);
+      if (data.length > 0) {
+        const sample = data[0];
+        console.log(`    Sample keys: ${Object.keys(sample).join(', ')}`);
+        console.log(`    Sample ${selectedAttribute}: ${sample[selectedAttribute]}`);
+      }
+    });
+
     const allTimestamps = new Set<string>();
     comparisonData.forEach(({ data }) => {
       data.forEach((point) => allTimestamps.add(point.timestamp));
     });
 
     const sortedTimestamps = Array.from(allTimestamps).sort();
+    console.log(`[SnowAnalytics] Total unique timestamps: ${sortedTimestamps.length}`);
     
     const fullData = sortedTimestamps.map((timestamp) => {
       const date = new Date(timestamp);
@@ -242,10 +267,22 @@ export const SnowAnalyticsDashboard = () => {
       
       comparisonData.forEach(({ database, data }) => {
         const dataPoint = data.find((d) => d.timestamp === timestamp);
-        point[database] = dataPoint ? (dataPoint[selectedAttribute] as number | null) : null;
+        if (dataPoint) {
+          // Get the attribute value - handle both direct attribute and nested
+          const value = dataPoint[selectedAttribute];
+          point[database] = value !== undefined && value !== null ? Number(value) : null;
+        } else {
+          point[database] = null;
+        }
       });
       
       return point;
+    });
+
+    // Debug: Check how many non-null values per database
+    COMPARISON_DATABASES.forEach(db => {
+      const nonNullCount = fullData.filter(p => p[db] !== null).length;
+      console.log(`[SnowAnalytics] ${db}: ${nonNullCount} non-null values out of ${fullData.length}`);
     });
 
     // Sample data if too large
