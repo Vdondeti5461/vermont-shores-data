@@ -318,19 +318,33 @@ export default function APIKeys() {
             <div>
               <h3 className="font-semibold mb-2">Authentication</h3>
               <p className="text-sm text-muted-foreground mb-2">
-                Include your API key in the Authorization header:
+                Include your API key in the <code className="bg-muted px-1 rounded">X-API-Key</code> header:
               </p>
               <pre className="bg-muted p-4 rounded-lg text-sm overflow-x-auto">
-                {`curl -H "Authorization: Bearer YOUR_API_KEY" \\
-  ${API_BASE_URL}/databases`}
+                {`curl -H "X-API-Key: YOUR_API_KEY" \\
+  ${API_BASE_URL}/api/databases`}
               </pre>
             </div>
             <div>
-              <h3 className="font-semibold mb-2">Example: Fetch Data</h3>
+              <h3 className="font-semibold mb-2">Example: List All Databases</h3>
               <pre className="bg-muted p-4 rounded-lg text-sm overflow-x-auto">
-                {`curl -H "Authorization: Bearer YOUR_API_KEY" \\
-  "${API_BASE_URL}/data?database=seasonal_qaqc_data&startDate=2024-01-01&endDate=2024-12-31"`}
+                {`curl -H "X-API-Key: YOUR_API_KEY" \\
+  "${API_BASE_URL}/api/databases"`}
               </pre>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-2">Example: Download Seasonal Data</h3>
+              <pre className="bg-muted p-4 rounded-lg text-sm overflow-x-auto">
+                {`curl -H "X-API-Key: YOUR_API_KEY" \\
+  "${API_BASE_URL}/api/seasonal/download/seasonal_env_core_observations?locations=SUMM,RB01&start_date=2024-01-01&end_date=2024-12-31"`}
+              </pre>
+            </div>
+            <div className="pt-4 border-t">
+              <h3 className="font-semibold mb-2">Access Levels</h3>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                <li>• <strong>Without API Key:</strong> Access to seasonal_qaqc_data only (100 req/hr)</li>
+                <li>• <strong>With API Key:</strong> Access to all 4 databases (1000 req/hr)</li>
+              </ul>
             </div>
           </CardContent>
         </Card>
