@@ -13,13 +13,14 @@ import {
 } from 'recharts';
 import { 
   MapPin, Download, Settings2, Eye, EyeOff, 
-  ZoomOut, Calendar, Snowflake, Droplets, Scale, Play, AlertCircle, RotateCcw, RefreshCw, TrendingUp, Loader2
+  ZoomOut, Calendar, Snowflake, Droplets, Scale, Play, AlertCircle, RotateCcw, TrendingUp, Loader2
 } from 'lucide-react';
-import { DatabaseType, TableType, TimeSeriesDataPoint, ServerStatistics, fetchLocations, fetchMultiQualityComparison, fetchMultiDatabaseStatistics, clearLocationsCache, warmUpLocationsCache, isConnectionHealthy, forceRefreshLocations } from '@/services/realTimeAnalyticsService';
+import { DatabaseType, TimeSeriesDataPoint, ServerStatistics, fetchMultiQualityComparison, fetchMultiDatabaseStatistics } from '@/services/realTimeAnalyticsService';
 import { useToast } from '@/hooks/use-toast';
 import { AnalyticsStatisticsPanel } from './AnalyticsStatisticsPanel';
 import { DateRangeFilter } from './DateRangeFilter';
 import { useLttbWorker } from '@/hooks/useLttbWorker';
+import { getLocationOptions } from '@/lib/locationData';
 
 // Snow-specific attributes with metadata
 const SNOW_ATTRIBUTES = [
@@ -72,12 +73,13 @@ export const SnowAnalyticsDashboard = () => {
   const { toast } = useToast();
   const { sampleAsync, isProcessing: isSampling } = useLttbWorker();
   
+  // Get locations from static data - instant, no API call needed
+  const locations = useMemo(() => getLocationOptions(), []);
+  
   // State
-  const [locations, setLocations] = useState<Array<{ id: string; name: string }>>([]);
   const [selectedLocation, setSelectedLocation] = useState<string>('');
   const [selectedAttribute, setSelectedAttribute] = useState<string>('snow_depth_cm');
   const [isLoading, setIsLoading] = useState(false);
-  const [isLocationsLoading, setIsLocationsLoading] = useState(true);
   const [comparisonData, setComparisonData] = useState<{ database: DatabaseType; data: TimeSeriesDataPoint[] }[]>([]);
   const [serverStatistics, setServerStatistics] = useState<Record<DatabaseType, ServerStatistics | null>>({} as any);
   const [hasLoadedData, setHasLoadedData] = useState(false);
@@ -105,86 +107,6 @@ export const SnowAnalyticsDashboard = () => {
 
   // Base table name used across all databases (each has different prefix)
   const BASE_TABLE = 'env_core_observations';
-  // Raw table for location loading (locations are same across all databases)
-  const RAW_TABLE: TableType = 'raw_env_core_observations';
-
-  // Function to load locations - simplified, service handles retries
-  const loadLocations = useCallback(async (forceRefresh = false) => {
-    setIsLocationsLoading(true);
-    setError(null);
-    
-    try {
-      console.log(`[SnowAnalytics] Loading locations${forceRefresh ? ' (forced)' : ''}`);
-      
-      let locs;
-      if (forceRefresh) {
-        locs = await forceRefreshLocations('CRRELS2S_raw_data_ingestion', RAW_TABLE);
-      } else {
-        locs = await fetchLocations('CRRELS2S_raw_data_ingestion', RAW_TABLE);
-      }
-      
-      console.log(`[SnowAnalytics] Loaded ${locs.length} locations`);
-      setLocations(locs);
-      setError(null);
-    } catch (err) {
-      console.error('[SnowAnalytics] Location load failed:', err);
-      setError('Failed to connect to data server. Please try again later.');
-      toast({
-        title: "Connection Error",
-        description: "Failed to load locations. Click refresh to try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLocationsLoading(false);
-    }
-  }, [toast]);
-
-  // Keepalive ping to prevent stale connections
-  useEffect(() => {
-    // Ping the server every 5 minutes to keep connection warm
-    const keepaliveInterval = setInterval(() => {
-      if (document.visibilityState === 'visible' && !isLoading) {
-        console.log('[SnowAnalytics] Keepalive - warming cache');
-        warmUpLocationsCache('CRRELS2S_raw_data_ingestion', RAW_TABLE).catch(() => {
-          console.warn('[SnowAnalytics] Keepalive ping failed');
-        });
-      }
-    }, 5 * 60 * 1000); // 5 minutes
-    
-    return () => clearInterval(keepaliveInterval);
-  }, [isLoading]);
-
-  // Fetch locations on mount and handle visibility/network changes
-  useEffect(() => {
-    loadLocations();
-    
-    // Handle visibility change - refresh locations when user returns to tab
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        console.log('[SnowAnalytics] Tab became visible - checking connection');
-        // If we have an error, reload; otherwise just warm cache
-        if (error) {
-          loadLocations(true);
-        } else {
-          warmUpLocationsCache('CRRELS2S_raw_data_ingestion', RAW_TABLE);
-        }
-      }
-    };
-    
-    // Handle online event
-    const handleOnline = () => {
-      console.log('[SnowAnalytics] Connection restored - refreshing locations');
-      loadLocations(true);
-    };
-    
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('online', handleOnline);
-    
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('online', handleOnline);
-    };
-  }, [loadLocations, error]);
 
   // Load data function - called explicitly by user
   const loadData = useCallback(async () => {
@@ -477,8 +399,6 @@ export const SnowAnalyticsDashboard = () => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
-    // Clear cache and reload locations
-    clearLocationsCache();
     setSelectedLocation('');
     setSelectedAttribute('snow_depth_cm');
     setStartDate('');
@@ -490,13 +410,11 @@ export const SnowAnalyticsDashboard = () => {
     setVisibleDatabases(new Set(COMPARISON_DATABASES));
     setSamplingMode('auto');
     setError(null);
-    // Reload locations with fresh data
-    loadLocations(true);
     toast({
       title: "Reset Complete",
-      description: "All selections cleared and locations refreshed.",
+      description: "All selections cleared.",
     });
-  }, [toast, loadLocations]);
+  }, [toast]);
 
   // Export chart as PNG
   const exportChart = useCallback(() => {
@@ -514,7 +432,7 @@ export const SnowAnalyticsDashboard = () => {
   return (
     <div className="space-y-6">
       {/* Error State */}
-      {error && !isLocationsLoading && (
+      {error && (
         <Card className="border-destructive">
           <CardContent className="flex items-center gap-3 p-4">
             <AlertCircle className="h-5 w-5 text-destructive" />
@@ -540,33 +458,19 @@ export const SnowAnalyticsDashboard = () => {
                 <Label className="flex items-center gap-2 text-sm font-medium">
                   <MapPin className="h-4 w-4 text-primary" />
                   Location
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-4 w-4 p-0 ml-1" 
-                    onClick={() => loadLocations(true)}
-                    disabled={isLocationsLoading}
-                    title="Refresh locations"
-                  >
-                    <RefreshCw className={`h-3 w-3 ${isLocationsLoading ? 'animate-spin' : ''}`} />
-                  </Button>
                 </Label>
-                {isLocationsLoading ? (
-                  <Skeleton className="h-10 w-full" />
-                ) : (
-                  <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select location" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {locations.map((loc) => (
-                        <SelectItem key={loc.id} value={loc.id}>
-                          {loc.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
+                <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select location" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {locations.map((loc) => (
+                      <SelectItem key={loc.id} value={loc.id}>
+                        {loc.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Attribute */}
