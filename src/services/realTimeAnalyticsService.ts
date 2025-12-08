@@ -53,13 +53,19 @@ export interface TimeSeriesDataPoint {
 
 // Simple in-memory cache for locations (avoids repeated slow fetches)
 const locationsCache: Map<string, { data: Location[]; timestamp: number }> = new Map();
-const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes - longer cache to survive tab switches
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes - shorter cache to pick up database updates
 
 // Maximum rows per analytics query (prevents timeout on large date ranges)
 const MAX_ANALYTICS_ROWS = 10000;
 
 // Track if we're currently fetching locations to prevent duplicate requests
 const pendingFetches: Map<string, Promise<Location[]>> = new Map();
+
+// Clear cache function for when database is updated
+export const clearLocationsCache = () => {
+  locationsCache.clear();
+  console.log('[Analytics] Location cache cleared');
+};
 
 // Helper function to get the API database key from the full database type
 function getDatabaseKey(database: DatabaseType): string {
