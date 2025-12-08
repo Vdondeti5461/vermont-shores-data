@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect, useCallback } from 'react';
 import {
   fetchDatabases,
   fetchSeasons,
@@ -8,6 +8,8 @@ import {
   fetchTimeSeriesData,
   fetchMultiQualityComparison,
   warmUpLocationsCache,
+  forceRefreshLocations,
+  clearLocationsCache,
   Database,
   DatabaseType,
   TableType,
@@ -22,7 +24,9 @@ export const useDatabases = () => {
   return useQuery({
     queryKey: ['databases'],
     queryFn: fetchDatabases,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 30 * 60 * 1000,
+    retry: 3,
   });
 };
 
@@ -35,31 +39,66 @@ export const useSeasons = () => {
   });
 };
 
-// Hook to fetch locations with visibility-aware caching
+// Hook to fetch locations with robust error handling and recovery
 export const useLocations = (database?: DatabaseType, table?: TableType) => {
-  // Handle visibility change to warm up cache
+  const queryClient = useQueryClient();
+
+  // Force refetch function that clears all caches
+  const forceRefetch = useCallback(async () => {
+    if (!database || !table) return;
+    
+    console.log('[Analytics] Force refetching locations...');
+    clearLocationsCache();
+    queryClient.invalidateQueries({ queryKey: ['locations', database, table] });
+  }, [database, table, queryClient]);
+
+  // Handle visibility change and online events
   useEffect(() => {
     if (!database || !table) return;
     
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
+        // Warm up cache when tab becomes visible
         warmUpLocationsCache(database, table);
       }
     };
     
+    const handleOnline = () => {
+      console.log('[Analytics] Network restored, refreshing locations...');
+      forceRefetch();
+    };
+    
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [database, table]);
+    window.addEventListener('online', handleOnline);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('online', handleOnline);
+    };
+  }, [database, table, forceRefetch]);
 
-  return useQuery({
+  const query = useQuery({
     queryKey: ['locations', database, table],
-    queryFn: () => database && table ? fetchLocations(database, table) : Promise.resolve([]),
+    queryFn: async () => {
+      if (!database || !table) return [];
+      try {
+        return await fetchLocations(database, table);
+      } catch (error) {
+        console.error('[Analytics] Location fetch failed, attempting force refresh...');
+        // On error, try force refresh once
+        return await forceRefreshLocations(database, table);
+      }
+    },
     enabled: !!database && !!table,
-    staleTime: 8 * 60 * 1000, // 8 minutes - slightly less than cache TTL
-    gcTime: 15 * 60 * 1000, // Keep in garbage collection for 15 minutes
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
+    staleTime: 12 * 60 * 1000, // 12 minutes
+    gcTime: 20 * 60 * 1000, // Keep in cache for 20 minutes
+    retry: 4,
+    retryDelay: (attemptIndex) => Math.min(500 * 2 ** attemptIndex, 8000),
+    refetchOnWindowFocus: false, // We handle this manually
+    refetchOnReconnect: true,
   });
+
+  return { ...query, forceRefetch };
 };
 
 // Hook to fetch table attributes
