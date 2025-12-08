@@ -18,10 +18,10 @@ export const getApiBaseUrl = (): string => {
     return baseUrl;
   }
 
-  // 3) Production server for any non-localhost deployment
-  if (w && w.location.hostname !== 'localhost' && w.location.hostname !== '127.0.0.1') {
-    const baseUrl = `${w.location.protocol}//${w.location.hostname}`;
-    console.log('🔧 API Config: Production deployment, using:', baseUrl);
+  // 3) Lovable preview or other non-UVM non-localhost deployment - use production API
+  if (w && w.location.hostname !== 'localhost' && w.location.hostname !== '127.0.0.1' && !w.location.hostname.includes('uvm.edu')) {
+    const baseUrl = 'https://crrels2s.w3.uvm.edu';
+    console.log('🔧 API Config: Preview/staging deployment, using production API:', baseUrl);
     return baseUrl;
   }
 
