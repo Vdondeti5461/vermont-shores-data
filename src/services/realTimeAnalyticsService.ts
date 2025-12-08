@@ -58,6 +58,14 @@ const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes - shorter cache to pick up data
 // Maximum rows per analytics query (prevents timeout on large date ranges)
 const MAX_ANALYTICS_ROWS = 10000;
 
+// Retry configuration for resilient connections
+const RETRY_CONFIG = {
+  maxRetries: 3,
+  baseDelayMs: 1000,
+  maxDelayMs: 10000,
+  timeoutMs: 30000, // 30s timeout per request
+};
+
 // Statistics computed server-side from full dataset
 export interface ServerStatistics {
   count: number;
@@ -76,6 +84,75 @@ export interface ServerStatistics {
 
 // Track if we're currently fetching locations to prevent duplicate requests
 const pendingFetches: Map<string, Promise<Location[]>> = new Map();
+
+// Robust fetch with retry logic and exponential backoff
+async function fetchWithRetry<T>(
+  url: string,
+  options: RequestInit = {},
+  retries = RETRY_CONFIG.maxRetries
+): Promise<T> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), RETRY_CONFIG.timeoutMs);
+    
+    // Merge abort signals if one was provided
+    const signal = options.signal 
+      ? combineAbortSignals(options.signal, controller.signal)
+      : controller.signal;
+    
+    try {
+      const response = await fetch(url, { ...options, signal });
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      clearTimeout(timeoutId);
+      lastError = error as Error;
+      
+      // Don't retry if request was intentionally aborted by caller
+      if (options.signal?.aborted) {
+        throw error;
+      }
+      
+      const isNetworkError = lastError.name === 'AbortError' || 
+                            lastError.message.includes('fetch') ||
+                            lastError.message.includes('network');
+      
+      if (attempt < retries && isNetworkError) {
+        const delay = Math.min(
+          RETRY_CONFIG.baseDelayMs * Math.pow(2, attempt),
+          RETRY_CONFIG.maxDelayMs
+        );
+        console.warn(`[Analytics] Request failed, retrying in ${delay}ms (attempt ${attempt + 1}/${retries}):`, lastError.message);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  
+  throw new Error(`Failed to connect to data server after ${retries} retries: ${lastError?.message}`);
+}
+
+// Helper to combine multiple abort signals
+function combineAbortSignals(signal1: AbortSignal, signal2: AbortSignal): AbortSignal {
+  const controller = new AbortController();
+  
+  const abort = () => controller.abort();
+  signal1.addEventListener('abort', abort);
+  signal2.addEventListener('abort', abort);
+  
+  if (signal1.aborted || signal2.aborted) {
+    controller.abort();
+  }
+  
+  return controller.signal;
+}
 
 // Clear cache function for when database is updated
 export const clearLocationsCache = () => {
@@ -96,29 +173,21 @@ function getDatabaseKey(database: DatabaseType): string {
     .toLowerCase();
 }
 
-// Fetch available databases - returns your 4 databases
+// Fetch available databases - returns your 4 databases (with retry)
 export const fetchDatabases = async (): Promise<Database[]> => {
   try {
-    console.log('Fetching databases from:', `${API_BASE_URL}/api/databases`);
-    const response = await fetch(`${API_BASE_URL}/api/databases`);
-    console.log('Database fetch response status:', response.status);
+    const url = `${API_BASE_URL}/api/databases`;
+    console.log('[Analytics] Fetching databases from:', url);
     
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Database fetch failed:', errorText);
-      throw new Error(`Failed to fetch databases: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    console.log('Fetched databases:', data);
+    const data = await fetchWithRetry<any>(url);
     
     // Handle both array response and object with databases array
     const databases = Array.isArray(data) ? data : (data.databases || []);
-    console.log('Processed databases:', databases);
+    console.log('[Analytics] Fetched databases:', databases.length);
     
     return databases;
   } catch (error) {
-    console.error('Error fetching databases:', error);
+    console.error('[Analytics] Error fetching databases:', error);
     throw error;
   }
 };
@@ -157,20 +226,9 @@ export const fetchLocations = async (
   console.log(`[Analytics] Fetching locations from: ${url}`);
   
   const fetchPromise = (async (): Promise<Location[]> => {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s timeout
-    
     try {
-      const response = await fetch(url, { signal: controller.signal });
-      clearTimeout(timeoutId);
+      const data = await fetchWithRetry<any>(url, {}, 2); // 2 retries for locations
       
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`[Analytics] Locations fetch failed:`, errorText);
-        throw new Error('Failed to fetch locations');
-      }
-      
-      const data = await response.json();
       console.log(`[Analytics] Received ${Array.isArray(data) ? data.length : 0} locations`);
       
       // Handle both array response and object with locations array
@@ -191,11 +249,7 @@ export const fetchLocations = async (
       
       return locations;
     } catch (error) {
-      clearTimeout(timeoutId);
-      if ((error as Error).name === 'AbortError') {
-        throw new Error('Location fetch timed out');
-      }
-      throw error;
+      throw new Error(`Failed to connect to data server. Please try again later.`);
     } finally {
       pendingFetches.delete(cacheKey);
     }
@@ -227,7 +281,7 @@ export const fetchTableAttributes = async (
   return Array.isArray(data) ? data : (data.attributes || []);
 };
 
-// Fetch time series data for a single database/table/location with row limit
+// Fetch time series data for a single database/table/location with row limit (with retry)
 export const fetchTimeSeriesData = async (
   database: DatabaseType,
   table: string, // Accept any table name (raw_, clean_, qaqc_ prefixed)
@@ -251,24 +305,12 @@ export const fetchTimeSeriesData = async (
   console.log(`[Analytics] Fetching time series from: ${url}`);
   
   try {
-    const response = await fetch(url, { signal });
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[Analytics] Time series fetch failed for ${dbKey}:`, response.status, errorText);
-      throw new Error(`Failed to fetch data from ${dbKey}: ${response.status}`);
-    }
-    
-    // Parse JSON response (analytics endpoint returns JSON, not CSV)
-    const data = await response.json();
+    const data = await fetchWithRetry<TimeSeriesDataPoint[]>(url, { signal }, 2);
     console.log(`[Analytics] Received ${data.length} data points for ${dbKey}/${table}/${location}`);
     
     // Log sample of returned data for debugging
     if (data.length > 0) {
       console.log(`[Analytics] ${dbKey} sample keys:`, Object.keys(data[0]));
-      if (data.length === 0) {
-        console.warn(`[Analytics] ${dbKey}: No data found for location ${location}`);
-      }
     } else {
       console.warn(`[Analytics] ${dbKey}: Empty response - location '${location}' might not exist in this database`);
     }
@@ -348,7 +390,7 @@ export const fetchMultiQualityComparison = async (
 };
 
 // Fetch server-side computed statistics for a single database/table/location/attribute
-// Statistics are computed from the FULL dataset (not sampled) for scientific accuracy
+// Statistics are computed from the FULL dataset (not sampled) for scientific accuracy (with retry)
 export const fetchServerStatistics = async (
   database: DatabaseType,
   table: string,
@@ -372,16 +414,8 @@ export const fetchServerStatistics = async (
   console.log(`[Analytics] Fetching server statistics from: ${url}`);
   
   try {
-    const response = await fetch(url, { signal });
-    
-    if (!response.ok) {
-      console.error(`[Analytics] Statistics fetch failed for ${dbKey}:`, response.status);
-      return null;
-    }
-    
-    const data = await response.json();
+    const data = await fetchWithRetry<ServerStatistics>(url, { signal }, 2);
     console.log(`[Analytics] Server statistics for ${dbKey}: ${data.count} valid points from ${data.total} total`);
-    
     return data;
   } catch (error) {
     if ((error as Error).name === 'AbortError') {
