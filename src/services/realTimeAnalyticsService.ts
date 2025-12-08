@@ -58,6 +58,22 @@ const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes - shorter cache to pick up data
 // Maximum rows per analytics query (prevents timeout on large date ranges)
 const MAX_ANALYTICS_ROWS = 10000;
 
+// Statistics computed server-side from full dataset
+export interface ServerStatistics {
+  count: number;
+  total: number;
+  mean: number | null;
+  min: number | null;
+  max: number | null;
+  stdDev: number | null;
+  completeness: number;
+  dateRange: {
+    start: string | null;
+    end: string | null;
+  };
+  computedAt: string;
+}
+
 // Track if we're currently fetching locations to prevent duplicate requests
 const pendingFetches: Map<string, Promise<Location[]>> = new Map();
 
@@ -329,4 +345,76 @@ export const fetchMultiQualityComparison = async (
   });
   
   return processed;
+};
+
+// Fetch server-side computed statistics for a single database/table/location/attribute
+// Statistics are computed from the FULL dataset (not sampled) for scientific accuracy
+export const fetchServerStatistics = async (
+  database: DatabaseType,
+  table: string,
+  location: string,
+  attribute: string,
+  startDate?: string,
+  endDate?: string,
+  signal?: AbortSignal
+): Promise<ServerStatistics | null> => {
+  const dbKey = getDatabaseKey(database);
+  const tableForDb = getTableNameForDatabase(database, table);
+  
+  const params = new URLSearchParams({
+    location,
+    attribute,
+    ...(startDate && { start_date: startDate }),
+    ...(endDate && { end_date: endDate }),
+  });
+
+  const url = `${API_BASE_URL}/api/databases/${dbKey}/statistics/${tableForDb}?${params}`;
+  console.log(`[Analytics] Fetching server statistics from: ${url}`);
+  
+  try {
+    const response = await fetch(url, { signal });
+    
+    if (!response.ok) {
+      console.error(`[Analytics] Statistics fetch failed for ${dbKey}:`, response.status);
+      return null;
+    }
+    
+    const data = await response.json();
+    console.log(`[Analytics] Server statistics for ${dbKey}: ${data.count} valid points from ${data.total} total`);
+    
+    return data;
+  } catch (error) {
+    if ((error as Error).name === 'AbortError') {
+      throw error;
+    }
+    console.error(`[Analytics] Error fetching statistics for ${dbKey}:`, error);
+    return null;
+  }
+};
+
+// Fetch statistics for multiple databases in parallel (for comparison view)
+export const fetchMultiDatabaseStatistics = async (
+  databases: DatabaseType[],
+  baseTable: string,
+  location: string,
+  attribute: string,
+  startDate?: string,
+  endDate?: string,
+  signal?: AbortSignal
+): Promise<{ database: DatabaseType; stats: ServerStatistics | null }[]> => {
+  console.log(`[Analytics] Fetching statistics for ${databases.length} databases`);
+  
+  const results = await Promise.allSettled(
+    databases.map(async (db) => {
+      const stats = await fetchServerStatistics(db, baseTable, location, attribute, startDate, endDate, signal);
+      return { database: db, stats };
+    })
+  );
+  
+  return results.map((result, index) => {
+    if (result.status === 'fulfilled') {
+      return result.value;
+    }
+    return { database: databases[index], stats: null };
+  });
 };
