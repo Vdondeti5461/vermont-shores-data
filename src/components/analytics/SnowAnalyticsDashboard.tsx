@@ -50,8 +50,8 @@ const DATABASE_LABELS: Record<DatabaseType, string> = {
   'CRRELS2S_seasonal_qaqc_data': 'Seasonal QAQC',
 };
 
-// Maximum data points to display for performance
-const MAX_DISPLAY_POINTS = 500;
+// Maximum data points to display for performance (chart sampling)
+const MAX_DISPLAY_POINTS = 1000;
 
 interface ChartDataPoint {
   timestamp: string;
@@ -234,7 +234,15 @@ export const SnowAnalyticsDashboard = () => {
       } else {
         const emptyDbs = data.filter(d => d.data.length === 0).map(d => DATABASE_LABELS[d.database]).join(', ');
         const hasEmptyDb = emptyDbs.length > 0;
-        if (hasEmptyDb) {
+        const maxHit = data.some(d => d.data.length >= 50000);
+        
+        if (maxHit) {
+          toast({
+            title: "Data Limit Reached",
+            description: `Showing first 50,000 records per database. Use a date range filter for complete data.`,
+            variant: "destructive",
+          });
+        } else if (hasEmptyDb) {
           toast({
             title: "Partial Data Loaded",
             description: `Loaded ${totalPoints.toLocaleString()} points. Missing: ${emptyDbs}`,
@@ -242,7 +250,7 @@ export const SnowAnalyticsDashboard = () => {
         } else {
           toast({
             title: "Data Loaded",
-            description: `Stats from ${totalServerPoints.toLocaleString()} points. Chart sampled to ${totalPoints.toLocaleString()}.`,
+            description: `Stats from ${totalServerPoints.toLocaleString()} points. Chart: ${totalPoints.toLocaleString()}.`,
           });
         }
       }
