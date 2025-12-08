@@ -7,6 +7,7 @@ import {
   fetchTableAttributes,
   fetchTimeSeriesData,
   fetchMultiQualityComparison,
+  fetchDatabaseTables,
   clearLocationsCache,
   Database,
   DatabaseType,
@@ -25,6 +26,18 @@ export const useDatabases = () => {
     staleTime: 10 * 60 * 1000, // 10 minutes
     gcTime: 30 * 60 * 1000,
     retry: 3,
+  });
+};
+
+// Hook to fetch tables for a specific database dynamically
+export const useDatabaseTables = (database?: DatabaseType) => {
+  return useQuery({
+    queryKey: ['database-tables', database],
+    queryFn: () => database ? fetchDatabaseTables(database) : Promise.resolve([]),
+    enabled: !!database,
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 30 * 60 * 1000,
+    retry: 2,
   });
 };
 

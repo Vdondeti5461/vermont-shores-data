@@ -577,6 +577,68 @@ app.get('/api/databases/:database/tables/:table/attributes', verifyApiKey(() => 
 /**
  * GET /api/databases/:database/locations
  */
+/**
+ * GET /api/databases/:database/tables/:table/locations
+ * Get locations from a specific table dynamically
+ */
+app.get('/api/databases/:database/tables/:table/locations', verifyApiKey(() => pool), async (req, res) => {
+  try {
+    const { database, table } = req.params;
+
+    if (!PUBLIC_DATABASES.includes(database) && req.accessLevel !== 'authenticated') {
+      return res.status(403).json({
+        success: false,
+        error: 'ACCESS_DENIED',
+        message: 'API key required'
+      });
+    }
+
+    const { connection, databaseName } = await getConnectionWithDB(database);
+
+    // Get location column name
+    const [cols] = await connection.query(`SHOW COLUMNS FROM \`${table}\``);
+    const locCol = cols.find(c => c.Field.toLowerCase() === 'location')?.Field || 'location';
+
+    // Fetch distinct locations from the table
+    const [rows] = await connection.execute(
+      `SELECT DISTINCT \`${locCol}\` AS code FROM \`${table}\` 
+       WHERE \`${locCol}\` IS NOT NULL ORDER BY \`${locCol}\``
+    );
+
+    connection.release();
+
+    // Filter deprecated location codes and map to metadata
+    const locations = rows
+      .filter(row => !['SleepersMain_SR01', 'Sleepers_W1', 'Sleepers_R25'].includes(row.code))
+      .map(row => {
+        const meta = LOCATION_METADATA[row.code] || LOCATION_METADATA[row.code.replace('-', '')];
+        return {
+          code: row.code,
+          name: meta?.name || row.code,
+          latitude: meta?.latitude || null,
+          longitude: meta?.longitude || null,
+          elevation: meta?.elevation || null
+        };
+      });
+
+    console.log(`✅ [LOCATIONS] Found ${locations.length} locations in ${databaseName}.${table}`);
+
+    res.json({
+      success: true,
+      database: databaseName,
+      table,
+      locations
+    });
+  } catch (error) {
+    console.error('Error fetching table locations:', error);
+    res.status(500).json({
+      success: false,
+      error: 'DATABASE_ERROR',
+      message: 'Failed to fetch locations'
+    });
+  }
+});
+
 app.get('/api/databases/:database/locations', verifyApiKey(() => pool), async (req, res) => {
   try {
     const { database } = req.params;
