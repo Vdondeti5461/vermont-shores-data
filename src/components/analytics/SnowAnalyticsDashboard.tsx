@@ -13,12 +13,13 @@ import {
 } from 'recharts';
 import { 
   MapPin, Download, Settings2, Eye, EyeOff, 
-  ZoomOut, Calendar, Snowflake, Droplets, Scale, Play, AlertCircle, RotateCcw, RefreshCw
+  ZoomOut, Calendar, Snowflake, Droplets, Scale, Play, AlertCircle, RotateCcw, RefreshCw, TrendingUp
 } from 'lucide-react';
 import { DatabaseType, TableType, TimeSeriesDataPoint, ServerStatistics, fetchLocations, fetchMultiQualityComparison, fetchMultiDatabaseStatistics, clearLocationsCache } from '@/services/realTimeAnalyticsService';
 import { useToast } from '@/hooks/use-toast';
 import { AnalyticsStatisticsPanel } from './AnalyticsStatisticsPanel';
 import { DateRangeFilter } from './DateRangeFilter';
+import { lttbDownsample } from '@/utils/lttbSampling';
 
 // Snow-specific attributes with metadata
 const SNOW_ATTRIBUTES = [
@@ -50,8 +51,16 @@ const DATABASE_LABELS: Record<DatabaseType, string> = {
   'CRRELS2S_seasonal_qaqc_data': 'Seasonal QAQC',
 };
 
-// Maximum data points to display for performance (chart sampling)
-const MAX_DISPLAY_POINTS = 1000;
+// Sampling presets - industry standard options
+type SamplingMode = 'auto' | 'high' | 'medium' | 'low' | 'full';
+
+const SAMPLING_PRESETS: Record<SamplingMode, { label: string; points: number; description: string }> = {
+  'auto': { label: 'Auto (Recommended)', points: 2000, description: 'LTTB algorithm, ~2000 points' },
+  'high': { label: 'High Detail', points: 5000, description: 'More detail, ~5000 points' },
+  'medium': { label: 'Medium', points: 1000, description: 'Balanced, ~1000 points' },
+  'low': { label: 'Fast', points: 500, description: 'Fastest rendering, ~500 points' },
+  'full': { label: 'Full Data', points: Infinity, description: 'All points (may be slow)' },
+};
 
 interface ChartDataPoint {
   timestamp: string;
@@ -59,23 +68,16 @@ interface ChartDataPoint {
   [key: string]: string | number | null;
 }
 
-// Sample data to reduce points for chart performance
-function sampleData<T>(data: T[], maxPoints: number): T[] {
-  if (data.length <= maxPoints) return data;
+// LTTB-based sampling for chart performance - preserves visual shape
+function sampleDataLTTB<T extends { timestamp: string; [key: string]: any }>(
+  data: T[], 
+  maxPoints: number,
+  valueKey: string
+): T[] {
+  if (data.length <= maxPoints || maxPoints === Infinity) return data;
   
-  const step = Math.ceil(data.length / maxPoints);
-  const sampled: T[] = [];
-  
-  for (let i = 0; i < data.length; i += step) {
-    sampled.push(data[i]);
-  }
-  
-  // Always include the last point
-  if (sampled[sampled.length - 1] !== data[data.length - 1]) {
-    sampled.push(data[data.length - 1]);
-  }
-  
-  return sampled;
+  // Use LTTB algorithm for visually accurate downsampling
+  return lttbDownsample(data, maxPoints, valueKey) as T[];
 }
 
 export const SnowAnalyticsDashboard = () => {
@@ -97,6 +99,7 @@ export const SnowAnalyticsDashboard = () => {
   const [showGrid, setShowGrid] = useState(true);
   const [showDataPoints, setShowDataPoints] = useState(false); // Disabled by default for performance
   const [visibleDatabases, setVisibleDatabases] = useState<Set<DatabaseType>>(new Set(COMPARISON_DATABASES));
+  const [samplingMode, setSamplingMode] = useState<SamplingMode>('auto');
   
   // Date range
   const [startDate, setStartDate] = useState<string>('');
@@ -333,9 +336,21 @@ export const SnowAnalyticsDashboard = () => {
       console.log(`[SnowAnalytics] ${db}: ${nonNullCount} non-null values out of ${fullData.length}`);
     });
 
-    // Sample data if too large
-    return sampleData(fullData, MAX_DISPLAY_POINTS);
-  }, [comparisonData, selectedAttribute, viewMode]);
+    // Use LTTB sampling based on selected mode
+    const maxPoints = SAMPLING_PRESETS[samplingMode].points;
+    
+    // Find the primary database with most data for LTTB reference
+    const primaryDb = COMPARISON_DATABASES.reduce((max, db) => {
+      const count = fullData.filter(p => p[db] !== null && !isNaN(p[db] as number)).length;
+      const maxCount = fullData.filter(p => p[max] !== null && !isNaN(p[max] as number)).length;
+      return count > maxCount ? db : max;
+    }, COMPARISON_DATABASES[0]);
+    
+    const sampled = sampleDataLTTB(fullData, maxPoints, primaryDb);
+    console.log(`[SnowAnalytics] LTTB sampled from ${fullData.length} to ${sampled.length} points (mode: ${samplingMode})`);
+    
+    return sampled;
+  }, [comparisonData, selectedAttribute, viewMode, samplingMode]);
 
   // Get data to display (zoomed or full)
   const displayData = zoomedData || chartData;
@@ -435,6 +450,7 @@ export const SnowAnalyticsDashboard = () => {
     setHasLoadedData(false);
     setZoomedData(null);
     setVisibleDatabases(new Set(COMPARISON_DATABASES));
+    setSamplingMode('auto');
     setError(null);
     // Reload locations with fresh data
     loadLocations(true);
@@ -454,7 +470,8 @@ export const SnowAnalyticsDashboard = () => {
 
   const selectedAttributeInfo = SNOW_ATTRIBUTES.find(a => a.value === selectedAttribute);
   const locationName = locations.find(l => l.id === selectedLocation)?.name || selectedLocation;
-  const isSampled = totalRawPoints > MAX_DISPLAY_POINTS;
+  const currentMaxPoints = SAMPLING_PRESETS[samplingMode].points;
+  const isSampled = totalRawPoints > currentMaxPoints;
 
   return (
     <div className="space-y-6">
@@ -589,6 +606,34 @@ export const SnowAnalyticsDashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Sampling Mode - Performance vs Detail */}
+            <div className="space-y-2">
+              <Label className="text-sm flex items-center gap-2">
+                <TrendingUp className="w-4 h-4" />
+                Chart Quality
+              </Label>
+              <Select value={samplingMode} onValueChange={(v) => setSamplingMode(v as SamplingMode)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select quality" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(SAMPLING_PRESETS) as SamplingMode[]).map((mode) => (
+                    <SelectItem key={mode} value={mode}>
+                      <div className="flex flex-col">
+                        <span>{SAMPLING_PRESETS[mode].label}</span>
+                        <span className="text-xs text-muted-foreground">{SAMPLING_PRESETS[mode].description}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {samplingMode === 'full' && (
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  ⚠️ Full data may cause slow rendering with large datasets
+                </p>
+              )}
+            </div>
+
             {/* View Mode Toggle */}
             <div className="flex items-center justify-between">
               <Label className="text-sm">Scientific Mode</Label>
@@ -684,10 +729,15 @@ export const SnowAnalyticsDashboard = () => {
                       {selectedAttributeInfo?.label} Time Series
                     </CardTitle>
                     <CardDescription className="flex flex-wrap items-center gap-2">
-                      {locationName} | {displayData.length} points displayed
+                      {locationName} | {displayData.length.toLocaleString()} points displayed
                       {isSampled && (
                         <Badge variant="secondary" className="text-xs">
-                          Sampled from {totalRawPoints}
+                          LTTB sampled from {totalRawPoints.toLocaleString()}
+                        </Badge>
+                      )}
+                      {samplingMode !== 'auto' && (
+                        <Badge variant="outline" className="text-xs">
+                          {SAMPLING_PRESETS[samplingMode].label}
                         </Badge>
                       )}
                       {zoomedData && <Badge variant="secondary">Zoomed</Badge>}

@@ -55,8 +55,9 @@ export interface TimeSeriesDataPoint {
 const locationsCache: Map<string, { data: Location[]; timestamp: number }> = new Map();
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes - shorter cache to pick up database updates
 
-// Maximum rows per analytics query - backend supports up to 50000
-const MAX_ANALYTICS_ROWS = 50000;
+// Maximum rows per analytics query - increased for comprehensive data
+// Backend can handle 100k rows efficiently with proper indexing
+const MAX_ANALYTICS_ROWS = 100000;
 
 // Retry configuration for resilient connections
 const RETRY_CONFIG = {

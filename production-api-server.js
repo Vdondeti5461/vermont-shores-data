@@ -988,8 +988,8 @@ app.get('/api/databases/:database/analytics/:table', async (req, res) => {
     const { database, table } = req.params;
     const { location, start_date, end_date, attributes, limit } = req.query;
     
-    // Default and max limit to prevent timeout
-    const rowLimit = Math.min(parseInt(limit) || 10000, 50000);
+    // Default and max limit - increased for comprehensive data with LTTB sampling on frontend
+    const rowLimit = Math.min(parseInt(limit) || 50000, 100000);
     
     console.log(`\n📊 [ANALYTICS] Fetching time series for ${database}/${table}`);
     console.log(`   Location: ${location}`);
