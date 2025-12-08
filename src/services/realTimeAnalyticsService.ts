@@ -51,56 +51,60 @@ export interface TimeSeriesDataPoint {
   [key: string]: string | number | null;
 }
 
-// Simple in-memory cache for locations (avoids repeated slow fetches)
+// Simple in-memory cache for locations
 const locationsCache: Map<string, { data: Location[]; timestamp: number }> = new Map();
-const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes cache - longer for stability
+const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
-// Maximum rows per analytics query - increased for comprehensive data
-// Backend can handle 100k rows efficiently with proper indexing
+// Maximum rows per analytics query
 const MAX_ANALYTICS_ROWS = 100000;
 
-// Retry configuration for resilient connections - more aggressive
-const RETRY_CONFIG = {
-  maxRetries: 5,
-  baseDelayMs: 300,
-  maxDelayMs: 5000,
-  timeoutMs: 60000, // 60s timeout per request
+// Simple retry config - reduced complexity
+const DEFAULT_TIMEOUT_MS = 30000; // 30s timeout
+const DEFAULT_RETRIES = 2;
+
+// Track pending location fetches to prevent duplicates
+const pendingLocationFetches: Map<string, Promise<Location[]>> = new Map();
+
+// Clear cache function
+export const clearLocationsCache = () => {
+  locationsCache.clear();
+  pendingLocationFetches.clear();
+  console.log('[Analytics] Location cache cleared');
 };
 
-// Track connection health for proactive refresh
-let lastSuccessfulFetch: number = Date.now();
-let connectionHealthy = true;
-let consecutiveFailures = 0;
-
-// Get connection health status
-export const isConnectionHealthy = (): boolean => connectionHealthy;
-
-// Mark connection as healthy/unhealthy with tracking
-const updateConnectionHealth = (healthy: boolean) => {
-  if (healthy) {
-    connectionHealthy = true;
-    lastSuccessfulFetch = Date.now();
-    consecutiveFailures = 0;
-  } else {
-    consecutiveFailures++;
-    // Only mark unhealthy after multiple failures
-    if (consecutiveFailures >= 3) {
-      connectionHealthy = false;
+// Warm up cache proactively
+export const warmUpLocationsCache = async (
+  database: DatabaseType = 'CRRELS2S_raw_data_ingestion',
+  table: TableType = 'raw_env_core_observations'
+): Promise<void> => {
+  const cacheKey = `${database}:${table}`;
+  const cached = locationsCache.get(cacheKey);
+  
+  if (!cached || (Date.now() - cached.timestamp) > (CACHE_TTL_MS - 60000)) {
+    console.log('[Analytics] Warming up locations cache');
+    try {
+      await fetchLocations(database, table);
+    } catch (error) {
+      console.warn('[Analytics] Cache warm-up failed:', error);
     }
   }
 };
 
-// Force refresh location cache - used when connection issues are detected
+// Connection health (simplified)
+let connectionHealthy = true;
+export const isConnectionHealthy = (): boolean => connectionHealthy;
+
+// Force refresh locations
 export const forceRefreshLocations = async (
   database: DatabaseType,
-  table: TableType
+  table: TableType,
+  signal?: AbortSignal
 ): Promise<Location[]> => {
   const cacheKey = `${database}:${table}`;
-  // Clear existing cache and pending fetches for this key
   locationsCache.delete(cacheKey);
-  pendingFetches.delete(cacheKey);
-  console.log('[Analytics] Force refreshing locations for:', cacheKey);
-  return fetchLocations(database, table);
+  pendingLocationFetches.delete(cacheKey);
+  console.log('[Analytics] Force refreshing locations');
+  return fetchLocationsInternal(database, table, signal);
 };
 
 // Statistics computed server-side from full dataset
@@ -119,122 +123,79 @@ export interface ServerStatistics {
   computedAt: string;
 }
 
-// Track if we're currently fetching locations to prevent duplicate requests
-const pendingFetches: Map<string, Promise<Location[]>> = new Map();
+// Simple fetch with timeout - no complex retry logic here
+async function simpleFetch<T>(
+  url: string,
+  signal?: AbortSignal,
+  timeoutMs = DEFAULT_TIMEOUT_MS
+): Promise<T> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  
+  // Combine signals if caller provided one
+  const combinedSignal = signal 
+    ? (() => {
+        const combined = new AbortController();
+        signal.addEventListener('abort', () => combined.abort());
+        controller.signal.addEventListener('abort', () => combined.abort());
+        if (signal.aborted) combined.abort();
+        return combined.signal;
+      })()
+    : controller.signal;
+  
+  try {
+    const response = await fetch(url, { 
+      signal: combinedSignal,
+      headers: { 'Cache-Control': 'no-cache' }
+    });
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+    
+    const data = await response.json();
+    connectionHealthy = true;
+    return data;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    connectionHealthy = false;
+    throw error;
+  }
+}
 
-// Robust fetch with retry logic and exponential backoff
+// Fetch with simple retry
 async function fetchWithRetry<T>(
   url: string,
-  options: RequestInit = {},
-  retries = RETRY_CONFIG.maxRetries
+  signal?: AbortSignal,
+  retries = DEFAULT_RETRIES
 ): Promise<T> {
   let lastError: Error | null = null;
   
   for (let attempt = 0; attempt <= retries; attempt++) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), RETRY_CONFIG.timeoutMs);
-    
-    // Merge abort signals if one was provided
-    const signal = options.signal 
-      ? combineAbortSignals(options.signal, controller.signal)
-      : controller.signal;
+    if (signal?.aborted) throw new Error('Request aborted');
     
     try {
-      const response = await fetch(url, { 
-        ...options, 
-        signal,
-        // Add cache control to prevent stale cached responses
-        headers: {
-          ...options.headers,
-          'Cache-Control': 'no-cache',
-        }
-      });
-      clearTimeout(timeoutId);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP ${response.status}: ${errorText}`);
-      }
-      
-      const data = await response.json();
-      updateConnectionHealth(true);
-      return data;
+      return await simpleFetch<T>(url, signal);
     } catch (error) {
-      clearTimeout(timeoutId);
       lastError = error as Error;
       
-      // Don't retry if request was intentionally aborted by caller
-      if (options.signal?.aborted) {
+      // Don't retry if aborted
+      if (lastError.name === 'AbortError' || signal?.aborted) {
         throw error;
       }
       
-      const isNetworkError = lastError.name === 'AbortError' || 
-                            lastError.message.includes('fetch') ||
-                            lastError.message.includes('network') ||
-                            lastError.message.includes('Failed to fetch');
-      
       if (attempt < retries) {
-        // Retry on network errors OR server errors (5xx)
-        const isServerError = lastError.message.includes('HTTP 5');
-        if (isNetworkError || isServerError) {
-          const delay = Math.min(
-            RETRY_CONFIG.baseDelayMs * Math.pow(2, attempt),
-            RETRY_CONFIG.maxDelayMs
-          );
-          console.warn(`[Analytics] Request failed, retrying in ${delay}ms (attempt ${attempt + 1}/${retries}):`, lastError.message);
-          await new Promise(resolve => setTimeout(resolve, delay));
-          continue;
-        }
+        const delay = 500 * Math.pow(2, attempt); // 500ms, 1s, 2s
+        console.warn(`[Analytics] Retry ${attempt + 1}/${retries} in ${delay}ms`);
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
   }
   
-  updateConnectionHealth(false);
-  throw new Error(`Failed to connect to data server after ${retries} retries: ${lastError?.message}`);
+  throw new Error(`Failed to connect after ${retries + 1} attempts: ${lastError?.message}`);
 }
-
-// Helper to combine multiple abort signals
-function combineAbortSignals(signal1: AbortSignal, signal2: AbortSignal): AbortSignal {
-  const controller = new AbortController();
-  
-  const abort = () => controller.abort();
-  signal1.addEventListener('abort', abort);
-  signal2.addEventListener('abort', abort);
-  
-  if (signal1.aborted || signal2.aborted) {
-    controller.abort();
-  }
-  
-  return controller.signal;
-}
-
-// Clear cache function for when database is updated
-export const clearLocationsCache = () => {
-  locationsCache.clear();
-  pendingFetches.clear();
-  console.log('[Analytics] Location cache cleared');
-};
-
-// Warm up the cache proactively - call this when app becomes visible
-export const warmUpLocationsCache = async (
-  database: DatabaseType = 'CRRELS2S_raw_data_ingestion',
-  table: TableType = 'raw_env_core_observations'
-): Promise<void> => {
-  const cacheKey = `${database}:${table}`;
-  const cached = locationsCache.get(cacheKey);
-  
-  // Only warm up if cache is expired or about to expire (within 2 minutes)
-  const cacheStale = !cached || (Date.now() - cached.timestamp) > (CACHE_TTL_MS - 2 * 60 * 1000);
-  
-  if (cacheStale) {
-    console.log('[Analytics] Warming up locations cache proactively');
-    try {
-      await fetchLocations(database, table);
-    } catch (error) {
-      console.warn('[Analytics] Cache warm-up failed:', error);
-    }
-  }
-};
 
 // Helper function to get the API database key from the full database type
 function getDatabaseKey(database: DatabaseType): string {
@@ -275,63 +236,66 @@ export const fetchSeasons = async (): Promise<Season[]> => {
   return response.json();
 };
 
-// Fetch locations for a specific database and table - with caching and deduplication
-export const fetchLocations = async (
+// Internal fetch locations - does the actual work
+async function fetchLocationsInternal(
   database: DatabaseType,
-  table: TableType
-): Promise<Location[]> => {
-  const cacheKey = `${database}:${table}`;
-  const cached = locationsCache.get(cacheKey);
-  
-  // Return cached data if still valid
-  if (cached && (Date.now() - cached.timestamp) < CACHE_TTL_MS) {
-    console.log(`[Analytics] Using cached locations for ${cacheKey}`);
-    return cached.data;
-  }
-
-  // If there's already a pending fetch for this key, wait for it
-  const pending = pendingFetches.get(cacheKey);
-  if (pending) {
-    console.log(`[Analytics] Waiting for pending fetch: ${cacheKey}`);
-    return pending;
-  }
-
+  table: TableType,
+  signal?: AbortSignal
+): Promise<Location[]> {
   const dbKey = getDatabaseKey(database);
   const url = `${API_BASE_URL}/api/databases/${dbKey}/tables/${table}/locations`;
   
   console.log(`[Analytics] Fetching locations from: ${url}`);
   
+  const data = await fetchWithRetry<any>(url, signal, 2);
+  
+  const rawLocations = Array.isArray(data) ? data : (data.locations || []);
+  console.log(`[Analytics] Received ${rawLocations.length} locations`);
+  
+  return rawLocations.map((loc: any, index: number) => ({
+    id: typeof loc === 'string' ? loc : (loc.code || loc.name || loc.id || `loc_${index}`),
+    name: typeof loc === 'string' ? loc : (loc.displayName || loc.name || loc.code || loc.id),
+    coordinates: loc.latitude && loc.longitude ? {
+      lat: loc.latitude,
+      lng: loc.longitude
+    } : undefined
+  }));
+}
+
+// Fetch locations with caching and deduplication
+export const fetchLocations = async (
+  database: DatabaseType,
+  table: TableType,
+  signal?: AbortSignal
+): Promise<Location[]> => {
+  const cacheKey = `${database}:${table}`;
+  
+  // Return cached data if valid
+  const cached = locationsCache.get(cacheKey);
+  if (cached && (Date.now() - cached.timestamp) < CACHE_TTL_MS) {
+    console.log(`[Analytics] Using cached locations`);
+    return cached.data;
+  }
+
+  // If already fetching, wait for it
+  const pending = pendingLocationFetches.get(cacheKey);
+  if (pending) {
+    console.log(`[Analytics] Waiting for pending fetch`);
+    return pending;
+  }
+
+  // Start new fetch
   const fetchPromise = (async (): Promise<Location[]> => {
     try {
-      const data = await fetchWithRetry<any>(url, {}, 2); // 2 retries for locations
-      
-      console.log(`[Analytics] Received ${Array.isArray(data) ? data.length : 0} locations`);
-      
-      // Handle both array response and object with locations array
-      const rawLocations = Array.isArray(data) ? data : (data.locations || []);
-      
-      // Normalize location format - use 'code' for API queries, 'displayName' for UI
-      const locations = rawLocations.map((loc: any, index: number) => ({
-        id: typeof loc === 'string' ? loc : (loc.code || loc.name || loc.id || `loc_${index}`),
-        name: typeof loc === 'string' ? loc : (loc.displayName || loc.name || loc.code || loc.id),
-        coordinates: loc.latitude && loc.longitude ? {
-          lat: loc.latitude,
-          lng: loc.longitude
-        } : undefined
-      }));
-      
-      // Cache the results
+      const locations = await fetchLocationsInternal(database, table, signal);
       locationsCache.set(cacheKey, { data: locations, timestamp: Date.now() });
-      
       return locations;
-    } catch (error) {
-      throw new Error(`Failed to connect to data server. Please try again later.`);
     } finally {
-      pendingFetches.delete(cacheKey);
+      pendingLocationFetches.delete(cacheKey);
     }
   })();
 
-  pendingFetches.set(cacheKey, fetchPromise);
+  pendingLocationFetches.set(cacheKey, fetchPromise);
   return fetchPromise;
 };
 
@@ -381,7 +345,7 @@ export const fetchTimeSeriesData = async (
   console.log(`[Analytics] Fetching time series from: ${url}`);
   
   try {
-    const data = await fetchWithRetry<TimeSeriesDataPoint[]>(url, { signal }, 2);
+    const data = await fetchWithRetry<TimeSeriesDataPoint[]>(url, signal, 2);
     console.log(`[Analytics] Received ${data.length} data points for ${dbKey}/${table}/${location}`);
     
     // Log sample of returned data for debugging
@@ -490,7 +454,7 @@ export const fetchServerStatistics = async (
   console.log(`[Analytics] Fetching server statistics from: ${url}`);
   
   try {
-    const data = await fetchWithRetry<ServerStatistics>(url, { signal }, 2);
+    const data = await fetchWithRetry<ServerStatistics>(url, signal, 2);
     console.log(`[Analytics] Server statistics for ${dbKey}: ${data.count} valid points from ${data.total} total`);
     return data;
   } catch (error) {

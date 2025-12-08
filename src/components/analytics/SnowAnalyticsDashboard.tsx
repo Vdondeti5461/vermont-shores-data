@@ -108,60 +108,35 @@ export const SnowAnalyticsDashboard = () => {
   // Raw table for location loading (locations are same across all databases)
   const RAW_TABLE: TableType = 'raw_env_core_observations';
 
-  // Function to load locations with robust retry
+  // Function to load locations - simplified, service handles retries
   const loadLocations = useCallback(async (forceRefresh = false) => {
     setIsLocationsLoading(true);
     setError(null);
     
-    if (forceRefresh) {
-      clearLocationsCache();
-    }
-    
-    const maxRetries = 4;
-    let lastError: Error | null = null;
-    
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        console.log(`[SnowAnalytics] Loading locations (attempt ${attempt}/${maxRetries})${forceRefresh ? ' - forced refresh' : ''}`);
-        
-        // Add timeout with AbortController
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
-        
-        const locs = await fetchLocations('CRRELS2S_raw_data_ingestion', RAW_TABLE);
-        clearTimeout(timeoutId);
-        
-        console.log(`[SnowAnalytics] Loaded ${locs.length} locations successfully`);
-        setLocations(locs);
-        setError(null);
-        setIsLocationsLoading(false);
-        return; // Success
-      } catch (err) {
-        lastError = err as Error;
-        console.error(`[SnowAnalytics] Location load attempt ${attempt} failed:`, err);
-        
-        if (attempt < maxRetries) {
-          // Exponential backoff: 500ms, 1s, 2s, 4s
-          const delay = Math.min(500 * Math.pow(2, attempt - 1), 4000);
-          console.log(`[SnowAnalytics] Retrying in ${delay}ms...`);
-          await new Promise(resolve => setTimeout(resolve, delay));
-          
-          // Force clear cache on retry
-          if (attempt >= 2) {
-            clearLocationsCache();
-          }
-        }
+    try {
+      console.log(`[SnowAnalytics] Loading locations${forceRefresh ? ' (forced)' : ''}`);
+      
+      let locs;
+      if (forceRefresh) {
+        locs = await forceRefreshLocations('CRRELS2S_raw_data_ingestion', RAW_TABLE);
+      } else {
+        locs = await fetchLocations('CRRELS2S_raw_data_ingestion', RAW_TABLE);
       }
+      
+      console.log(`[SnowAnalytics] Loaded ${locs.length} locations`);
+      setLocations(locs);
+      setError(null);
+    } catch (err) {
+      console.error('[SnowAnalytics] Location load failed:', err);
+      setError('Failed to connect to data server. Please try again later.');
+      toast({
+        title: "Connection Error",
+        description: "Failed to load locations. Click refresh to try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLocationsLoading(false);
     }
-    
-    // All retries failed
-    setError('Failed to connect to data server. Please try again later.');
-    setIsLocationsLoading(false);
-    toast({
-      title: "Connection Error",
-      description: "Failed to load locations. Click the refresh button to try again.",
-      variant: "destructive",
-    });
   }, [toast]);
 
   // Keepalive ping to prevent stale connections
