@@ -53,7 +53,7 @@ export interface TimeSeriesDataPoint {
 
 // Simple in-memory cache for locations (avoids repeated slow fetches)
 const locationsCache: Map<string, { data: Location[]; timestamp: number }> = new Map();
-const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes cache
+const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes cache - longer for stability
 
 // Maximum rows per analytics query - increased for comprehensive data
 // Backend can handle 100k rows efficiently with proper indexing
@@ -61,25 +61,46 @@ const MAX_ANALYTICS_ROWS = 100000;
 
 // Retry configuration for resilient connections - more aggressive
 const RETRY_CONFIG = {
-  maxRetries: 4,
-  baseDelayMs: 500,
-  maxDelayMs: 8000,
-  timeoutMs: 45000, // 45s timeout per request (increased for slow connections)
+  maxRetries: 5,
+  baseDelayMs: 300,
+  maxDelayMs: 5000,
+  timeoutMs: 60000, // 60s timeout per request
 };
 
 // Track connection health for proactive refresh
 let lastSuccessfulFetch: number = Date.now();
 let connectionHealthy = true;
+let consecutiveFailures = 0;
 
 // Get connection health status
 export const isConnectionHealthy = (): boolean => connectionHealthy;
 
-// Mark connection as healthy/unhealthy
+// Mark connection as healthy/unhealthy with tracking
 const updateConnectionHealth = (healthy: boolean) => {
-  connectionHealthy = healthy;
   if (healthy) {
+    connectionHealthy = true;
     lastSuccessfulFetch = Date.now();
+    consecutiveFailures = 0;
+  } else {
+    consecutiveFailures++;
+    // Only mark unhealthy after multiple failures
+    if (consecutiveFailures >= 3) {
+      connectionHealthy = false;
+    }
   }
+};
+
+// Force refresh location cache - used when connection issues are detected
+export const forceRefreshLocations = async (
+  database: DatabaseType,
+  table: TableType
+): Promise<Location[]> => {
+  const cacheKey = `${database}:${table}`;
+  // Clear existing cache and pending fetches for this key
+  locationsCache.delete(cacheKey);
+  pendingFetches.delete(cacheKey);
+  console.log('[Analytics] Force refreshing locations for:', cacheKey);
+  return fetchLocations(database, table);
 };
 
 // Statistics computed server-side from full dataset

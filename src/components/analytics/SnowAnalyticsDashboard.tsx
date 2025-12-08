@@ -15,7 +15,7 @@ import {
   MapPin, Download, Settings2, Eye, EyeOff, 
   ZoomOut, Calendar, Snowflake, Droplets, Scale, Play, AlertCircle, RotateCcw, RefreshCw, TrendingUp, Loader2
 } from 'lucide-react';
-import { DatabaseType, TableType, TimeSeriesDataPoint, ServerStatistics, fetchLocations, fetchMultiQualityComparison, fetchMultiDatabaseStatistics, clearLocationsCache, warmUpLocationsCache, isConnectionHealthy } from '@/services/realTimeAnalyticsService';
+import { DatabaseType, TableType, TimeSeriesDataPoint, ServerStatistics, fetchLocations, fetchMultiQualityComparison, fetchMultiDatabaseStatistics, clearLocationsCache, warmUpLocationsCache, isConnectionHealthy, forceRefreshLocations } from '@/services/realTimeAnalyticsService';
 import { useToast } from '@/hooks/use-toast';
 import { AnalyticsStatisticsPanel } from './AnalyticsStatisticsPanel';
 import { DateRangeFilter } from './DateRangeFilter';
@@ -108,7 +108,7 @@ export const SnowAnalyticsDashboard = () => {
   // Raw table for location loading (locations are same across all databases)
   const RAW_TABLE: TableType = 'raw_env_core_observations';
 
-  // Function to load locations
+  // Function to load locations with robust retry
   const loadLocations = useCallback(async (forceRefresh = false) => {
     setIsLocationsLoading(true);
     setError(null);
@@ -117,51 +117,86 @@ export const SnowAnalyticsDashboard = () => {
       clearLocationsCache();
     }
     
-    let retryCount = 0;
-    const maxRetries = 2;
+    const maxRetries = 4;
+    let lastError: Error | null = null;
     
-    while (retryCount <= maxRetries) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        console.log(`[SnowAnalytics] Loading locations (attempt ${retryCount + 1})${forceRefresh ? ' - forced refresh' : ''}`);
+        console.log(`[SnowAnalytics] Loading locations (attempt ${attempt}/${maxRetries})${forceRefresh ? ' - forced refresh' : ''}`);
+        
+        // Add timeout with AbortController
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+        
         const locs = await fetchLocations('CRRELS2S_raw_data_ingestion', RAW_TABLE);
-        console.log(`[SnowAnalytics] Loaded ${locs.length} locations:`, locs.map(l => `${l.id} (${l.name})`).slice(0, 5));
+        clearTimeout(timeoutId);
+        
+        console.log(`[SnowAnalytics] Loaded ${locs.length} locations successfully`);
         setLocations(locs);
         setError(null);
         setIsLocationsLoading(false);
         return; // Success
       } catch (err) {
-        retryCount++;
-        console.error(`[SnowAnalytics] Location load attempt ${retryCount} failed:`, err);
+        lastError = err as Error;
+        console.error(`[SnowAnalytics] Location load attempt ${attempt} failed:`, err);
         
-        if (retryCount > maxRetries) {
-          setError('Failed to connect to data server. Please try again later.');
-          toast({
-            title: "Connection Error",
-            description: "Failed to load locations. Please try the refresh button.",
-            variant: "destructive",
-          });
-          setIsLocationsLoading(false);
-        } else {
-          // Wait before retry
-          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+        if (attempt < maxRetries) {
+          // Exponential backoff: 500ms, 1s, 2s, 4s
+          const delay = Math.min(500 * Math.pow(2, attempt - 1), 4000);
+          console.log(`[SnowAnalytics] Retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          
+          // Force clear cache on retry
+          if (attempt >= 2) {
+            clearLocationsCache();
+          }
         }
       }
     }
+    
+    // All retries failed
+    setError('Failed to connect to data server. Please try again later.');
+    setIsLocationsLoading(false);
+    toast({
+      title: "Connection Error",
+      description: "Failed to load locations. Click the refresh button to try again.",
+      variant: "destructive",
+    });
   }, [toast]);
 
-  // Fetch locations on mount and handle visibility changes
+  // Keepalive ping to prevent stale connections
+  useEffect(() => {
+    // Ping the server every 5 minutes to keep connection warm
+    const keepaliveInterval = setInterval(() => {
+      if (document.visibilityState === 'visible' && !isLoading) {
+        console.log('[SnowAnalytics] Keepalive - warming cache');
+        warmUpLocationsCache('CRRELS2S_raw_data_ingestion', RAW_TABLE).catch(() => {
+          console.warn('[SnowAnalytics] Keepalive ping failed');
+        });
+      }
+    }, 5 * 60 * 1000); // 5 minutes
+    
+    return () => clearInterval(keepaliveInterval);
+  }, [isLoading]);
+
+  // Fetch locations on mount and handle visibility/network changes
   useEffect(() => {
     loadLocations();
     
     // Handle visibility change - refresh locations when user returns to tab
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        console.log('[SnowAnalytics] Tab became visible - warming up cache');
-        warmUpLocationsCache('CRRELS2S_raw_data_ingestion', RAW_TABLE);
+        console.log('[SnowAnalytics] Tab became visible - checking connection');
+        // If we have an error, reload; otherwise just warm cache
+        if (error) {
+          loadLocations(true);
+        } else {
+          warmUpLocationsCache('CRRELS2S_raw_data_ingestion', RAW_TABLE);
+        }
       }
     };
     
-    // Handle online/offline events
+    // Handle online event
     const handleOnline = () => {
       console.log('[SnowAnalytics] Connection restored - refreshing locations');
       loadLocations(true);
@@ -170,20 +205,11 @@ export const SnowAnalyticsDashboard = () => {
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('online', handleOnline);
     
-    // Periodic cache refresh every 8 minutes to prevent stale connections
-    const refreshInterval = setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        console.log('[SnowAnalytics] Periodic cache refresh');
-        warmUpLocationsCache('CRRELS2S_raw_data_ingestion', RAW_TABLE);
-      }
-    }, 8 * 60 * 1000);
-    
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('online', handleOnline);
-      clearInterval(refreshInterval);
     };
-  }, [loadLocations]);
+  }, [loadLocations, error]);
 
   // Load data function - called explicitly by user
   const loadData = useCallback(async () => {
