@@ -12,13 +12,17 @@ import { API_BASE_URL } from '@/lib/apiConfig';
 import { DatabaseType, TableType } from '@/services/realTimeAnalyticsService';
 
 const TABLE_LABELS: Record<TableType, string> = {
+  'raw_env_combined_observations': 'Combined Raw Observations',
+  'clean_env_combined_observations': 'Combined Clean Observations',
   'raw_env_core_observations': 'Core Environmental Observations',
   'raw_env_wind_observations': 'Wind Observations',
   'raw_env_snowpack_temperature_profile': 'Snowpack Temperature Profile',
   'raw_env_precipitation_observations': 'Precipitation Observations',
+  'core_env_observations_qaqc': 'QAQC Core Observations',
 };
 
 const DATABASE_LABELS: Record<DatabaseType, string> = {
+  'CRRELS2S_Analytics': 'Analytics (Combined)',
   'CRRELS2S_raw_data_ingestion': 'Raw Data',
   'CRRELS2S_stage_clean_data': 'Clean Data',
   'CRRELS2S_stage_qaqc_data': 'QAQC Data',

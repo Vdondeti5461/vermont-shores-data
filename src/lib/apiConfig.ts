@@ -54,6 +54,13 @@ console.log('📡 API Base URL configured:', API_BASE_URL);
 export const DOWNLOADABLE_DATABASE = 'seasonal_qaqc_data';
 
 export const DATABASE_CONFIG = {
+  // Analytics database uses unified combined tables for raw and clean data
+  CRRELS2S_Analytics: {
+    key: 'analytics',
+    name: 'CRRELS2S Analytics',
+    downloadable: false,
+    description: 'Unified analytics layer combining core, wind, and precipitation observations'
+  },
   CRRELS2S_raw_data_ingestion: {
     key: 'raw_data',
     name: 'CRRELS2S Raw Data Ingestion',

@@ -10,6 +10,7 @@ interface TimeSeriesComparisonProps {
 }
 
 const DATABASE_COLORS: Record<DatabaseType, string> = {
+  'CRRELS2S_Analytics': '#8b5cf6',
   'CRRELS2S_raw_data_ingestion': '#ef4444',
   'CRRELS2S_stage_clean_data': '#3b82f6',
   'CRRELS2S_stage_qaqc_data': '#22c55e',
@@ -17,6 +18,7 @@ const DATABASE_COLORS: Record<DatabaseType, string> = {
 };
 
 const DATABASE_LABELS: Record<DatabaseType, string> = {
+  'CRRELS2S_Analytics': 'Analytics',
   'CRRELS2S_raw_data_ingestion': 'Raw Data',
   'CRRELS2S_stage_clean_data': 'Clean Data',
   'CRRELS2S_stage_qaqc_data': 'QAQC Data',

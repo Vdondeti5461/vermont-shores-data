@@ -1,18 +1,22 @@
 import { API_BASE_URL, DATABASE_CONFIG } from '@/lib/apiConfig';
 
-// Database types matching your 4 databases
+// Database types - includes Analytics database for unified queries
 export type DatabaseType = 
+  | 'CRRELS2S_Analytics'  // Unified analytics database with combined tables
   | 'CRRELS2S_raw_data_ingestion'
   | 'CRRELS2S_stage_clean_data'
   | 'CRRELS2S_stage_qaqc_data'
   | 'CRRELS2S_seasonal_qaqc_data';
 
-// Table types matching your 4 tables
+// Table types - includes combined analytics tables
 export type TableType = 
+  | 'raw_env_combined_observations'   // Analytics: combined raw data
+  | 'clean_env_combined_observations' // Analytics: combined clean data
   | 'raw_env_core_observations'
   | 'raw_env_wind_observations'
   | 'raw_env_snowpack_temperature_profile'
-  | 'raw_env_precipitation_observations';
+  | 'raw_env_precipitation_observations'
+  | 'core_env_observations_qaqc';     // QAQC table
 
 export interface Database {
   id: DatabaseType;
@@ -366,39 +370,40 @@ export const fetchTimeSeriesData = async (
 };
 
 // Get the correct table name for each database based on actual database structure
-// Based on actual tables:
-// - CRRELS2S_raw_data_ingestion: raw_env_core_observations, raw_env_precipitation_observations, raw_env_snowpack_temperature_profile_observations, raw_env_wind_observations
-// - CRRELS2S_stage_clean_data: clean_env_core_observations, clean_env_precipitation_observations, clean_env_snowpack_temperature_profile_observations, clean_env_wind_observations
-// - CRRELS2S_stage_qaqc_data: core_env_observations_qaqc (NOT qaqc_env_core_observations)
+// Updated to use CRRELS2S_Analytics database with combined tables for better performance
+// 
+// Database → Table mapping:
+// - CRRELS2S_Analytics: raw_env_combined_observations, clean_env_combined_observations (PREFERRED for analytics)
+// - CRRELS2S_stage_qaqc_data: core_env_observations_qaqc (QAQC data with indexes)
 // - CRRELS2S_seasonal_qaqc_data: core_observations_YYYY_YYYY_qaqc
+//
+// The Analytics database combines core, wind, and precipitation data into unified tables
+// with optimized indexes for fast location + timestamp + attribute queries
 export const getTableNameForDatabase = (database: DatabaseType, baseTable: string): string => {
-  // Extract the core table type from any prefixed name
-  // Handle common patterns: raw_env_core_observations, clean_env_core_observations, env_core_observations
-  const coreMatch = baseTable.match(/(env_core_observations|env_precipitation_observations|env_snowpack_temperature_profile_observations|env_wind_observations)/i);
-  
-  if (!coreMatch) {
-    // Not a standard observations table, return as-is
-    return baseTable;
-  }
-  
-  const tableType = coreMatch[1];
-  
   switch (database) {
-    case 'CRRELS2S_raw_data_ingestion':
-      return `raw_${tableType}`;
-    case 'CRRELS2S_stage_clean_data':
-      return `clean_${tableType}`;
-    case 'CRRELS2S_stage_qaqc_data':
-      // QAQC uses different naming: core_env_observations_qaqc instead of qaqc_env_core_observations
-      if (tableType === 'env_core_observations') {
-        return 'core_env_observations_qaqc';
+    case 'CRRELS2S_Analytics':
+      // Analytics database uses combined tables - determine raw vs clean from baseTable hint
+      if (baseTable.includes('clean') || baseTable.includes('Clean')) {
+        return 'clean_env_combined_observations';
       }
-      // For other types, they may not exist in qaqc - return pattern that might work
-      return tableType.replace('env_', '') + '_qaqc';
+      return 'raw_env_combined_observations';
+    
+    case 'CRRELS2S_raw_data_ingestion':
+      // Legacy: still works but prefer Analytics database
+      return 'raw_env_core_observations';
+    
+    case 'CRRELS2S_stage_clean_data':
+      // Legacy: still works but prefer Analytics database
+      return 'clean_env_core_observations';
+    
+    case 'CRRELS2S_stage_qaqc_data':
+      // QAQC uses its own database with indexed table
+      return 'core_env_observations_qaqc';
+    
     case 'CRRELS2S_seasonal_qaqc_data':
-      // Seasonal uses specific season tables, not generic pattern
-      // Return base table as-is since caller should specify exact table
+      // Seasonal uses specific season tables
       return baseTable;
+    
     default:
       return baseTable;
   }
@@ -425,6 +430,8 @@ export const fetchDatabaseTables = async (
 };
 
 // Fetch comparison data across multiple data quality levels (raw, clean, QAQC)
+// Updated to use CRRELS2S_Analytics database for raw/clean data with optimized combined tables
+// QAQC data still uses CRRELS2S_stage_qaqc_data with core_env_observations_qaqc (indexed)
 export const fetchMultiQualityComparison = async (
   databases: DatabaseType[],
   baseTable: string, // e.g., 'env_core_observations' or 'raw_env_core_observations'
@@ -440,10 +447,28 @@ export const fetchMultiQualityComparison = async (
   
   const results = await Promise.allSettled(
     databases.map(async (db) => {
-      // Get the correct table name for this specific database
-      const tableForDb = getTableNameForDatabase(db, baseTable);
-      console.log(`[Analytics] Fetching ${db} with table: ${tableForDb}`);
-      const data = await fetchTimeSeriesData(db, tableForDb as TableType, location, attributes, startDate, endDate, signal);
+      // Determine the optimal database and table for this data type
+      // Use Analytics database for raw/clean (combined, indexed tables)
+      // Use QAQC database directly for QAQC data
+      let actualDb = db;
+      let tableForDb: string;
+      
+      if (db === 'CRRELS2S_raw_data_ingestion') {
+        // Use Analytics database with raw combined table
+        actualDb = 'CRRELS2S_Analytics' as DatabaseType;
+        tableForDb = 'raw_env_combined_observations';
+      } else if (db === 'CRRELS2S_stage_clean_data') {
+        // Use Analytics database with clean combined table
+        actualDb = 'CRRELS2S_Analytics' as DatabaseType;
+        tableForDb = 'clean_env_combined_observations';
+      } else {
+        // QAQC and seasonal use their own databases with specific tables
+        tableForDb = getTableNameForDatabase(db, baseTable);
+      }
+      
+      console.log(`[Analytics] Fetching ${db} -> using ${actualDb} with table: ${tableForDb}`);
+      const data = await fetchTimeSeriesData(actualDb, tableForDb as TableType, location, attributes, startDate, endDate, signal);
+      // Return original database name for UI consistency
       return { database: db, data };
     })
   );
@@ -471,6 +496,7 @@ export const fetchMultiQualityComparison = async (
 
 // Fetch server-side computed statistics for a single database/table/location/attribute
 // Statistics are computed from the FULL dataset (not sampled) for scientific accuracy (with retry)
+// Updated to use Analytics database for raw/clean data
 export const fetchServerStatistics = async (
   database: DatabaseType,
   table: string,
@@ -480,8 +506,21 @@ export const fetchServerStatistics = async (
   endDate?: string,
   signal?: AbortSignal
 ): Promise<ServerStatistics | null> => {
-  const dbKey = getDatabaseKey(database);
-  const tableForDb = getTableNameForDatabase(database, table);
+  // Route to Analytics database for raw/clean, keep QAQC on its own database
+  let actualDb = database;
+  let tableForDb: string;
+  
+  if (database === 'CRRELS2S_raw_data_ingestion') {
+    actualDb = 'CRRELS2S_Analytics' as DatabaseType;
+    tableForDb = 'raw_env_combined_observations';
+  } else if (database === 'CRRELS2S_stage_clean_data') {
+    actualDb = 'CRRELS2S_Analytics' as DatabaseType;
+    tableForDb = 'clean_env_combined_observations';
+  } else {
+    tableForDb = getTableNameForDatabase(database, table);
+  }
+  
+  const dbKey = getDatabaseKey(actualDb);
   
   const params = new URLSearchParams({
     location,

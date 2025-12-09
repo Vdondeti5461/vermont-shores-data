@@ -30,6 +30,7 @@ interface AnalyticsStatisticsPanelProps {
 }
 
 const DATABASE_COLORS: Record<DatabaseType, string> = {
+  'CRRELS2S_Analytics': 'hsl(270, 70%, 55%)',
   'CRRELS2S_raw_data_ingestion': 'hsl(0, 75%, 55%)',
   'CRRELS2S_stage_clean_data': 'hsl(217, 85%, 55%)',
   'CRRELS2S_stage_qaqc_data': 'hsl(142, 70%, 42%)',
@@ -37,6 +38,7 @@ const DATABASE_COLORS: Record<DatabaseType, string> = {
 };
 
 const DATABASE_LABELS: Record<DatabaseType, string> = {
+  'CRRELS2S_Analytics': 'Analytics',
   'CRRELS2S_raw_data_ingestion': 'Raw Data',
   'CRRELS2S_stage_clean_data': 'Clean Data',
   'CRRELS2S_stage_qaqc_data': 'QAQC Data',
