@@ -13,13 +13,13 @@ interface DateRangeFilterProps {
   onEndDateChange: (date: string) => void;
 }
 
-// Predefined date ranges
+// Predefined date ranges - prefer specific ranges over "All Data" for better performance
 const DATE_PRESETS = [
-  { label: 'Last 7 days', days: 7 },
-  { label: 'Last 30 days', days: 30 },
-  { label: 'Last 90 days', days: 90 },
-  { label: 'This Season', days: 180 },
-  { label: 'All Data', days: 0 },
+  { label: 'Last 7 days', days: 7, recommended: true },
+  { label: 'Last 30 days', days: 30, recommended: true },
+  { label: 'Last 90 days', days: 90, recommended: true },
+  { label: 'This Season', days: 180, recommended: true },
+  { label: 'All Data', days: 0, recommended: false },
 ];
 
 export const DateRangeFilter = ({
@@ -77,20 +77,28 @@ export const DateRangeFilter = ({
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
         <div className="p-3 border-b space-y-2">
-          <p className="text-sm font-medium">Quick Select</p>
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium">Quick Select</p>
+            <span className="text-xs text-muted-foreground">★ = Recommended</span>
+          </div>
           <div className="flex flex-wrap gap-2">
             {DATE_PRESETS.map((preset) => (
               <Button
                 key={preset.label}
-                variant="outline"
+                variant={preset.recommended ? "outline" : "ghost"}
                 size="sm"
                 onClick={() => handlePreset(preset.days)}
-                className="text-xs"
+                className={`text-xs ${!preset.recommended ? 'opacity-70 border-dashed border' : ''}`}
+                title={preset.recommended ? 'Recommended for best performance' : 'May be slow with large datasets'}
               >
+                {preset.recommended && <span className="mr-1 text-primary">★</span>}
                 {preset.label}
               </Button>
             ))}
           </div>
+          <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+            💡 Tip: Use a date range for faster loading and better chart performance
+          </p>
         </div>
         <div className="p-3 space-y-3">
           <div className="grid grid-cols-2 gap-3">
