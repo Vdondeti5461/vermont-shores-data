@@ -10,6 +10,7 @@ import Network from "./pages/Network";
 import Analytics from "./pages/Analytics";
 import RealTime from "./pages/analytics/RealTime";
 import SnowAnalyticsPage from "./pages/analytics/SnowAnalytics";
+import SeasonalPage from "./pages/analytics/Seasonal";
 import DataDownload from "./pages/DataDownload";
 import Research from "./pages/Research";
 import Gallery from "./pages/research/Gallery";
@@ -40,7 +41,7 @@ const App = () => (
           {/* Analytics Routes */}
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/analytics/realtime" element={<RealTime />} />
-          <Route path="/analytics/seasonal" element={<SnowAnalyticsPage />} />
+          <Route path="/analytics/seasonal" element={<SeasonalPage />} />
           <Route path="/analytics/snow" element={<SnowAnalyticsPage />} />
           <Route path="/analytics/advanced" element={<AdvancedAnalytics />} />
           
