@@ -457,16 +457,19 @@ export const fetchMultiQualityComparison = async (
         // Use Analytics database with raw combined table
         actualDb = 'CRRELS2S_Analytics' as DatabaseType;
         tableForDb = 'raw_env_combined_observations';
+        console.log(`[Analytics] Routing RAW: ${db} -> analytics/${tableForDb}`);
       } else if (db === 'CRRELS2S_stage_clean_data') {
         // Use Analytics database with clean combined table
         actualDb = 'CRRELS2S_Analytics' as DatabaseType;
         tableForDb = 'clean_env_combined_observations';
+        console.log(`[Analytics] Routing CLEAN: ${db} -> analytics/${tableForDb}`);
       } else {
         // QAQC and seasonal use their own databases with specific tables
         tableForDb = getTableNameForDatabase(db, baseTable);
+        console.log(`[Analytics] Routing ${db} -> ${getDatabaseKey(db)}/${tableForDb}`);
       }
       
-      console.log(`[Analytics] Fetching ${db} -> using ${actualDb} with table: ${tableForDb}`);
+      console.log(`[Analytics] Fetching ${db} -> ${getDatabaseKey(actualDb)}/analytics/${tableForDb}`);
       const data = await fetchTimeSeriesData(actualDb, tableForDb as TableType, location, attributes, startDate, endDate, signal);
       // Return original database name for UI consistency
       return { database: db, data };
@@ -513,11 +516,14 @@ export const fetchServerStatistics = async (
   if (database === 'CRRELS2S_raw_data_ingestion') {
     actualDb = 'CRRELS2S_Analytics' as DatabaseType;
     tableForDb = 'raw_env_combined_observations';
+    console.log(`[Statistics] Routing RAW: analytics/${tableForDb}`);
   } else if (database === 'CRRELS2S_stage_clean_data') {
     actualDb = 'CRRELS2S_Analytics' as DatabaseType;
     tableForDb = 'clean_env_combined_observations';
+    console.log(`[Statistics] Routing CLEAN: analytics/${tableForDb}`);
   } else {
     tableForDb = getTableNameForDatabase(database, table);
+    console.log(`[Statistics] Routing ${database}: ${tableForDb}`);
   }
   
   const dbKey = getDatabaseKey(actualDb);
