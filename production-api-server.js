@@ -5,13 +5,16 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// CORS configuration
+// CORS configuration - allow all origins for API access
 app.use(cors({
   origin: [
     'https://www.uvm.edu',
     'https://crrels2s.w3.uvm.edu',
     'https://vdondeti.w3.uvm.edu',
-    'http://localhost:5173'
+    'http://localhost:5173',
+    'http://localhost:8080',
+    /\.lovable\.app$/,  // Allow Lovable preview environments
+    /\.lovableproject\.com$/  // Allow Lovable project domains
   ],
   credentials: true
 }));
@@ -73,6 +76,10 @@ async function connectDB() {
 
 // Known database configurations - support both cases for URL compatibility
 const DATABASES = {
+  // Analytics database - unified combined tables for raw and clean data (PREFERRED for analytics queries)
+  'analytics': 'CRRELS2S_Analytics',
+  'Analytics': 'CRRELS2S_Analytics', // Case variant
+  // Original databases
   'raw_data': 'CRRELS2S_raw_data_ingestion',
   'Raw_Data': 'CRRELS2S_raw_data_ingestion', // Case variant
   'stage_clean_data': 'CRRELS2S_stage_clean_data', 
@@ -224,8 +231,76 @@ const TABLE_METADATA = {
   }
 };
 
+// Analytics combined tables metadata (CRRELS2S_Analytics database)
+// These tables combine core, wind, and precipitation data for fast analytics queries
+const ANALYTICS_TABLE_METADATA = {
+  'raw_env_combined_observations': {
+    displayName: 'Raw Combined Observations',
+    description: 'Unified raw sensor data combining core, wind, and precipitation observations with optimized indexes',
+    attributes: {
+      'id': { description: 'Auto-incremented primary key', unit: 'No Unit', measurement_type: 'Identifier', category: 'System' },
+      'timestamp': { description: 'Date and time of observation', unit: 'DateTime', measurement_type: 'No Unit', category: 'Time' },
+      'location': { description: 'Station identifier', unit: 'LOC', measurement_type: 'No Unit', category: 'Location' },
+      'air_temperature_avg_c': { description: 'Average air temperature', unit: '°C', measurement_type: 'Avg', category: 'Temperature' },
+      'relative_humidity_percent': { description: 'Relative humidity', unit: '%', measurement_type: 'Sample', category: 'Humidity' },
+      'soil_heat_flux_w_m2': { description: 'Soil heat flux', unit: 'W/m²', measurement_type: 'Sample', category: 'Radiation' },
+      'soil_moisture_wfv': { description: 'Soil moisture', unit: '%', measurement_type: 'Sample', category: 'Soil' },
+      'soil_temperature_c': { description: 'Soil temperature', unit: '°C', measurement_type: 'Sample', category: 'Temperature' },
+      'snow_water_equivalent_mm': { description: 'Snow Water Equivalent', unit: 'mm', measurement_type: 'Sample', category: 'Snow' },
+      'shortwave_radiation_in_w_m2': { description: 'Incoming shortwave radiation', unit: 'W/m²', measurement_type: 'Sample', category: 'Radiation' },
+      'shortwave_radiation_out_w_m2': { description: 'Outgoing shortwave radiation', unit: 'W/m²', measurement_type: 'Sample', category: 'Radiation' },
+      'longwave_radiation_in_w_m2': { description: 'Incoming longwave radiation', unit: 'W/m²', measurement_type: 'Sample', category: 'Radiation' },
+      'longwave_radiation_out_w_m2': { description: 'Outgoing longwave radiation', unit: 'W/m²', measurement_type: 'Sample', category: 'Radiation' },
+      'snow_depth_cm': { description: 'Snow depth', unit: 'cm', measurement_type: 'Sample', category: 'Snow' },
+      'snowpack_density_kg_m3': { description: 'Snowpack density', unit: 'kg/m³', measurement_type: 'Sample', category: 'Snow' },
+      'ice_content_percent': { description: 'Ice content in snowpack', unit: '%', measurement_type: 'Sample', category: 'Snow' },
+      'water_content_percent': { description: 'Water content in snowpack', unit: '%', measurement_type: 'Sample', category: 'Snow' },
+      'wind_direction_deg': { description: 'Wind direction', unit: '°', measurement_type: 'Sample', category: 'Wind' },
+      'wind_speed_avg_ms': { description: 'Average wind speed', unit: 'm/s', measurement_type: 'Avg', category: 'Wind' },
+      'wind_speed_max_ms': { description: 'Maximum wind speed', unit: 'm/s', measurement_type: 'Max', category: 'Wind' },
+      'precip_intensity_rt_mm_min': { description: 'Precipitation intensity', unit: 'mm/min', measurement_type: 'Sample', category: 'Precipitation' },
+      'precip_accum_rt_nrt_mm': { description: 'Accumulated precipitation', unit: 'mm', measurement_type: 'Accum', category: 'Precipitation' },
+      'data_quality_flag': { description: 'Data quality flag', unit: 'Flag', measurement_type: 'Flag', category: 'Quality' }
+    }
+  },
+  'clean_env_combined_observations': {
+    displayName: 'Clean Combined Observations',
+    description: 'Unified cleaned sensor data with quality control applied, combining core, wind, and precipitation',
+    attributes: {
+      'id': { description: 'Auto-incremented primary key', unit: 'No Unit', measurement_type: 'Identifier', category: 'System' },
+      'timestamp': { description: 'Date and time of observation', unit: 'DateTime', measurement_type: 'No Unit', category: 'Time' },
+      'location': { description: 'Station identifier', unit: 'LOC', measurement_type: 'No Unit', category: 'Location' },
+      'air_temperature_avg_c': { description: 'Average air temperature', unit: '°C', measurement_type: 'Avg', category: 'Temperature' },
+      'relative_humidity_percent': { description: 'Relative humidity', unit: '%', measurement_type: 'Sample', category: 'Humidity' },
+      'soil_heat_flux_w_m2': { description: 'Soil heat flux', unit: 'W/m²', measurement_type: 'Sample', category: 'Radiation' },
+      'soil_moisture_wfv': { description: 'Soil moisture', unit: '%', measurement_type: 'Sample', category: 'Soil' },
+      'soil_temperature_c': { description: 'Soil temperature', unit: '°C', measurement_type: 'Sample', category: 'Temperature' },
+      'snow_water_equivalent_mm': { description: 'Snow Water Equivalent', unit: 'mm', measurement_type: 'Sample', category: 'Snow' },
+      'shortwave_radiation_in_w_m2': { description: 'Incoming shortwave radiation', unit: 'W/m²', measurement_type: 'Sample', category: 'Radiation' },
+      'shortwave_radiation_out_w_m2': { description: 'Outgoing shortwave radiation', unit: 'W/m²', measurement_type: 'Sample', category: 'Radiation' },
+      'longwave_radiation_in_w_m2': { description: 'Incoming longwave radiation', unit: 'W/m²', measurement_type: 'Sample', category: 'Radiation' },
+      'longwave_radiation_out_w_m2': { description: 'Outgoing longwave radiation', unit: 'W/m²', measurement_type: 'Sample', category: 'Radiation' },
+      'snow_depth_cm': { description: 'Snow depth', unit: 'cm', measurement_type: 'Sample', category: 'Snow' },
+      'snowpack_density_kg_m3': { description: 'Snowpack density', unit: 'kg/m³', measurement_type: 'Sample', category: 'Snow' },
+      'ice_content_percent': { description: 'Ice content in snowpack', unit: '%', measurement_type: 'Sample', category: 'Snow' },
+      'water_content_percent': { description: 'Water content in snowpack', unit: '%', measurement_type: 'Sample', category: 'Snow' },
+      'wind_direction_deg': { description: 'Wind direction', unit: '°', measurement_type: 'Sample', category: 'Wind' },
+      'wind_speed_avg_ms': { description: 'Average wind speed', unit: 'm/s', measurement_type: 'Avg', category: 'Wind' },
+      'wind_speed_max_ms': { description: 'Maximum wind speed', unit: 'm/s', measurement_type: 'Max', category: 'Wind' },
+      'precip_intensity_rt_mm_min': { description: 'Precipitation intensity', unit: 'mm/min', measurement_type: 'Sample', category: 'Precipitation' },
+      'precip_accum_rt_nrt_mm': { description: 'Accumulated precipitation', unit: 'mm', measurement_type: 'Accum', category: 'Precipitation' },
+      'data_quality_flag': { description: 'Data quality flag', unit: 'Flag', measurement_type: 'Flag', category: 'Quality' }
+    }
+  }
+};
+
 // Helper to get table metadata regardless of prefix (raw_, clean_, qaqc_)
+// Also checks analytics combined tables
 function getTableMetadata(tableName) {
+  // Check analytics combined tables first
+  if (ANALYTICS_TABLE_METADATA[tableName]) {
+    return ANALYTICS_TABLE_METADATA[tableName];
+  }
   const normalized = tableName.replace(/^(raw_|clean_|qaqc_|seasonal_)/, 'raw_');
   return TABLE_METADATA[normalized] || TABLE_METADATA[tableName];
 }
@@ -233,6 +308,11 @@ function getTableMetadata(tableName) {
 
 // Database metadata configuration
 const DATABASE_METADATA = {
+  'analytics': {
+    category: 'analytics',
+    order: 0,
+    description: 'Unified analytics layer with optimized combined tables for fast visualization'
+  },
   'raw_data': {
     category: 'raw',
     order: 1,
