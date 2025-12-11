@@ -7,30 +7,12 @@ RedirectMatch 302 ^/favicon\.ico$ /lovable-uploads/6cc4d90f-0179-494a-a8be-7a9a1
 RedirectMatch 302 ^/api/favicon\.ico$ /lovable-uploads/6cc4d90f-0179-494a-a8be-7a9a1c70a0e9.png
 RedirectMatch 302 ^/health/favicon\.ico$ /lovable-uploads/6cc4d90f-0179-494a-a8be-7a9a1c70a0e9.png
 
-# Proxy API requests to Node.js backend
-# /health - health check endpoint
-# /api - all API endpoints
-# /api-keys - API key management endpoints
-# /auth/login, /auth/signup, /auth/verify, /auth/logout, /auth/profile - auth API endpoints
-RewriteCond %{REQUEST_URI} ^/health [OR]
-RewriteCond %{REQUEST_URI} ^/api [OR]
-RewriteCond %{REQUEST_URI} ^/api-keys [OR]
-RewriteCond %{REQUEST_URI} ^/auth/login [OR]
-RewriteCond %{REQUEST_URI} ^/auth/signup [OR]
-RewriteCond %{REQUEST_URI} ^/auth/verify [OR]
-RewriteCond %{REQUEST_URI} ^/auth/logout [OR]
-RewriteCond %{REQUEST_URI} ^/auth/profile
+# Proxy API requests to Node.js backend (health + api)
+RewriteCond %{REQUEST_URI} ^/(health|api)
 RewriteRule ^(.*)$ http://127.0.0.1:3001/$1 [P,L]
 
-# Client-side routing for React (serve index.html for all non-file/non-API routes)
+# Client-side routing for React (exclude health/api)
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteCond %{REQUEST_URI} !^/health
-RewriteCond %{REQUEST_URI} !^/api
-RewriteCond %{REQUEST_URI} !^/api-keys
-RewriteCond %{REQUEST_URI} !^/auth/login
-RewriteCond %{REQUEST_URI} !^/auth/signup
-RewriteCond %{REQUEST_URI} !^/auth/verify
-RewriteCond %{REQUEST_URI} !^/auth/logout
-RewriteCond %{REQUEST_URI} !^/auth/profile
+RewriteCond %{REQUEST_URI} !^/(health|api)
 RewriteRule . /index.html [L]
