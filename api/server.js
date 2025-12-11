@@ -40,7 +40,10 @@ app.use(cors({
     'https://crrels2s.w3.uvm.edu',
     'https://vdondeti.w3.uvm.edu',
     'http://localhost:5173',
-    'http://localhost:3000'
+    'http://localhost:3000',
+    // Lovable preview domains
+    /https:\/\/.*\.lovableproject\.com$/,
+    /https:\/\/.*\.lovable\.app$/
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
