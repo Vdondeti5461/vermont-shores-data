@@ -2,8 +2,19 @@ require('dotenv').config();
 const express = require('express');
 const mysql = require('mysql2/promise');
 const cors = require('cors');
+const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Import auth routes (optional - only if auth modules exist)
+let authRoutes, apiKeyRoutes;
+try {
+  authRoutes = require('./routes/auth.routes');
+  apiKeyRoutes = require('./routes/apiKeys.routes');
+  console.log('✅ Authentication modules loaded');
+} catch (err) {
+  console.log('⚠️ Authentication modules not found - auth features disabled');
+}
 
 // CORS configuration - allow all origins for API access
 app.use(cors({
@@ -1291,6 +1302,18 @@ app.get('/api/databases/:database/download/:table', async (req, res) => {
 });
 
 
+// Mount authentication routes (if available)
+function mountAuthRoutes() {
+  if (authRoutes && pool) {
+    app.use('/auth', authRoutes(pool));
+    console.log('✅ Auth routes mounted at /auth');
+  }
+  if (apiKeyRoutes && pool) {
+    app.use('/api-keys', apiKeyRoutes(pool));
+    console.log('✅ API Key routes mounted at /api-keys');
+  }
+}
+
 // Error handling middleware
 app.use((error, req, res, next) => {
   console.error('Server error:', error);
@@ -1301,9 +1324,12 @@ app.use((error, req, res, next) => {
 async function startServer() {
   try {
     await connectDB();
+    // Mount auth routes after DB is connected
+    mountAuthRoutes();
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
-      console.log(`📊 Database host: web5.uvm.edu`);
+      console.log(`📊 Database host: webdb5.uvm.edu`);
+      console.log(`🔐 Auth routes: ${authRoutes ? 'ENABLED' : 'DISABLED'}`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);
