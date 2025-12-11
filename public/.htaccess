@@ -7,12 +7,19 @@ RedirectMatch 302 ^/favicon\.ico$ /lovable-uploads/6cc4d90f-0179-494a-a8be-7a9a1
 RedirectMatch 302 ^/api/favicon\.ico$ /lovable-uploads/6cc4d90f-0179-494a-a8be-7a9a1c70a0e9.png
 RedirectMatch 302 ^/health/favicon\.ico$ /lovable-uploads/6cc4d90f-0179-494a-a8be-7a9a1c70a0e9.png
 
-# Proxy API requests to Node.js backend (health, api, auth, api-keys)
-RewriteCond %{REQUEST_URI} ^/(health|api|auth|api-keys)
+# Proxy API requests to Node.js backend
+# Note: Only proxy specific auth endpoints, not /auth page itself
+RewriteCond %{REQUEST_URI} ^/health [OR]
+RewriteCond %{REQUEST_URI} ^/api [OR]
+RewriteCond %{REQUEST_URI} ^/api-keys [OR]
+RewriteCond %{REQUEST_URI} ^/auth/(login|signup|verify)
 RewriteRule ^(.*)$ http://127.0.0.1:3001/$1 [P,L]
 
-# Client-side routing for React (exclude health/api/auth/api-keys)
+# Client-side routing for React
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteCond %{REQUEST_URI} !^/(health|api|auth|api-keys)
+RewriteCond %{REQUEST_URI} !^/health
+RewriteCond %{REQUEST_URI} !^/api
+RewriteCond %{REQUEST_URI} !^/api-keys
+RewriteCond %{REQUEST_URI} !^/auth/(login|signup|verify)
 RewriteRule . /index.html [L]
