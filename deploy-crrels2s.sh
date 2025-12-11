@@ -51,10 +51,8 @@ cp -a dist/. ~/www-root/
 chmod -R 755 ~/www-root
 
 # Ensure .htaccess exists for API proxying and client-side routing
-echo -e "${YELLOW}📝 Checking .htaccess configuration...${NC}"
-if [ ! -f ~/www-root/.htaccess ]; then
-    echo -e "${YELLOW}Creating .htaccess...${NC}"
-    cat > ~/www-root/.htaccess << 'EOF'
+echo -e "${YELLOW}📝 Updating .htaccess configuration...${NC}"
+cat > ~/www-root/.htaccess << 'EOF'
 RewriteEngine On
 RewriteBase /
 
@@ -64,18 +62,31 @@ RedirectMatch 302 ^/api/favicon\.ico$ /lovable-uploads/6cc4d90f-0179-494a-a8be-7
 RedirectMatch 302 ^/health/favicon\.ico$ /lovable-uploads/6cc4d90f-0179-494a-a8be-7a9a1c70a0e9.png
 
 # Proxy API requests to Node.js backend
-RewriteCond %{REQUEST_URI} ^/(health|api)
+# /health, /api, /api-keys, /auth/* API endpoints
+RewriteCond %{REQUEST_URI} ^/health [OR]
+RewriteCond %{REQUEST_URI} ^/api [OR]
+RewriteCond %{REQUEST_URI} ^/api-keys [OR]
+RewriteCond %{REQUEST_URI} ^/auth/login [OR]
+RewriteCond %{REQUEST_URI} ^/auth/signup [OR]
+RewriteCond %{REQUEST_URI} ^/auth/verify [OR]
+RewriteCond %{REQUEST_URI} ^/auth/logout [OR]
+RewriteCond %{REQUEST_URI} ^/auth/profile
 RewriteRule ^(.*)$ http://127.0.0.1:3001/$1 [P,L]
 
 # Client-side routing for React
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteCond %{REQUEST_URI} !^/(health|api)
+RewriteCond %{REQUEST_URI} !^/health
+RewriteCond %{REQUEST_URI} !^/api
+RewriteCond %{REQUEST_URI} !^/api-keys
+RewriteCond %{REQUEST_URI} !^/auth/login
+RewriteCond %{REQUEST_URI} !^/auth/signup
+RewriteCond %{REQUEST_URI} !^/auth/verify
+RewriteCond %{REQUEST_URI} !^/auth/logout
+RewriteCond %{REQUEST_URI} !^/auth/profile
 RewriteRule . /index.html [L]
 EOF
-else
-    echo -e "${GREEN}✅ .htaccess already exists${NC}"
-fi
+echo -e "${GREEN}✅ .htaccess configured with auth routes${NC}"
 
 # Check for any hardcoded localhost URLs in frontend
 echo -e "${BLUE}🔍 Checking for development URLs in frontend bundle...${NC}"
@@ -94,9 +105,22 @@ cd ~/vermont-shores-data
 # Create backup of current backend
 cp -r ~/api ~/backup-api-$ts 2>/dev/null || true
 
-# Copy backend files
-cp production-api-server.js ~/api/
-cp production-package.json ~/api/package.json
+# Copy backend files - use api/server.js which includes auth routes
+echo -e "${YELLOW}📋 Copying backend server files...${NC}"
+cp api/server.js ~/api/server.js
+cp api/package.json ~/api/package.json
+
+# Copy middleware and routes
+mkdir -p ~/api/middleware ~/api/routes ~/api/config
+cp api/middleware/*.js ~/api/middleware/ 2>/dev/null || true
+cp api/routes/*.js ~/api/routes/ 2>/dev/null || true
+cp api/config/*.js ~/api/config/ 2>/dev/null || true
+
+# Copy .env.example if .env doesn't exist
+if [ ! -f ~/api/.env ]; then
+    cp api/.env.example ~/api/.env 2>/dev/null || true
+    echo -e "${YELLOW}⚠️  Created ~/api/.env - please configure JWT_SECRET and MYSQL_PASSWORD${NC}"
+fi
 
 # Install backend dependencies
 echo -e "${YELLOW}📦 Installing backend dependencies...${NC}"
@@ -110,7 +134,7 @@ if pm2 describe crrels2s-api > /dev/null 2>&1; then
     pm2 restart crrels2s-api
 else
     echo -e "${YELLOW}Starting new API server...${NC}"
-    pm2 start production-api-server.js --name crrels2s-api
+    pm2 start server.js --name crrels2s-api
 fi
 
 # Save pm2 configuration
