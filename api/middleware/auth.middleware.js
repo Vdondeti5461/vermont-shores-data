@@ -64,7 +64,7 @@ const verifyToken = async (req, res, next) => {
  * Verify API Key Middleware
  * Checks X-API-Key header for valid API key
  */
-const verifyApiKey = (pool) => async (req, res, next) => {
+const verifyApiKey = (getPool) => async (req, res, next) => {
   try {
     const apiKey = req.headers['x-api-key'];
     
@@ -85,6 +85,7 @@ const verifyApiKey = (pool) => async (req, res, next) => {
     }
 
     // Look up API key in database
+    const pool = typeof getPool === 'function' ? getPool() : getPool;
     const connection = await pool.getConnection();
     
     try {
