@@ -1,11 +1,13 @@
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Code, Database, FileText, Globe, Key, Info } from 'lucide-react';
+import { Code, Database, FileText, Globe, Key, Info, LogIn, User } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/apiConfig';
+import { Link } from 'react-router-dom';
 
 const APIDocumentation = () => {
   const baseUrl = `${API_BASE_URL}/api`;
@@ -26,9 +28,9 @@ const APIDocumentation = () => {
         'Access to raw and intermediate processing stages',
         'Higher rate limits (1000 requests per hour)',
         'Bulk download capabilities',
-        'Priority support'
+        'Usage analytics and tracking'
       ],
-      howToGetKey: 'Contact crrels2s@uvm.edu to request developer API access'
+      howToGetKey: 'Create a free account and generate your API key instantly'
     },
     contactInfo: {
       email: 'crrels2s@uvm.edu',
@@ -613,76 +615,155 @@ try {
               </TabsContent>
 
               <TabsContent value="authentication" className="mt-8">
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center gap-3">
-                      <Key className="h-8 w-8 text-primary" />
-                      <div>
-                        <CardTitle>Data Access & Availability</CardTitle>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Current access policies and restricted datasets
+                <div className="space-y-6">
+                  {/* Developer Login Section */}
+                  <Card className="border-primary/30 bg-primary/5">
+                    <CardHeader>
+                      <div className="flex items-center gap-3">
+                        <LogIn className="h-8 w-8 text-primary" />
+                        <div>
+                          <CardTitle>Developer Authentication</CardTitle>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Create an account and generate API keys for programmatic access
+                          </p>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        <div className="p-4 bg-background rounded-lg border">
+                          <h4 className="font-semibold mb-2 flex items-center gap-2">
+                            <User className="h-4 w-4" />
+                            Step 1: Create Account
+                          </h4>
+                          <p className="text-sm text-muted-foreground mb-3">
+                            Sign up with your email to create a developer account
+                          </p>
+                          <Button asChild size="sm">
+                            <Link to="/auth">Sign Up / Login</Link>
+                          </Button>
+                        </div>
+                        <div className="p-4 bg-background rounded-lg border">
+                          <h4 className="font-semibold mb-2 flex items-center gap-2">
+                            <Key className="h-4 w-4" />
+                            Step 2: Generate API Key
+                          </h4>
+                          <p className="text-sm text-muted-foreground mb-3">
+                            Create and manage your API keys for data access
+                          </p>
+                          <Button asChild size="sm" variant="outline">
+                            <Link to="/api-keys">Manage API Keys</Link>
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <div className="pt-4 border-t">
+                        <h4 className="font-semibold mb-3">Using Your API Key</h4>
+                        <p className="text-sm text-muted-foreground mb-3">
+                          Include your API key in the <code className="bg-muted px-1 rounded">X-API-Key</code> header with every request:
                         </p>
+                        <pre className="bg-muted p-4 rounded-lg text-sm overflow-x-auto">
+{`curl -H "X-API-Key: s2s_YOUR_API_KEY_HERE" \\
+  ${API_BASE_URL}/api/databases`}
+                        </pre>
                       </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                     <div>
-                      <h3 className="font-semibold mb-2">{authInfo.publicAccess.title}</h3>
-                      <p className="text-sm text-muted-foreground mt-2">
-                        {authInfo.publicAccess.description}
-                      </p>
-                      <div className="flex gap-2 mt-2">
-                        {authInfo.publicAccess.databases.map((db, idx) => (
-                          <Badge key={idx} variant="secondary">{db}</Badge>
-                        ))}
-                      </div>
-                    </div>
 
-                    <div>
-                      <h3 className="font-semibold mb-2">{authInfo.authenticatedAccess.title}</h3>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        {authInfo.authenticatedAccess.description}
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {authInfo.authenticatedAccess.databases.map((db, idx) => (
-                          <Badge key={idx} variant="outline">
-                            {db}
-                          </Badge>
-                        ))}
-                      </div>
-                      <ul className="mt-3 space-y-1 text-sm text-muted-foreground">
-                        {authInfo.authenticatedAccess.benefits.map((benefit, idx) => (
-                          <li key={idx}>✓ {benefit}</li>
-                        ))}
-                      </ul>
-                    </div>
+                      <div className="pt-4 border-t">
+                        <h4 className="font-semibold mb-3">Example: Download Data with API Key</h4>
+                        <pre className="bg-muted p-4 rounded-lg text-sm overflow-x-auto">
+{`# Download raw data (requires API key)
+curl -H "X-API-Key: s2s_YOUR_API_KEY" \\
+  "${API_BASE_URL}/api/databases/raw_data/download/raw_env_core_observations?locations=SUMM,RB01&start_date=2024-01-01"
 
-                    <div>
-                      <h3 className="font-semibold mb-2">Request API Access</h3>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        {authInfo.authenticatedAccess.howToGetKey}
-                      </p>
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline">Email</Badge>
-                          <code className="text-sm">{authInfo.contactInfo.email}</code>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline">Phone</Badge>
-                          <code className="text-sm">{authInfo.contactInfo.phone}</code>
+# Download seasonal data (public access)
+curl "${API_BASE_URL}/api/seasonal/download/season_2023_2024_qaqc?locations=SUMM"`}
+                        </pre>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Access Tiers */}
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-center gap-3">
+                        <Key className="h-8 w-8 text-primary" />
+                        <div>
+                          <CardTitle>Access Tiers & Rate Limits</CardTitle>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Tiered access based on authentication level
+                          </p>
                         </div>
                       </div>
-                    </div>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        <div className="p-4 border rounded-lg">
+                          <h3 className="font-semibold mb-2 flex items-center gap-2">
+                            <Badge variant="secondary">Public</Badge>
+                            No Authentication
+                          </h3>
+                          <p className="text-sm text-muted-foreground mb-3">
+                            {authInfo.publicAccess.description}
+                          </p>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex items-center gap-2">
+                              <span className="text-muted-foreground">Databases:</span>
+                              {authInfo.publicAccess.databases.map((db, idx) => (
+                                <Badge key={idx} variant="outline" className="text-xs">{db}</Badge>
+                              ))}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-muted-foreground">Rate Limit:</span>
+                              <span className="font-mono">100 requests/hour</span>
+                            </div>
+                          </div>
+                        </div>
 
-                    <Alert>
-                      <Info className="h-4 w-4" />
-                      <AlertDescription>
-                        All API requests are subject to rate limiting to ensure fair usage. 
-                        Please implement caching and avoid excessive concurrent requests.
-                      </AlertDescription>
-                    </Alert>
-                  </CardContent>
-                </Card>
+                        <div className="p-4 border rounded-lg border-primary/30 bg-primary/5">
+                          <h3 className="font-semibold mb-2 flex items-center gap-2">
+                            <Badge>Authenticated</Badge>
+                            API Key Required
+                          </h3>
+                          <p className="text-sm text-muted-foreground mb-3">
+                            Full access to all databases with higher rate limits
+                          </p>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex flex-wrap items-center gap-1">
+                              <span className="text-muted-foreground">Databases:</span>
+                              {authInfo.authenticatedAccess.databases.map((db, idx) => (
+                                <Badge key={idx} variant="outline" className="text-xs">{db}</Badge>
+                              ))}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-muted-foreground">Rate Limit:</span>
+                              <span className="font-mono">1000 requests/hour</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <h3 className="font-semibold mb-2">Benefits of API Key Authentication</h3>
+                        <ul className="grid sm:grid-cols-2 gap-2 text-sm text-muted-foreground">
+                          {authInfo.authenticatedAccess.benefits.map((benefit, idx) => (
+                            <li key={idx} className="flex items-center gap-2">
+                              <span className="text-primary">✓</span> {benefit}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      <Alert>
+                        <Info className="h-4 w-4" />
+                        <AlertDescription>
+                          All API requests are subject to rate limiting to ensure fair usage. 
+                          Please implement caching and avoid excessive concurrent requests.
+                          Contact {authInfo.contactInfo.email} for higher rate limits.
+                        </AlertDescription>
+                      </Alert>
+                    </CardContent>
+                  </Card>
+                </div>
               </TabsContent>
 
               <TabsContent value="examples" className="mt-8">
