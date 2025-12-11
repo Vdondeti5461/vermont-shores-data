@@ -52,9 +52,9 @@ chmod -R 755 ~/www-root
 
 # Ensure .htaccess exists for API proxying and client-side routing
 echo -e "${YELLOW}📝 Checking .htaccess configuration...${NC}"
-if [ ! -f ~/www-root/.htaccess ]; then
-    echo -e "${YELLOW}Creating .htaccess...${NC}"
-    cat > ~/www-root/.htaccess << 'EOF'
+# Always recreate .htaccess to ensure auth routes work
+echo -e "${YELLOW}Creating .htaccess with auth routing...${NC}"
+cat > ~/www-root/.htaccess << 'EOF'
 RewriteEngine On
 RewriteBase /
 
@@ -63,14 +63,19 @@ RedirectMatch 302 ^/favicon\.ico$ /lovable-uploads/6cc4d90f-0179-494a-a8be-7a9a1
 RedirectMatch 302 ^/api/favicon\.ico$ /lovable-uploads/6cc4d90f-0179-494a-a8be-7a9a1c70a0e9.png
 RedirectMatch 302 ^/health/favicon\.ico$ /lovable-uploads/6cc4d90f-0179-494a-a8be-7a9a1c70a0e9.png
 
-# Proxy API requests to Node.js backend
-RewriteCond %{REQUEST_URI} ^/(health|api)
+# Proxy auth endpoints to Node.js backend (specific endpoints only)
+RewriteCond %{REQUEST_URI} ^/auth/(login|signup|verify|logout|profile)
 RewriteRule ^(.*)$ http://127.0.0.1:3001/$1 [P,L]
 
-# Client-side routing for React
+# Proxy API requests to Node.js backend (includes /api-keys)
+RewriteCond %{REQUEST_URI} ^/(health|api|api-keys)
+RewriteRule ^(.*)$ http://127.0.0.1:3001/$1 [P,L]
+
+# Client-side routing for React (handles /auth page for UI)
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteCond %{REQUEST_URI} !^/(health|api)
+RewriteCond %{REQUEST_URI} !^/(health|api|api-keys)
+RewriteCond %{REQUEST_URI} !^/auth/(login|signup|verify|logout|profile)
 RewriteRule . /index.html [L]
 EOF
 else
@@ -97,6 +102,13 @@ cp -r ~/api ~/backup-api-$ts 2>/dev/null || true
 # Copy backend files
 cp production-api-server.js ~/api/
 cp production-package.json ~/api/package.json
+
+# Copy authentication modules (routes, middleware, config)
+echo -e "${YELLOW}🔐 Deploying authentication modules...${NC}"
+mkdir -p ~/api/routes ~/api/middleware ~/api/config
+cp -r api/routes/* ~/api/routes/ 2>/dev/null || echo "No routes to copy"
+cp -r api/middleware/* ~/api/middleware/ 2>/dev/null || echo "No middleware to copy"
+cp -r api/config/* ~/api/config/ 2>/dev/null || echo "No config to copy"
 
 # Install backend dependencies
 echo -e "${YELLOW}📦 Installing backend dependencies...${NC}"
@@ -135,6 +147,15 @@ else
     echo -e "${RED}⚠️  Seasonal tables endpoint failed${NC}"
 fi
 
+# Test auth signup endpoint (should return 400 without body - that means route exists)
+echo -e "${BLUE}🔐 Testing auth routes...${NC}"
+AUTH_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:3001/auth/signup 2>/dev/null || echo "000")
+if [ "$AUTH_RESPONSE" = "400" ] || [ "$AUTH_RESPONSE" = "200" ]; then
+    echo -e "${GREEN}✅ Auth routes mounted successfully${NC}"
+else
+    echo -e "${YELLOW}⚠️  Auth routes may not be mounted (HTTP $AUTH_RESPONSE) - check pm2 logs${NC}"
+fi
+
 echo ""
 echo -e "${GREEN}✅ Deployment completed successfully!${NC}"
 echo ""
@@ -148,6 +169,7 @@ echo ""
 echo -e "${YELLOW}Quick commands:${NC}"
 echo -e "${YELLOW}  - Test site: curl -I https://crrels2s.w3.uvm.edu${NC}"
 echo -e "${YELLOW}  - Test API: curl https://crrels2s.w3.uvm.edu/api/seasonal/tables${NC}"
+echo -e "${YELLOW}  - Test Auth: curl -X POST https://crrels2s.w3.uvm.edu/auth/login${NC}"
 echo -e "${YELLOW}  - View API logs: pm2 logs crrels2s-api${NC}"
 echo -e "${YELLOW}  - API status: pm2 status${NC}"
 echo -e "${YELLOW}  - Restart API: pm2 restart crrels2s-api${NC}"
