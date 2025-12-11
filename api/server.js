@@ -822,41 +822,41 @@ function extractUnit(name) {
 }
 
 // ============================================
-// ERROR HANDLING
-// ============================================
-app.use((err, req, res, next) => {
-  console.error('Server error:', err);
-  res.status(500).json({
-    success: false,
-    error: 'SERVER_ERROR',
-    message: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
-  });
-});
-
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    error: 'NOT_FOUND',
-    message: `Endpoint ${req.method} ${req.path} not found`,
-    documentation: 'https://crrels2s.w3.uvm.edu/documentation'
-  });
-});
-
-// ============================================
 // SERVER STARTUP
 // ============================================
 async function startServer() {
   try {
     await connectDB();
     
-    // Initialize auth routes with pool
+    // Initialize auth routes with pool - MUST be before error handlers
     app.use('/auth', authRoutes(pool));
     app.use('/api-keys', apiKeyRoutes(pool));
     
     // Apply rate limiting to API routes (after auth routes are set up)
     app.use('/api', createRateLimiter(pool));
     app.use('/api', logApiUsage(pool));
+    
+    // ============================================
+    // ERROR HANDLING - Must be AFTER all routes
+    // ============================================
+    app.use((err, req, res, next) => {
+      console.error('Server error:', err);
+      res.status(500).json({
+        success: false,
+        error: 'SERVER_ERROR',
+        message: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
+      });
+    });
+
+    // 404 handler - Must be last
+    app.use((req, res) => {
+      res.status(404).json({
+        success: false,
+        error: 'NOT_FOUND',
+        message: `Endpoint ${req.method} ${req.path} not found`,
+        documentation: 'https://crrels2s.w3.uvm.edu/documentation'
+      });
+    });
     
     // Schedule rate limit cleanup
     setInterval(() => cleanupRateLimits(pool), 60 * 60 * 1000);
@@ -865,6 +865,7 @@ async function startServer() {
       console.log(`🚀 Summit2Shore API Server running on port ${PORT}`);
       console.log(`📚 API Documentation: https://crrels2s.w3.uvm.edu/documentation`);
       console.log(`🔐 Authentication: JWT + API Key`);
+      console.log(`📍 Auth routes: /auth/signup, /auth/login, /auth/verify, /auth/logout, /auth/profile`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);
