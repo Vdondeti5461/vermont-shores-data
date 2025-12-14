@@ -3,14 +3,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Loader2, MapPin, TrendingUp, RefreshCw, Clock, Radio } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, Area, ComposedChart } from 'recharts';
+import { Loader2, MapPin, TrendingUp, RefreshCw, Clock, Radio, GitCompare } from 'lucide-react';
 import { DatabaseType, TimeSeriesDataPoint, fetchMultiQualityComparison } from '@/services/realTimeAnalyticsService';
 import { getLocationOptions } from '@/lib/locationData';
 import { useToast } from '@/hooks/use-toast';
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Mapping of attributes to display names and units
 const ATTRIBUTES = [
@@ -38,14 +39,16 @@ const COMPARISON_DATABASES: DatabaseType[] = [
   'CRRELS2S_stage_clean_data',
 ];
 
-const DATABASE_COLORS = {
+const DATABASE_COLORS: Record<string, string> = {
   'CRRELS2S_raw_data_ingestion': 'hsl(0, 84%, 60%)',    // Red
   'CRRELS2S_stage_clean_data': 'hsl(217, 91%, 60%)',   // Blue
+  'difference': 'hsl(142, 71%, 45%)',                    // Green for difference
 };
 
-const DATABASE_LABELS = {
+const DATABASE_LABELS: Record<string, string> = {
   'CRRELS2S_raw_data_ingestion': 'Raw Data',
   'CRRELS2S_stage_clean_data': 'Clean Data',
+  'difference': 'Difference (Raw - Clean)',
 };
 
 // LTTB downsampling for performance
@@ -303,6 +306,20 @@ export const RealTimeAnalytics = () => {
   }, [comparisonData, selectedAttribute, getTimeRangeHours]);
 
   const chartData = prepareChartData();
+  
+  // Prepare comparison data showing difference (Raw - Clean)
+  const comparisonChartData = chartData.map((point: any) => {
+    const rawVal = point['CRRELS2S_raw_data_ingestion'];
+    const cleanVal = point['CRRELS2S_stage_clean_data'];
+    const difference = (typeof rawVal === 'number' && typeof cleanVal === 'number')
+      ? rawVal - cleanVal
+      : null;
+    return {
+      ...point,
+      difference,
+    };
+  });
+
   const selectedAttributeInfo = ATTRIBUTES.find(a => a.value === selectedAttribute);
   const selectedTimeRangeInfo = TIME_RANGES.find(r => r.value === selectedTimeRange);
 
@@ -487,7 +504,6 @@ export const RealTimeAnalytics = () => {
         </Card>
       )}
 
-      {/* Chart Display */}
       {!isLoading && selectedLocation && selectedAttribute && chartData.length > 0 && (
         <Card>
           <CardHeader>
@@ -495,7 +511,7 @@ export const RealTimeAnalytics = () => {
               {selectedAttributeInfo?.label} — {selectedTimeRangeInfo?.label}
             </CardTitle>
             <CardDescription>
-              {locations.find(l => l.id === selectedLocation)?.name} | Raw vs Clean Data Comparison (EST)
+              {locations.find(l => l.id === selectedLocation)?.name} | Real-Time Monitoring (EST)
               {chartData.length >= MAX_DISPLAY_POINTS && (
                 <span className="ml-2 text-xs text-muted-foreground">
                   (Sampled to {MAX_DISPLAY_POINTS} points)
@@ -504,79 +520,202 @@ export const RealTimeAnalytics = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={500}>
-              <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 80 }}>
-                <CartesianGrid 
-                  strokeDasharray="3 3" 
-                  stroke="hsl(var(--border))" 
-                  opacity={0.3} 
-                />
-                <XAxis
-                  dataKey="displayTime"
-                  angle={-45}
-                  textAnchor="end"
-                  height={100}
-                  stroke="hsl(var(--muted-foreground))"
-                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                />
-                <YAxis
-                  stroke="hsl(var(--muted-foreground))"
-                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                  label={{ 
-                    value: selectedAttributeInfo?.unit || '', 
-                    angle: -90, 
-                    position: 'insideLeft',
-                    style: { fill: 'hsl(var(--muted-foreground))' }
-                  }}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px',
-                    padding: '12px'
-                  }}
-                  labelFormatter={(label, payload) => {
-                    if (payload && payload.length > 0) {
-                      const timestamp = payload[0]?.payload?.timestamp;
-                      if (timestamp) {
-                        return new Date(timestamp).toLocaleString('en-US', {
-                          timeZone: 'America/New_York',
-                          weekday: 'short',
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          hour12: true
-                        }) + ' EST';
-                      }
-                    }
-                    return label;
-                  }}
-                  formatter={(value: any, name: string) => [
-                    `${typeof value === 'number' ? value.toFixed(2) : value} ${selectedAttributeInfo?.unit || ''}`,
-                    DATABASE_LABELS[name as keyof typeof DATABASE_LABELS]
-                  ]}
-                />
-                <Legend 
-                  formatter={(value) => DATABASE_LABELS[value as keyof typeof DATABASE_LABELS]}
-                  wrapperStyle={{ paddingTop: '20px' }}
-                />
-                {COMPARISON_DATABASES.map((database) => (
-                  <Line
-                    key={database}
-                    type="monotone"
-                    dataKey={database}
-                    name={database}
-                    stroke={DATABASE_COLORS[database]}
-                    strokeWidth={2}
-                    dot={false}
-                    isAnimationActive={false}
-                    connectNulls
-                  />
-                ))}
-              </LineChart>
-            </ResponsiveContainer>
+            <Tabs defaultValue="overlay" className="w-full">
+              <TabsList className="mb-4">
+                <TabsTrigger value="overlay" className="gap-2">
+                  <TrendingUp className="h-4 w-4" />
+                  Raw vs Clean
+                </TabsTrigger>
+                <TabsTrigger value="comparison" className="gap-2">
+                  <GitCompare className="h-4 w-4" />
+                  Comparison
+                </TabsTrigger>
+              </TabsList>
+
+              {/* Raw vs Clean Overlay */}
+              <TabsContent value="overlay">
+                <ResponsiveContainer width="100%" height={500}>
+                  <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 80 }}>
+                    <CartesianGrid 
+                      strokeDasharray="3 3" 
+                      stroke="hsl(var(--border))" 
+                      opacity={0.3} 
+                    />
+                    <XAxis
+                      dataKey="displayTime"
+                      angle={-45}
+                      textAnchor="end"
+                      height={100}
+                      stroke="hsl(var(--muted-foreground))"
+                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                    />
+                    <YAxis
+                      stroke="hsl(var(--muted-foreground))"
+                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                      label={{ 
+                        value: selectedAttributeInfo?.unit || '', 
+                        angle: -90, 
+                        position: 'insideLeft',
+                        style: { fill: 'hsl(var(--muted-foreground))' }
+                      }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px',
+                        padding: '12px'
+                      }}
+                      labelFormatter={(label, payload) => {
+                        if (payload && payload.length > 0) {
+                          const timestamp = payload[0]?.payload?.timestamp;
+                          if (timestamp) {
+                            return new Date(timestamp).toLocaleString('en-US', {
+                              timeZone: 'America/New_York',
+                              weekday: 'short',
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              hour12: true
+                            }) + ' EST';
+                          }
+                        }
+                        return label;
+                      }}
+                      formatter={(value: any, name: string) => [
+                        `${typeof value === 'number' ? value.toFixed(2) : value} ${selectedAttributeInfo?.unit || ''}`,
+                        DATABASE_LABELS[name]
+                      ]}
+                    />
+                    <Legend 
+                      formatter={(value) => DATABASE_LABELS[value]}
+                      wrapperStyle={{ paddingTop: '20px' }}
+                    />
+                    {COMPARISON_DATABASES.map((database) => (
+                      <Line
+                        key={database}
+                        type="monotone"
+                        dataKey={database}
+                        name={database}
+                        stroke={DATABASE_COLORS[database]}
+                        strokeWidth={2}
+                        dot={false}
+                        isAnimationActive={false}
+                        connectNulls
+                      />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              </TabsContent>
+
+              {/* Comparison View - Shows difference and both series */}
+              <TabsContent value="comparison">
+                <div className="space-y-4">
+                  {/* Difference Chart */}
+                  <div>
+                    <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
+                      <GitCompare className="h-4 w-4 text-muted-foreground" />
+                      Difference (Raw − Clean) — Data Quality Impact
+                    </h4>
+                    <ResponsiveContainer width="100%" height={250}>
+                      <ComposedChart data={comparisonChartData} margin={{ top: 20, right: 30, left: 20, bottom: 80 }}>
+                        <CartesianGrid 
+                          strokeDasharray="3 3" 
+                          stroke="hsl(var(--border))" 
+                          opacity={0.3} 
+                        />
+                        <XAxis
+                          dataKey="displayTime"
+                          angle={-45}
+                          textAnchor="end"
+                          height={80}
+                          stroke="hsl(var(--muted-foreground))"
+                          tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                        />
+                        <YAxis
+                          stroke="hsl(var(--muted-foreground))"
+                          tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                          label={{ 
+                            value: `Δ ${selectedAttributeInfo?.unit || ''}`, 
+                            angle: -90, 
+                            position: 'insideLeft',
+                            style: { fill: 'hsl(var(--muted-foreground))' }
+                          }}
+                        />
+                        <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: 'hsl(var(--card))',
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px',
+                            padding: '12px'
+                          }}
+                          labelFormatter={(label, payload) => {
+                            if (payload && payload.length > 0) {
+                              const timestamp = payload[0]?.payload?.timestamp;
+                              if (timestamp) {
+                                return new Date(timestamp).toLocaleString('en-US', {
+                                  timeZone: 'America/New_York',
+                                  weekday: 'short',
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                  hour12: true
+                                }) + ' EST';
+                              }
+                            }
+                            return label;
+                          }}
+                          formatter={(value: any, name: string) => [
+                            `${typeof value === 'number' ? value.toFixed(3) : value} ${selectedAttributeInfo?.unit || ''}`,
+                            name === 'difference' ? 'Difference (Raw − Clean)' : DATABASE_LABELS[name]
+                          ]}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="difference"
+                          name="difference"
+                          stroke={DATABASE_COLORS['difference']}
+                          fill={DATABASE_COLORS['difference']}
+                          fillOpacity={0.3}
+                          strokeWidth={2}
+                          isAnimationActive={false}
+                          connectNulls
+                        />
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                    <p className="text-xs text-muted-foreground mt-2 text-center">
+                      Positive values indicate raw readings were higher than cleaned data; negative values indicate lower raw readings.
+                      Large deviations may indicate sensor noise removed during cleaning.
+                    </p>
+                  </div>
+
+                  {/* Side-by-side comparison info */}
+                  <div className="grid grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg">
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-2 mb-1">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: DATABASE_COLORS['CRRELS2S_raw_data_ingestion'] }} />
+                        <span className="text-sm font-medium">Raw Data</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Unprocessed sensor readings directly from instruments
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-2 mb-1">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: DATABASE_COLORS['CRRELS2S_stage_clean_data'] }} />
+                        <span className="text-sm font-medium">Clean Data</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Automated quality control removes outliers and sensor errors
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
       )}
