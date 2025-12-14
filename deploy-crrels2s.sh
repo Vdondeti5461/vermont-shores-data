@@ -59,9 +59,9 @@ RewriteEngine On
 RewriteBase /
 
 # Serve UVM favicon for all routes
-RedirectMatch 302 ^/favicon\.ico$ /lovable-uploads/6cc4d90f-0179-494a-a8be-7a9a1c70a0e9.png
-RedirectMatch 302 ^/api/favicon\.ico$ /lovable-uploads/6cc4d90f-0179-494a-a8be-7a9a1c70a0e9.png
-RedirectMatch 302 ^/health/favicon\.ico$ /lovable-uploads/6cc4d90f-0179-494a-a8be-7a9a1c70a0e9.png
+RedirectMatch 302 ^/favicon\.ico$ /images/favicon.png
+RedirectMatch 302 ^/api/favicon\.ico$ /images/favicon.png
+RedirectMatch 302 ^/health/favicon\.ico$ /images/favicon.png
 
 # Proxy auth API endpoints to Node.js backend (only paths like /auth/login, /auth/forgot-password)
 RewriteCond %{REQUEST_URI} ^/auth/.+
