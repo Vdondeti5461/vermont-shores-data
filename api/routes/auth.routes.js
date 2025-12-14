@@ -1,6 +1,7 @@
 // Authentication Routes for Summit2Shore API
 const express = require('express');
 const router = express.Router();
+const crypto = require('crypto');
 const { 
   verifyToken, 
   generateToken, 
@@ -9,6 +10,14 @@ const {
   authConfig 
 } = require('../middleware/auth.middleware');
 
+// Generate a secure random token
+function generateSecureToken() {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+// Supabase edge function URL for sending emails
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://ixxcjdlhhzhgssgvsjmr.supabase.co';
+
 /**
  * Initialize auth routes with database pool
  */
@@ -16,11 +25,11 @@ module.exports = (pool) => {
   
   /**
    * POST /auth/signup
-   * Create a new user account
+   * Create a new user account with email verification
    */
   router.post('/signup', async (req, res) => {
     try {
-      const { email, password, full_name, organization } = req.body;
+      const { email, password, full_name, organization, baseUrl } = req.body;
 
       // Validate required fields
       if (!email || !password) {
@@ -58,7 +67,7 @@ module.exports = (pool) => {
       try {
         // Check if user already exists
         const [existing] = await connection.execute(
-          'SELECT id FROM users WHERE email = ?',
+          'SELECT id, email_verified FROM users WHERE email = ?',
           [email.toLowerCase()]
         );
 
@@ -73,12 +82,16 @@ module.exports = (pool) => {
 
         // Hash password
         const passwordHash = await hashPassword(password);
+        
+        // Generate verification token
+        const verificationToken = generateSecureToken();
+        const tokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-        // Create user
+        // Create user with verification token
         const [result] = await connection.execute(
-          `INSERT INTO users (email, password_hash, full_name, organization, is_active, created_at)
-           VALUES (?, ?, ?, ?, TRUE, NOW())`,
-          [email.toLowerCase(), passwordHash, full_name || null, organization || null]
+          `INSERT INTO users (email, password_hash, full_name, organization, is_active, email_verified, verification_token, verification_token_expires, created_at)
+           VALUES (?, ?, ?, ?, TRUE, FALSE, ?, ?, NOW())`,
+          [email.toLowerCase(), passwordHash, full_name || null, organization || null, verificationToken, tokenExpires]
         );
 
         const userId = result.insertId;
@@ -98,9 +111,28 @@ module.exports = (pool) => {
 
         connection.release();
 
+        // Send verification email via edge function
+        try {
+          const emailBaseUrl = baseUrl || 'https://crrels2s.w3.uvm.edu';
+          await fetch(`${SUPABASE_URL}/functions/v1/send-auth-email`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'verification',
+              email: email.toLowerCase(),
+              token: verificationToken,
+              userName: full_name,
+              baseUrl: emailBaseUrl
+            })
+          });
+        } catch (emailError) {
+          console.error('Failed to send verification email:', emailError);
+        }
+
         res.status(201).json({
           success: true,
-          message: 'Account created successfully. Please log in.',
+          message: 'Account created! Please check your email to verify your account.',
+          requiresVerification: true,
           user: {
             id: userId,
             email: email.toLowerCase(),
@@ -117,6 +149,357 @@ module.exports = (pool) => {
         success: false,
         error: 'SIGNUP_ERROR',
         message: 'Failed to create account'
+      });
+    }
+  });
+
+  /**
+   * GET /auth/verify-email
+   * Verify user's email with token
+   */
+  router.get('/verify-email', async (req, res) => {
+    try {
+      const { token } = req.query;
+
+      if (!token) {
+        return res.status(400).json({
+          success: false,
+          error: 'MISSING_TOKEN',
+          message: 'Verification token is required'
+        });
+      }
+
+      const connection = await pool.getConnection();
+      await connection.query('USE CRRELS2S_auth');
+
+      try {
+        // Find user with this token
+        const [users] = await connection.execute(
+          'SELECT id, email, verification_token_expires FROM users WHERE verification_token = ?',
+          [token]
+        );
+
+        if (users.length === 0) {
+          connection.release();
+          return res.status(400).json({
+            success: false,
+            error: 'INVALID_TOKEN',
+            message: 'Invalid or expired verification link'
+          });
+        }
+
+        const user = users[0];
+
+        // Check if token is expired
+        if (new Date(user.verification_token_expires) < new Date()) {
+          connection.release();
+          return res.status(400).json({
+            success: false,
+            error: 'TOKEN_EXPIRED',
+            message: 'Verification link has expired. Please request a new one.'
+          });
+        }
+
+        // Mark email as verified
+        await connection.execute(
+          'UPDATE users SET email_verified = TRUE, verification_token = NULL, verification_token_expires = NULL WHERE id = ?',
+          [user.id]
+        );
+
+        // Log verification
+        await connection.execute(
+          `INSERT INTO audit_log (user_id, action, details, ip_address, created_at)
+           VALUES (?, 'EMAIL_VERIFIED', ?, ?, NOW())`,
+          [user.id, JSON.stringify({ email: user.email }), req.ip]
+        );
+
+        connection.release();
+
+        res.json({
+          success: true,
+          message: 'Email verified successfully! You can now log in.'
+        });
+      } catch (error) {
+        connection.release();
+        throw error;
+      }
+    } catch (error) {
+      console.error('Email verification error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'VERIFICATION_ERROR',
+        message: 'Failed to verify email'
+      });
+    }
+  });
+
+  /**
+   * POST /auth/resend-verification
+   * Resend verification email
+   */
+  router.post('/resend-verification', async (req, res) => {
+    try {
+      const { email, baseUrl } = req.body;
+
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          error: 'VALIDATION_ERROR',
+          message: 'Email is required'
+        });
+      }
+
+      const connection = await pool.getConnection();
+      await connection.query('USE CRRELS2S_auth');
+
+      try {
+        const [users] = await connection.execute(
+          'SELECT id, full_name, email_verified FROM users WHERE email = ?',
+          [email.toLowerCase()]
+        );
+
+        if (users.length === 0) {
+          connection.release();
+          return res.status(404).json({
+            success: false,
+            error: 'USER_NOT_FOUND',
+            message: 'No account found with this email'
+          });
+        }
+
+        const user = users[0];
+
+        if (user.email_verified) {
+          connection.release();
+          return res.status(400).json({
+            success: false,
+            error: 'ALREADY_VERIFIED',
+            message: 'Email is already verified'
+          });
+        }
+
+        // Generate new verification token
+        const verificationToken = generateSecureToken();
+        const tokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+        await connection.execute(
+          'UPDATE users SET verification_token = ?, verification_token_expires = ? WHERE id = ?',
+          [verificationToken, tokenExpires, user.id]
+        );
+
+        connection.release();
+
+        // Send verification email
+        try {
+          const emailBaseUrl = baseUrl || 'https://crrels2s.w3.uvm.edu';
+          await fetch(`${SUPABASE_URL}/functions/v1/send-auth-email`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'verification',
+              email: email.toLowerCase(),
+              token: verificationToken,
+              userName: user.full_name,
+              baseUrl: emailBaseUrl
+            })
+          });
+        } catch (emailError) {
+          console.error('Failed to send verification email:', emailError);
+        }
+
+        res.json({
+          success: true,
+          message: 'Verification email sent! Please check your inbox.'
+        });
+      } catch (error) {
+        connection.release();
+        throw error;
+      }
+    } catch (error) {
+      console.error('Resend verification error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'RESEND_ERROR',
+        message: 'Failed to resend verification email'
+      });
+    }
+  });
+
+  /**
+   * POST /auth/forgot-password
+   * Request password reset email
+   */
+  router.post('/forgot-password', async (req, res) => {
+    try {
+      const { email, baseUrl } = req.body;
+
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          error: 'VALIDATION_ERROR',
+          message: 'Email is required'
+        });
+      }
+
+      const connection = await pool.getConnection();
+      await connection.query('USE CRRELS2S_auth');
+
+      try {
+        const [users] = await connection.execute(
+          'SELECT id, full_name, is_active FROM users WHERE email = ?',
+          [email.toLowerCase()]
+        );
+
+        // Always return success to prevent email enumeration
+        if (users.length === 0 || !users[0].is_active) {
+          connection.release();
+          return res.json({
+            success: true,
+            message: 'If an account exists with this email, you will receive a password reset link.'
+          });
+        }
+
+        const user = users[0];
+
+        // Generate reset token
+        const resetToken = generateSecureToken();
+        const tokenExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+        await connection.execute(
+          'UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE id = ?',
+          [resetToken, tokenExpires, user.id]
+        );
+
+        // Log password reset request
+        await connection.execute(
+          `INSERT INTO audit_log (user_id, action, details, ip_address, created_at)
+           VALUES (?, 'PASSWORD_RESET_REQUEST', ?, ?, NOW())`,
+          [user.id, JSON.stringify({}), req.ip]
+        );
+
+        connection.release();
+
+        // Send reset email
+        try {
+          const emailBaseUrl = baseUrl || 'https://crrels2s.w3.uvm.edu';
+          await fetch(`${SUPABASE_URL}/functions/v1/send-auth-email`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'password_reset',
+              email: email.toLowerCase(),
+              token: resetToken,
+              userName: user.full_name,
+              baseUrl: emailBaseUrl
+            })
+          });
+        } catch (emailError) {
+          console.error('Failed to send reset email:', emailError);
+        }
+
+        res.json({
+          success: true,
+          message: 'If an account exists with this email, you will receive a password reset link.'
+        });
+      } catch (error) {
+        connection.release();
+        throw error;
+      }
+    } catch (error) {
+      console.error('Forgot password error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'FORGOT_PASSWORD_ERROR',
+        message: 'Failed to process password reset request'
+      });
+    }
+  });
+
+  /**
+   * POST /auth/reset-password
+   * Reset password with token
+   */
+  router.post('/reset-password', async (req, res) => {
+    try {
+      const { token, password } = req.body;
+
+      if (!token || !password) {
+        return res.status(400).json({
+          success: false,
+          error: 'VALIDATION_ERROR',
+          message: 'Token and new password are required'
+        });
+      }
+
+      if (password.length < authConfig.password.minLength) {
+        return res.status(400).json({
+          success: false,
+          error: 'WEAK_PASSWORD',
+          message: `Password must be at least ${authConfig.password.minLength} characters long`
+        });
+      }
+
+      const connection = await pool.getConnection();
+      await connection.query('USE CRRELS2S_auth');
+
+      try {
+        const [users] = await connection.execute(
+          'SELECT id, email, reset_token_expires FROM users WHERE reset_token = ?',
+          [token]
+        );
+
+        if (users.length === 0) {
+          connection.release();
+          return res.status(400).json({
+            success: false,
+            error: 'INVALID_TOKEN',
+            message: 'Invalid or expired reset link'
+          });
+        }
+
+        const user = users[0];
+
+        if (new Date(user.reset_token_expires) < new Date()) {
+          connection.release();
+          return res.status(400).json({
+            success: false,
+            error: 'TOKEN_EXPIRED',
+            message: 'Reset link has expired. Please request a new one.'
+          });
+        }
+
+        // Hash new password
+        const passwordHash = await hashPassword(password);
+
+        // Update password and clear reset token
+        await connection.execute(
+          'UPDATE users SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL WHERE id = ?',
+          [passwordHash, user.id]
+        );
+
+        // Log password reset
+        await connection.execute(
+          `INSERT INTO audit_log (user_id, action, details, ip_address, created_at)
+           VALUES (?, 'PASSWORD_RESET_COMPLETE', ?, ?, NOW())`,
+          [user.id, JSON.stringify({}), req.ip]
+        );
+
+        connection.release();
+
+        res.json({
+          success: true,
+          message: 'Password reset successfully! You can now log in with your new password.'
+        });
+      } catch (error) {
+        connection.release();
+        throw error;
+      }
+    } catch (error) {
+      console.error('Reset password error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'RESET_PASSWORD_ERROR',
+        message: 'Failed to reset password'
       });
     }
   });
@@ -143,9 +526,9 @@ module.exports = (pool) => {
       await connection.query('USE CRRELS2S_auth');
 
       try {
-        // Find user
+        // Find user including email_verified status
         const [users] = await connection.execute(
-          'SELECT id, email, password_hash, full_name, organization, is_active FROM users WHERE email = ?',
+          'SELECT id, email, password_hash, full_name, organization, is_active, email_verified FROM users WHERE email = ?',
           [email.toLowerCase()]
         );
 
@@ -170,7 +553,7 @@ module.exports = (pool) => {
           });
         }
 
-        // Verify password
+        // Verify password first
         const isValidPassword = await comparePassword(password, user.password_hash);
         if (!isValidPassword) {
           // Log failed attempt
@@ -185,6 +568,17 @@ module.exports = (pool) => {
             success: false,
             error: 'INVALID_CREDENTIALS',
             message: 'Invalid email or password'
+          });
+        }
+
+        // Check if email is verified
+        if (!user.email_verified) {
+          connection.release();
+          return res.status(403).json({
+            success: false,
+            error: 'EMAIL_NOT_VERIFIED',
+            message: 'Please verify your email before logging in. Check your inbox for the verification link.',
+            email: user.email
           });
         }
 
@@ -215,6 +609,7 @@ module.exports = (pool) => {
             email: user.email,
             full_name: user.full_name,
             organization: user.organization,
+            email_verified: user.email_verified,
             roles: roles.map(r => r.role)
           }
         });
