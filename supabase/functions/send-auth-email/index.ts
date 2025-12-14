@@ -21,6 +21,42 @@ serve(async (req) => {
 
   try {
     const requestData: AuthEmailRequest = await req.json();
+    
+    // Input validation
+    if (!requestData.type || !['verification', 'password_reset'].includes(requestData.type)) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid email type' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!requestData.email || !emailRegex.test(requestData.email)) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid email address' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    if (!requestData.token || requestData.token.length < 32) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid token' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    if (!requestData.baseUrl || !requestData.baseUrl.startsWith('http')) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid base URL' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    // Sanitize userName to prevent injection
+    const sanitizedUserName = requestData.userName 
+      ? requestData.userName.replace(/[<>]/g, '').substring(0, 100) 
+      : undefined;
+    
     console.log('Auth email request received:', { type: requestData.type, email: requestData.email });
 
     const smtpHost = Deno.env.get('SMTP_HOST') || 'smtp.uvm.edu';
@@ -36,10 +72,10 @@ serve(async (req) => {
     let body: string;
 
     if (requestData.type === 'verification') {
-      const verifyUrl = `${requestData.baseUrl}/auth?action=verify&token=${requestData.token}`;
+      const verifyUrl = `${requestData.baseUrl}/auth?action=verify&token=${encodeURIComponent(requestData.token)}`;
       subject = 'Verify Your Email - Summit2Shore Data Portal';
       body = `
-Hello${requestData.userName ? ` ${requestData.userName}` : ''},
+Hello${sanitizedUserName ? ` ${sanitizedUserName}` : ''},
 
 Welcome to the Summit2Shore Data Portal!
 
@@ -59,10 +95,10 @@ This is an automated message from the Summit2Shore Data Portal.
 Contact us at crrels2s@uvm.edu if you have any questions.
       `.trim();
     } else {
-      const resetUrl = `${requestData.baseUrl}/auth?action=reset&token=${requestData.token}`;
+      const resetUrl = `${requestData.baseUrl}/auth?action=reset&token=${encodeURIComponent(requestData.token)}`;
       subject = 'Reset Your Password - Summit2Shore Data Portal';
       body = `
-Hello${requestData.userName ? ` ${requestData.userName}` : ''},
+Hello${sanitizedUserName ? ` ${sanitizedUserName}` : ''},
 
 We received a request to reset your password for the Summit2Shore Data Portal.
 
