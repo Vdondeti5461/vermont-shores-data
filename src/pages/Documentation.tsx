@@ -10,22 +10,22 @@ const Documentation = () => {
 
   const projectImages = [
     {
-      src: '/lovable-uploads/9d5d35d8-43d8-4c2d-a89e-7522213fc836.png',
+      src: '/images/hero-mountain.png',
       title: 'Mount Mansfield Summit Station',
       description: 'Primary monitoring station at Vermont\'s highest peak'
     },
     {
-      src: '/lovable-uploads/d19c9c85-6a6b-4115-bc8e-2ed5fd432891.png',
+      src: '/images/snow-monitoring.png',
       title: 'Snow Depth Monitoring Equipment',
       description: 'Ultrasonic sensors measuring real-time snow depth'
     },
     {
-      src: '/lovable-uploads/250350aa-abaa-4e6e-b886-bae339af81b9.png',
+      src: '/images/weather-station.png',
       title: 'Weather Station Installation',
       description: 'Comprehensive meteorological monitoring setup'
     },
     {
-      src: '/lovable-uploads/f0e8b972-8f4c-4294-98e6-d3ae431cbd24.png',
+      src: '/images/team/arne-bomblies.png',
       title: 'Research Team in Field',
       description: 'Scientists collecting data across Vermont\'s elevational gradient'
     }

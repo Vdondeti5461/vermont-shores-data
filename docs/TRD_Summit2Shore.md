@@ -91,7 +91,7 @@ Directory Structure:
 └── www-root/                 # Frontend build (Apache serves this)
     ├── index.html
     ├── assets/               # Bundled JS/CSS
-    ├── lovable-uploads/      # User-uploaded images
+    ├── images/               # Project images
     └── .htaccess             # Apache rewrite rules
 ```
 
@@ -493,7 +493,7 @@ RewriteCond %{REQUEST_URI} !^/(health|api)
 RewriteRule . /index.html [L]
 
 # Favicon redirect
-RedirectMatch 302 ^/favicon\.ico$ /lovable-uploads/6cc4d90f-0179-494a-a8be-7a9a1c70a0e9.png
+RedirectMatch 302 ^/favicon\.ico$ /images/favicon.png
 ```
 
 ### 6.2 Build & Deployment Process
