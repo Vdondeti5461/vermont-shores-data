@@ -128,11 +128,11 @@ www-root/                    # Deployment target
 all_backups*.tar.gz         # Backup archives
 phptemp/                    # Temporary files
 oradiag_*/                  # Diagnostic files
-src/integrations/supabase/  # Read-only Lovable Cloud files (in .gitignore)
+src/integrations/supabase/  # Auto-generated files (in .gitignore)
 ```
 
 ### Note on Read-Only Files
-Some files in `src/integrations/supabase/` cannot be deleted because they are managed by Lovable Cloud:
+Some files in `src/integrations/supabase/` cannot be deleted because they are auto-generated:
 - `client.ts` (read-only)
 - `types.ts` (read-only)
 

@@ -154,7 +154,7 @@ pm2 logs crrels2s-api
 
 ```bash
 # Test MySQL connection from command line
-mysql -h webdb5.uvm.edu -u crrels2s_admin -p
+mysql -h $MYSQL_HOST -u $MYSQL_USER -p
 
 # Once connected, verify databases exist
 SHOW DATABASES LIKE 'CRRELS2S%';
