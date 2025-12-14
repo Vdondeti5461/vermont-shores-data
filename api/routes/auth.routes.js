@@ -51,6 +51,9 @@ module.exports = (pool) => {
       }
 
       const connection = await pool.getConnection();
+      
+      // Switch to auth database
+      await connection.query('USE CRRELS2S_auth');
 
       try {
         // Check if user already exists
@@ -135,6 +138,9 @@ module.exports = (pool) => {
       }
 
       const connection = await pool.getConnection();
+      
+      // Switch to auth database
+      await connection.query('USE CRRELS2S_auth');
 
       try {
         // Find user
@@ -233,6 +239,7 @@ module.exports = (pool) => {
   router.get('/verify', verifyToken, async (req, res) => {
     try {
       const connection = await pool.getConnection();
+      await connection.query('USE CRRELS2S_auth');
 
       try {
         const [users] = await connection.execute(
@@ -284,6 +291,7 @@ module.exports = (pool) => {
   router.post('/logout', verifyToken, async (req, res) => {
     try {
       const connection = await pool.getConnection();
+      await connection.query('USE CRRELS2S_auth');
       
       await connection.execute(
         `INSERT INTO audit_log (user_id, action, details, ip_address, created_at)
@@ -314,6 +322,7 @@ module.exports = (pool) => {
   router.get('/profile', verifyToken, async (req, res) => {
     try {
       const connection = await pool.getConnection();
+      await connection.query('USE CRRELS2S_auth');
 
       try {
         const [users] = await connection.execute(
@@ -374,6 +383,7 @@ module.exports = (pool) => {
       const { full_name, organization } = req.body;
 
       const connection = await pool.getConnection();
+      await connection.query('USE CRRELS2S_auth');
 
       try {
         await connection.execute(
