@@ -25,28 +25,28 @@ const Gallery = () => {
       category: 'Field Sites'
     },
     {
-      src: '/lovable-uploads/9d5d35d8-43d8-4c2d-a89e-7522213fc836.png',
+      src: '/images/hero-mountain.png',
       title: 'Vermont Mountain Summit',
       description: 'High-elevation monitoring station capturing snow and weather data',
       location: 'Mount Mansfield, VT',
       category: 'Field Sites'
     },
     {
-      src: '/lovable-uploads/d19c9c85-6a6b-4115-bc8e-2ed5fd432891.png',
+      src: '/images/snow-monitoring.png',
       title: 'UVM Partnership',
       description: 'University of Vermont collaboration with CRREL',
       location: 'Burlington, VT',
       category: 'Partners'
     },
     {
-      src: '/lovable-uploads/d237cd6e-cadf-4b6d-9006-bd432196c042.png',
+      src: '/images/field-site.png',
       title: 'Data Collection',
       description: 'Real-time environmental monitoring systems',
       location: 'Summit-to-Shore Network',
       category: 'Technology'
     },
     {
-      src: '/lovable-uploads/5d861d7c-499d-4cd9-8407-96f99934b2b1.png',
+      src: '/images/monitoring-equipment.png',
       title: 'Winter Monitoring',
       description: 'Snow depth and temperature measurements',
       location: 'Vermont Mountains',
