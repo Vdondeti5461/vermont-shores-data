@@ -53,19 +53,28 @@ const APIDocumentation = () => {
     {
       method: 'GET',
       path: '/databases',
-      description: 'Get publicly accessible databases (currently restricted to seasonal QAQC data only)',
-      response: `[
-  {
-    "id": "CRRELS2S_seasonal_qaqc_data",
-    "key": "seasonal_qaqc_data",
-    "name": "CRRELS2S_seasonal_qaqc_data",
-    "displayName": "Seasonal QAQC Data",
-    "description": "Quality-controlled seasonal environmental datasets",
-    "category": "seasonal",
-    "order": 4,
-    "tables": []
-  }
-]`
+      description: 'Get available databases based on authentication level. Public access returns seasonal QAQC only; authenticated users with API key get all 4 databases.',
+      authRequired: 'Optional - more databases with API key',
+      response: `// Without API Key (Public):
+{
+  "success": true,
+  "access_level": "public",
+  "databases": [
+    { "id": "CRRELS2S_seasonal_qaqc_data", "key": "seasonal_qaqc_data", ... }
+  ]
+}
+
+// With API Key (Authenticated):
+{
+  "success": true,
+  "access_level": "authenticated",
+  "databases": [
+    { "id": "CRRELS2S_raw_data_ingestion", "key": "raw_data", "requiresAuth": true, ... },
+    { "id": "CRRELS2S_stage_clean_data", "key": "stage_clean_data", "requiresAuth": true, ... },
+    { "id": "CRRELS2S_stage_qaqc_data", "key": "stage_qaqc_data", "requiresAuth": true, ... },
+    { "id": "CRRELS2S_seasonal_qaqc_data", "key": "seasonal_qaqc_data", "requiresAuth": false, ... }
+  ]
+}`
     },
     {
       method: 'GET',
@@ -367,9 +376,14 @@ Content-Disposition: attachment`
       description: 'Verify API server status and availability before making data requests'
     },
     {
-      title: 'Get Available Database',
+      title: 'Get Databases (Public)',
       url: `https://crrels2s.w3.uvm.edu/api/databases`,
-      description: 'Retrieve publicly accessible database (Seasonal QAQC only)'
+      description: 'Returns seasonal QAQC database only (public access)'
+    },
+    {
+      title: 'Get All Databases (Authenticated)',
+      url: `curl -H "X-API-Key: s2s_YOUR_KEY" https://crrels2s.w3.uvm.edu/api/databases`,
+      description: 'Returns all 4 databases: raw_data, stage_clean_data, stage_qaqc_data, seasonal_qaqc_data'
     },
     {
       title: 'Get Seasonal Tables',
@@ -387,19 +401,24 @@ Content-Disposition: attachment`
       description: 'Fetch all monitoring station locations with geographic coordinates'
     },
     {
-      title: 'Download Multi-Location Data',
-      url: `https://crrels2s.w3.uvm.edu/api/seasonal/download/season_2023_2024_qaqc?locations=SUMM,RB-01&attributes=timestamp,location,panel_temperature_c,air_temperature_avg_c&start_date=2024-01-01 00:00:00&end_date=2024-03-31 23:59:59`,
-      description: 'Download winter temperature data from multiple monitoring locations'
+      title: 'Download Seasonal Data (Public)',
+      url: `https://crrels2s.w3.uvm.edu/api/seasonal/download/season_2023_2024_qaqc?locations=SUMM,RB01&start_date=2024-01-01 00:00:00&end_date=2024-03-31 23:59:59`,
+      description: 'Download winter data from seasonal QAQC (no auth required)'
     },
     {
-      title: 'Download All Locations with Date Filter',
-      url: `https://crrels2s.w3.uvm.edu/api/seasonal/download/season_2023_2024_qaqc?start_date=2024-01-01 00:00:00&end_date=2024-12-31 23:59:59`,
-      description: 'Download full-year data from all locations'
+      title: 'Get Raw Data Tables (Authenticated)',
+      url: `curl -H "X-API-Key: s2s_YOUR_KEY" https://crrels2s.w3.uvm.edu/api/databases/raw_data/tables`,
+      description: 'List tables in raw data ingestion database (requires API key)'
     },
     {
-      title: 'Download Specific Attributes Only',
-      url: `https://crrels2s.w3.uvm.edu/api/seasonal/download/season_2023_2024_qaqc?attributes=timestamp,location,snow_water_equivalent_mm,snow_depth_cm`,
-      description: 'Download only snow-related measurements for all time periods and locations'
+      title: 'Download Raw Data (Authenticated)',
+      url: `curl -H "X-API-Key: s2s_YOUR_KEY" "https://crrels2s.w3.uvm.edu/api/databases/raw_data/download/raw_env_core_observations?locations=SUMM&start_date=2024-01-01"`,
+      description: 'Download raw environmental data (requires API key)'
+    },
+    {
+      title: 'Download Clean Data (Authenticated)',
+      url: `curl -H "X-API-Key: s2s_YOUR_KEY" "https://crrels2s.w3.uvm.edu/api/databases/stage_clean_data/download/clean_env_core_observations?locations=RB01,RB02"`,
+      description: 'Download cleaned/processed data (requires API key)'
     }
   ];
 
