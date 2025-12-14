@@ -10,7 +10,7 @@ const Hero = () => {
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: `url('/lovable-uploads/9d5d35d8-43d8-4c2d-a89e-7522213fc836.png')`
+          backgroundImage: `url('/images/hero-mountain.png')`
         }}
       >
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/60"></div>

@@ -52,7 +52,7 @@ RewriteEngine On
 RewriteBase /
 
 # Serve UVM favicon
-RedirectMatch 302 ^/favicon\.ico$ /lovable-uploads/6cc4d90f-0179-494a-a8be-7a9a1c70a0e9.png
+RedirectMatch 302 ^/favicon\.ico$ /images/favicon.png
 
 # Proxy API requests to Node.js backend on port 3001
 RewriteCond %{REQUEST_URI} ^/(health|api)

@@ -13,7 +13,7 @@ const Team = () => {
       role: "Principal Investigator", 
       affiliation: "UVM Civil & Environmental Engineering",
       expertise: "Computational Hydrology, Climate Modeling",
-      image: "/lovable-uploads/f0e8b972-8f4c-4294-98e6-d3ae431cbd24.png",
+      image: "/images/team/arne-bomblies.png",
       email: "abomblie@uvm.edu",
       linkedin: "https://www.linkedin.com/in/arne-bomblies-phd-pe-73835a21/"
     },
@@ -22,7 +22,7 @@ const Team = () => {
       role: "Co-Investigator",
       affiliation: "UVM Geography & Geosciences",
       expertise: "Geomorphology, Watershed Hydrology",
-      image: "/lovable-uploads/beverley-wemple.jpg",
+      image: "/images/team/beverley-wemple.jpg",
       email: "bwemple@uvm.edu",
       linkedin: "https://www.linkedin.com/in/beverley-wemple-94557721/"
     },
@@ -31,7 +31,7 @@ const Team = () => {
       role: "Data Architect & Manager",
       affiliation: "UVM Civil & Environmental Engineering",
       expertise: "Data Management, System Architecture",
-      image: "/lovable-uploads/vamsi-dondeti.jpg",
+      image: "/images/team/vamsi-dondeti.jpg",
       email: "vdondeti@uvm.edu",
       linkedin: "https://www.linkedin.com/in/vamsi-naidu-d/"
     },
@@ -40,7 +40,7 @@ const Team = () => {
       role: "Environmental Researcher",
       affiliation: "UVM Civil & Environmental Engineering",
       expertise: "Snowpack Dynamics, Hydrologic Modeling",
-      image: "/lovable-uploads/250350aa-abaa-4e6e-b886-bae339af81b9.png",
+      image: "/images/weather-station.png",
       email: "Anna.Grunes@uvm.edu",
       linkedin: "https://www.linkedin.com/in/anna-grunes/"
     },
@@ -49,7 +49,7 @@ const Team = () => {
       role: "Environmental Researcher",
       affiliation: "UVM Civil & Environmental Engineering",
       expertise: "Field Research, Data Collection",
-      image: "/lovable-uploads/3953a891-e744-46ca-b6fa-0ebf0ce9835d.png",
+      image: "/images/research-field.png",
       email: "Jacob.Ladue@uvm.edu",
       linkedin: "https://www.linkedin.com/in/jacob-ladue-8aa992232/"
     }
