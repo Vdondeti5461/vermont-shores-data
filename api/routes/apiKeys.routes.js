@@ -23,6 +23,7 @@ module.exports = (pool) => {
   router.get('/', async (req, res) => {
     try {
       const connection = await pool.getConnection();
+      await connection.query('USE CRRELS2S_auth');
 
       try {
         const [keys] = await connection.execute(
@@ -84,6 +85,7 @@ module.exports = (pool) => {
       }
 
       const connection = await pool.getConnection();
+      await connection.query('USE CRRELS2S_auth');
 
       try {
         // Check existing key count (limit to 10 keys per user)
@@ -176,6 +178,7 @@ module.exports = (pool) => {
     try {
       const { keyId } = req.params;
       const connection = await pool.getConnection();
+      await connection.query('USE CRRELS2S_auth');
 
       try {
         const [keys] = await connection.execute(
@@ -240,6 +243,7 @@ module.exports = (pool) => {
       const { name, description, is_active, rate_limit_per_hour } = req.body;
 
       const connection = await pool.getConnection();
+      await connection.query('USE CRRELS2S_auth');
 
       try {
         // Verify ownership
@@ -329,6 +333,7 @@ module.exports = (pool) => {
     try {
       const { keyId } = req.params;
       const connection = await pool.getConnection();
+      await connection.query('USE CRRELS2S_auth');
 
       try {
         // Verify ownership
@@ -388,6 +393,7 @@ module.exports = (pool) => {
       const { days = 7 } = req.query;
 
       const connection = await pool.getConnection();
+      await connection.query('USE CRRELS2S_auth');
 
       try {
         // Verify ownership
