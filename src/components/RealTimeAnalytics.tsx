@@ -122,6 +122,15 @@ function getTimeRangeDates(hours: number): { startDate: string; endDate: string 
   return { startDate, endDate };
 }
 
+// Data source options
+type DataSourceType = 'both' | 'raw' | 'clean';
+
+const DATA_SOURCE_OPTIONS: { value: DataSourceType; label: string }[] = [
+  { value: 'both', label: 'Both' },
+  { value: 'raw', label: 'Raw Data' },
+  { value: 'clean', label: 'Clean Data' },
+];
+
 export const RealTimeAnalytics = () => {
   const { toast } = useToast();
   const locations = getLocationOptions();
@@ -130,6 +139,7 @@ export const RealTimeAnalytics = () => {
   const [compareLocations, setCompareLocations] = useState(false);
   const [selectedAttribute, setSelectedAttribute] = useState<string>('');
   const [selectedTimeRange, setSelectedTimeRange] = useState<string>('24h');
+  const [selectedDataSource, setSelectedDataSource] = useState<DataSourceType>('both');
   const [isLoading, setIsLoading] = useState(false);
   const [comparisonData, setComparisonData] = useState<{ database: DatabaseType; data: TimeSeriesDataPoint[] }[]>([]);
   const [comparisonData2, setComparisonData2] = useState<{ database: DatabaseType; data: TimeSeriesDataPoint[] }[]>([]);
@@ -139,6 +149,18 @@ export const RealTimeAnalytics = () => {
   const autoRefreshTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const TABLE = 'raw_env_core_observations';
+
+  // Get active databases based on data source selection
+  const getActiveDataSources = useCallback((): DatabaseType[] => {
+    switch (selectedDataSource) {
+      case 'raw':
+        return ['CRRELS2S_raw_data_ingestion'];
+      case 'clean':
+        return ['CRRELS2S_stage_clean_data'];
+      default:
+        return COMPARISON_DATABASES;
+    }
+  }, [selectedDataSource]);
 
   // Get time range in hours
   const getTimeRangeHours = useCallback(() => {
@@ -154,11 +176,12 @@ export const RealTimeAnalytics = () => {
   ) => {
     const hours = getTimeRangeHours();
     const { startDate, endDate } = getTimeRangeDates(hours);
+    const activeSources = getActiveDataSources();
 
-    console.log(`[RealTime] Fetching data for ${location} from ${startDate} to ${endDate}`);
+    console.log(`[RealTime] Fetching data for ${location} from ${startDate} to ${endDate}, sources: ${activeSources.join(', ')}`);
 
     const data = await fetchMultiQualityComparison(
-      COMPARISON_DATABASES,
+      activeSources,
       TABLE,
       location,
       [selectedAttribute],
@@ -169,7 +192,7 @@ export const RealTimeAnalytics = () => {
     
     setData(data);
     return data;
-  }, [selectedAttribute, getTimeRangeHours]);
+  }, [selectedAttribute, getTimeRangeHours, getActiveDataSources]);
 
   // Load data function
   const loadData = useCallback(async (showToast = true) => {
@@ -242,7 +265,7 @@ export const RealTimeAnalytics = () => {
         abortController.abort();
       }
     };
-  }, [selectedLocation, selectedLocation2, selectedAttribute, selectedTimeRange, compareLocations]);
+  }, [selectedLocation, selectedLocation2, selectedAttribute, selectedTimeRange, compareLocations, selectedDataSource]);
 
   // Auto-refresh timer
   useEffect(() => {
@@ -590,6 +613,29 @@ export const RealTimeAnalytics = () => {
             </div>
           </div>
 
+          {/* Data Source Selection */}
+          <div className="space-y-2">
+            <Label className="text-sm">Data Source</Label>
+            <ToggleGroup 
+              type="single" 
+              value={selectedDataSource}
+              onValueChange={(value) => value && setSelectedDataSource(value as DataSourceType)}
+              className="flex justify-start gap-1"
+            >
+              {DATA_SOURCE_OPTIONS.map((option) => (
+                <ToggleGroupItem 
+                  key={option.value} 
+                  value={option.value}
+                  variant="outline"
+                  size="sm"
+                  className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                >
+                  {option.label}
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+          </div>
+
           {/* Refresh Button */}
           {selectedLocation && selectedAttribute && (
             <Button 
@@ -619,7 +665,7 @@ export const RealTimeAnalytics = () => {
                 {' '}— <span className="font-semibold text-foreground">{selectedTimeRangeInfo?.label}</span>
               </p>
               <div className="flex flex-wrap gap-4">
-                {COMPARISON_DATABASES.map((db) => (
+                {getActiveDataSources().map((db) => (
                   <div key={db} className="flex items-center gap-2">
                     <div 
                       className="w-3 h-3 rounded-full" 
@@ -695,7 +741,7 @@ export const RealTimeAnalytics = () => {
                       ]}
                     />
                     <Legend formatter={(value) => DATABASE_LABELS[value]} />
-                    {COMPARISON_DATABASES.map((database) => (
+                    {getActiveDataSources().map((database) => (
                       <Line
                         key={database}
                         type="monotone"
@@ -758,7 +804,7 @@ export const RealTimeAnalytics = () => {
                       ]}
                     />
                     <Legend formatter={(value) => DATABASE_LABELS[value]} />
-                    {COMPARISON_DATABASES.map((database) => (
+                    {getActiveDataSources().map((database) => (
                       <Line
                         key={database}
                         type="monotone"
@@ -871,7 +917,7 @@ export const RealTimeAnalytics = () => {
                       formatter={(value) => DATABASE_LABELS[value]}
                       wrapperStyle={{ paddingTop: '20px' }}
                     />
-                    {COMPARISON_DATABASES.map((database) => (
+                    {getActiveDataSources().map((database) => (
                       <Line
                         key={database}
                         type="monotone"
