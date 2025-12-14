@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Download, BarChart3 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 
 const Hero = () => {
@@ -50,22 +51,22 @@ const Hero = () => {
           
           {/* Action Buttons */}
           <div className="flex flex-col xs:flex-col sm:flex-row gap-3 xs:gap-4 md:gap-6 justify-center mb-8 xs:mb-12 md:mb-16 animate-fade-in px-2">
-            <a href="/analytics" className="group w-full sm:w-auto">
+            <Link to="/analytics" className="group w-full sm:w-auto">
               <Button size="lg" className="w-full sm:w-auto btn-research font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 hover-scale touch:active:scale-95 px-4 xs:px-6 md:px-8 py-3 xs:py-4 text-sm xs:text-base md:text-lg min-h-[48px] xs:min-h-[52px]">
                 <BarChart3 className="mr-2 xs:mr-3 h-4 w-4 xs:h-5 xs:w-5 md:h-6 md:w-6 group-hover:animate-pulse" />
                 <span className="hidden xs:inline md:hidden">Live Data</span>
                 <span className="xs:hidden md:inline">Explore Live Data</span>
                 <span className="ml-2 text-primary-foreground/80">→</span>
               </Button>
-            </a>
-            <a href="/download" className="group w-full sm:w-auto">
+            </Link>
+            <Link to="/download" className="group w-full sm:w-auto">
               <Button size="lg" className="w-full sm:w-auto bg-white/10 hover:bg-white/20 text-white border-2 border-white/20 backdrop-blur-sm font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 hover-scale touch:active:scale-95 px-4 xs:px-6 md:px-8 py-3 xs:py-4 text-sm xs:text-base md:text-lg min-h-[48px] xs:min-h-[52px]">
                 <Download className="mr-2 xs:mr-3 h-4 w-4 xs:h-5 xs:w-5 md:h-6 md:w-6 group-hover:animate-pulse" />
                 <span className="hidden xs:inline md:hidden">Download</span>
                 <span className="xs:hidden md:inline">Download Data</span>
                 <span className="ml-2 text-white/80">→</span>
               </Button>
-            </a>
+            </Link>
           </div>
 
         </div>
