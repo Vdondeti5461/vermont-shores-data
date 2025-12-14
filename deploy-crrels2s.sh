@@ -78,9 +78,6 @@ RewriteCond %{REQUEST_URI} !^/(health|api|api-keys)
 RewriteCond %{REQUEST_URI} !^/auth/(login|signup|verify|logout|profile)
 RewriteRule . /index.html [L]
 EOF
-else
-    echo -e "${GREEN}✅ .htaccess already exists${NC}"
-fi
 
 # Check for any hardcoded localhost URLs in frontend
 echo -e "${BLUE}🔍 Checking for development URLs in frontend bundle...${NC}"
