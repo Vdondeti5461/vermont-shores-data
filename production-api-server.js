@@ -482,19 +482,26 @@ app.get('/api/health', async (req, res) => {
 const API_KEY_PREFIX = 's2s_';
 
 const verifyApiKeyForAccess = async (req, res, next) => {
-  // Check for API key in X-API-Key header OR query parameter
-  const apiKey = req.headers['x-api-key'] || req.query['X-API-Key'] || req.query['api_key'];
+  // Check for API key in X-API-Key header OR query parameter (case-insensitive header check)
+  const apiKey = req.headers['x-api-key'] || 
+                 req.headers['X-API-Key'] || 
+                 req.query['X-API-Key'] || 
+                 req.query['x-api-key'] || 
+                 req.query['api_key'];
+  
+  console.log(`🔑 [API KEY CHECK] Received key: ${apiKey ? apiKey.substring(0, 12) + '...' : 'none'}`);
   
   if (!apiKey) {
+    console.log('🔓 [API KEY] No key provided - public access');
     req.accessLevel = 'public';
     return next();
   }
   
   // Validate prefix
   if (!apiKey.startsWith(API_KEY_PREFIX)) {
-    req.accessLevel = 'public';
     console.log(`⚠️ [API KEY] Invalid prefix: ${apiKey.substring(0, 8)}...`);
-    return next(); // Continue as public instead of erroring
+    req.accessLevel = 'public';
+    return next();
   }
   
   // Verify against database
@@ -509,45 +516,63 @@ const verifyApiKeyForAccess = async (req, res, next) => {
     connection = await pool.getConnection();
     await connection.query('USE CRRELS2S_auth');
     
-    // Find API key by prefix (first 12 chars)
+    // Find API key by prefix (first 12 chars) - fetch ALL matching keys including inactive for debugging
     const keyPrefix = apiKey.substring(0, 12);
-    const [keys] = await connection.execute(
-      `SELECT ak.*, u.email, u.is_active as user_active
+    console.log(`🔍 [API KEY] Looking for key_prefix: "${keyPrefix}"`);
+    
+    // First check if any keys exist with this prefix (for debugging)
+    const [allKeys] = await connection.execute(
+      `SELECT ak.id, ak.key_prefix, ak.is_active, ak.key_hash, u.email, u.is_active as user_active
        FROM api_keys ak
        JOIN users u ON ak.user_id = u.id
-       WHERE ak.key_prefix = ? AND ak.is_active = TRUE`,
+       WHERE ak.key_prefix = ?`,
       [keyPrefix]
     );
     
-    if (keys.length === 0) {
-      console.log(`⚠️ [API KEY] Key not found: ${keyPrefix}...`);
+    console.log(`🔍 [API KEY] Found ${allKeys.length} keys with prefix "${keyPrefix}"`);
+    
+    if (allKeys.length > 0) {
+      allKeys.forEach((k, i) => {
+        console.log(`   Key ${i + 1}: is_active=${k.is_active}, user_active=${k.user_active}, email=${k.email}`);
+      });
+    }
+    
+    // Now filter for active keys
+    const activeKeys = allKeys.filter(k => k.is_active === 1);
+    
+    if (activeKeys.length === 0) {
+      console.log(`⚠️ [API KEY] No ACTIVE keys found for prefix: ${keyPrefix}`);
       req.accessLevel = 'public';
       connection.release();
       return next();
     }
     
-    const keyRecord = keys[0];
+    // Try to verify against each active key
+    let matchedKey = null;
+    for (const keyRecord of activeKeys) {
+      console.log(`🔐 [API KEY] Comparing hash for key id ${keyRecord.id}...`);
+      try {
+        const isValid = await bcrypt.compare(apiKey, keyRecord.key_hash);
+        console.log(`🔐 [API KEY] Hash comparison result for key id ${keyRecord.id}: ${isValid}`);
+        if (isValid) {
+          matchedKey = keyRecord;
+          break;
+        }
+      } catch (hashError) {
+        console.error(`❌ [API KEY] Hash comparison error for key ${keyRecord.id}:`, hashError.message);
+      }
+    }
     
-    // Verify full key hash
-    const isValid = await bcrypt.compare(apiKey, keyRecord.key_hash);
-    if (!isValid) {
-      console.log(`⚠️ [API KEY] Hash mismatch for: ${keyPrefix}...`);
+    if (!matchedKey) {
+      console.log(`⚠️ [API KEY] No matching hash found for any active keys with prefix: ${keyPrefix}`);
       req.accessLevel = 'public';
       connection.release();
       return next();
     }
     
     // Check if user is active
-    if (!keyRecord.user_active) {
-      console.log(`⚠️ [API KEY] User inactive for: ${keyPrefix}...`);
-      req.accessLevel = 'public';
-      connection.release();
-      return next();
-    }
-    
-    // Check expiration
-    if (keyRecord.expires_at && new Date(keyRecord.expires_at) < new Date()) {
-      console.log(`⚠️ [API KEY] Key expired: ${keyPrefix}...`);
+    if (!matchedKey.user_active) {
+      console.log(`⚠️ [API KEY] User inactive for key: ${keyPrefix}...`);
       req.accessLevel = 'public';
       connection.release();
       return next();
@@ -555,24 +580,24 @@ const verifyApiKeyForAccess = async (req, res, next) => {
     
     // Update last used timestamp
     await connection.execute(
-      'UPDATE api_keys SET last_used_at = NOW() WHERE id = ?',
-      [keyRecord.id]
+      'UPDATE api_keys SET last_used_at = NOW(), total_requests = total_requests + 1 WHERE id = ?',
+      [matchedKey.id]
     );
     
     connection.release();
     
     // Success - authenticated access
-    console.log(`✅ [API KEY] Authenticated: ${keyRecord.email} (${keyRecord.name})`);
+    console.log(`✅ [API KEY] AUTHENTICATED: ${matchedKey.email} (key id: ${matchedKey.id})`);
     req.accessLevel = 'authenticated';
     req.apiKeyAuth = {
-      keyId: keyRecord.id,
-      userId: keyRecord.user_id,
-      email: keyRecord.email,
-      keyName: keyRecord.name
+      keyId: matchedKey.id,
+      userId: matchedKey.user_id,
+      email: matchedKey.email
     };
     next();
   } catch (error) {
     console.error('❌ [API KEY] Verification error:', error.message);
+    console.error('❌ [API KEY] Full error:', error);
     if (connection) connection.release();
     req.accessLevel = 'public';
     next();
