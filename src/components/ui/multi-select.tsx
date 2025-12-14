@@ -81,7 +81,11 @@ export function MultiSelect({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn("w-full justify-between h-auto min-h-10", className)}
+          className={cn(
+            "w-full justify-between h-auto min-h-10 border-2 transition-all",
+            open ? "border-primary ring-2 ring-primary/20" : "hover:border-primary/50",
+            className
+          )}
         >
           <div className="flex gap-1 flex-wrap flex-1 items-center">
             {selected.length === 0 ? (
@@ -92,7 +96,7 @@ export function MultiSelect({
                   <Badge
                     variant="secondary"
                     key={label}
-                    className="mr-1"
+                    className="mr-1 bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20"
                     onClick={(e) => {
                       e.stopPropagation()
                       const option = options.find(opt => opt.label === label)
@@ -119,45 +123,53 @@ export function MultiSelect({
                         if (option) handleRemove(option.value)
                       }}
                     >
-                      <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                      <X className="h-3 w-3 text-primary/60 hover:text-primary" />
                     </button>
                   </Badge>
                 ))}
                 {selected.length > maxDisplay && (
-                  <Badge variant="secondary" className="mr-1">
+                  <Badge variant="secondary" className="mr-1 bg-primary/10 text-primary border border-primary/20">
                     +{selected.length - maxDisplay} more
                   </Badge>
                 )}
               </>
             )}
           </div>
-          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <ChevronDown className={cn(
+            "ml-2 h-4 w-4 shrink-0 transition-transform duration-200",
+            open ? "rotate-180 text-primary" : "opacity-50"
+          )} />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0 bg-background z-[100]" align="start">
-        <Command>
-          <CommandInput placeholder={searchPlaceholder} className="h-9" />
-          <CommandList>
-            <CommandEmpty>{emptyText}</CommandEmpty>
+      <PopoverContent className="w-full p-0 bg-popover border-2 border-border shadow-lg z-[100]" align="start">
+        <Command className="bg-transparent">
+          <CommandInput 
+            placeholder={searchPlaceholder} 
+            className="h-10 border-b border-border" 
+          />
+          <CommandList className="max-h-[280px]">
+            <CommandEmpty className="py-6 text-center text-muted-foreground">
+              {emptyText}
+            </CommandEmpty>
             <CommandGroup>
               <CommandItem
                 onSelect={handleSelectAll}
-                className="cursor-pointer"
+                className="cursor-pointer py-3 hover:bg-muted/50"
               >
-                <div className="flex items-center gap-2 w-full">
+                <div className="flex items-center gap-3 w-full">
                   <div
                     className={cn(
-                      "flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                      "flex h-5 w-5 items-center justify-center rounded border-2 transition-colors",
                       selected.length === options.length
-                        ? "bg-primary text-primary-foreground"
-                        : "opacity-50"
+                        ? "bg-primary border-primary text-primary-foreground"
+                        : "border-muted-foreground/30 hover:border-primary/50"
                     )}
                   >
                     {selected.length === options.length && (
-                      <Check className="h-4 w-4" />
+                      <Check className="h-3.5 w-3.5" />
                     )}
                   </div>
-                  <span className="font-medium">
+                  <span className="font-semibold text-foreground">
                     {selected.length === options.length ? "Deselect All" : "Select All"}
                   </span>
                 </div>
@@ -166,25 +178,25 @@ export function MultiSelect({
                 <CommandItem
                   key={option.value}
                   onSelect={() => handleSelect(option.value)}
-                  className="cursor-pointer"
+                  className="cursor-pointer py-2.5 hover:bg-muted/50"
                 >
-                  <div className="flex items-center gap-2 w-full">
+                  <div className="flex items-center gap-3 w-full">
                     <div
                       className={cn(
-                        "flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                        "flex h-5 w-5 items-center justify-center rounded border-2 transition-colors",
                         selected.includes(option.value)
-                          ? "bg-primary text-primary-foreground"
-                          : "opacity-50"
+                          ? "bg-primary border-primary text-primary-foreground"
+                          : "border-muted-foreground/30 hover:border-primary/50"
                       )}
                     >
                       {selected.includes(option.value) && (
-                        <Check className="h-4 w-4" />
+                        <Check className="h-3.5 w-3.5" />
                       )}
                     </div>
-                    <div className="flex-1">
-                      <div className="font-medium">{option.label}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-foreground truncate">{option.label}</div>
                       {option.description && (
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-xs text-muted-foreground truncate">
                           {option.description}
                         </div>
                       )}
@@ -196,14 +208,15 @@ export function MultiSelect({
           </CommandList>
         </Command>
         {selected.length > 0 && (
-          <div className="border-t p-2">
+          <div className="border-t border-border p-2 bg-muted/30">
             <Button
               variant="ghost"
               size="sm"
-              className="w-full"
+              className="w-full text-muted-foreground hover:text-destructive hover:bg-destructive/10"
               onClick={handleClear}
             >
-              Clear All
+              <X className="h-4 w-4 mr-2" />
+              Clear All ({selected.length})
             </Button>
           </div>
         )}
