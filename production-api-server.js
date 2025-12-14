@@ -581,14 +581,23 @@ app.get('/api/auth/verify-key', async (req, res) => {
 });
 
 const verifyApiKeyForAccess = async (req, res, next) => {
-  // Check for API key in X-API-Key header OR query parameter (case-insensitive header check)
-  const apiKey = req.headers['x-api-key'] || 
-                 req.headers['X-API-Key'] || 
-                 req.query['X-API-Key'] || 
-                 req.query['x-api-key'] || 
-                 req.query['api_key'];
+  // Debug: Log all incoming headers and query params for API key
+  console.log(`🔍 [API KEY DEBUG] All headers:`, JSON.stringify(req.headers, null, 2));
+  console.log(`🔍 [API KEY DEBUG] All query params:`, JSON.stringify(req.query, null, 2));
   
-  console.log(`🔑 [API KEY CHECK] Received key: ${apiKey ? apiKey.substring(0, 12) + '...' : 'none'}`);
+  // Check for API key in X-API-Key header (Express lowercases all headers)
+  // Also check query parameters with multiple casing
+  let apiKey = req.headers['x-api-key'];  // Express ALWAYS lowercases headers
+  
+  // Fallback to query params
+  if (!apiKey) {
+    apiKey = req.query['X-API-Key'] || req.query['x-api-key'] || req.query['api_key'];
+    console.log(`🔑 [API KEY] Key from query param: ${apiKey ? 'found' : 'not found'}`);
+  } else {
+    console.log(`🔑 [API KEY] Key from header: found`);
+  }
+  
+  console.log(`🔑 [API KEY CHECK] Final key: ${apiKey ? apiKey.substring(0, 12) + '...' : 'none'}`);
   
   if (!apiKey) {
     console.log('🔓 [API KEY] No key provided - public access');
@@ -711,10 +720,13 @@ const verifyApiKeyForAccess = async (req, res, next) => {
 app.get('/api/databases', verifyApiKeyForAccess, async (req, res) => {
   try {
     const isAuthenticated = req.accessLevel === 'authenticated';
-    console.log(`📊 [DATABASES] Access level: ${req.accessLevel}, Authenticated: ${isAuthenticated}`);
+    console.log(`📊 [DATABASES] Access level: ${req.accessLevel}`);
+    console.log(`📊 [DATABASES] Authenticated: ${isAuthenticated}`);
+    console.log(`📊 [DATABASES] apiKeyAuth:`, req.apiKeyAuth || 'none');
     
     if (isAuthenticated) {
       // Return all 4 databases for authenticated users
+      console.log(`📊 [DATABASES] Returning ALL 4 databases for authenticated user`);
       const allDatabases = ['raw_data', 'stage_clean_data', 'stage_qaqc_data', 'seasonal_qaqc_data'];
       const databases = allDatabases.map(key => {
         const metadata = DATABASE_METADATA[key] || {};
@@ -730,8 +742,11 @@ app.get('/api/databases', verifyApiKeyForAccess, async (req, res) => {
         };
       });
       
+      console.log(`📊 [DATABASES] Sending ${databases.length} databases`);
       return res.json(databases);
     }
+    
+    console.log(`📊 [DATABASES] Returning ONLY seasonal_qaqc_data for public access`);
     
     // Public access - only seasonal_qaqc_data
     const metadata = DATABASE_METADATA['seasonal_qaqc_data'];
