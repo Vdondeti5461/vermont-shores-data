@@ -115,14 +115,14 @@ Port: 3306
 Engine: MySQL 8.0+
 
 Credentials:
-- User: crrels2s_admin (read-only for API)
-- Password: [Stored in production environment]
+- User: [configured via environment variable]
+- Password: [configured via environment variable]
 
 Databases:
-1. CRRELS2S_VTClimateRepository (Raw Data)
-2. CRRELS2S_VTClimateRepository_Processed (Initial Clean)
-3. CRRELS2S_ProcessedData (Final Clean)
-4. CRRELS2S_cleaned_data_seasons (Seasonal)
+1. CRRELS2S_raw_data_ingestion (Raw Data)
+2. CRRELS2S_stage_clean_data (Cleaned Data)
+3. CRRELS2S_stage_qaqc_data (QAQC Data)
+4. CRRELS2S_seasonal_qaqc_data (Seasonal Data)
 ```
 
 ---
@@ -287,10 +287,10 @@ app.use(express.json());
 
 // Database connection pool
 const pool = mysql.createPool({
-  host: 'web5.uvm.edu',
-  user: process.env.MYSQL_USER || 'crrels2s_admin',
+  host: process.env.MYSQL_HOST,
+  user: process.env.MYSQL_USER,
   password: process.env.MYSQL_PASSWORD,
-  port: 3306,
+  port: process.env.MYSQL_PORT || 3306,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
@@ -551,10 +551,10 @@ fi
 **Production Environment:**
 ```bash
 # ~/.bashrc or ~/.bash_profile
-export MYSQL_USER="crrels2s_admin"
-export MYSQL_PASSWORD="[REDACTED]"
-export MYSQL_HOST="web5.uvm.edu"
-export MYSQL_PORT="3306"
+export MYSQL_USER="[YOUR_DB_USER]"
+export MYSQL_PASSWORD="[YOUR_DB_PASSWORD]"
+export MYSQL_HOST="[YOUR_DB_HOST]"
+export MYSQL_PORT="[YOUR_DB_PORT]"
 export NODE_ENV="production"
 export PORT="3001"
 ```

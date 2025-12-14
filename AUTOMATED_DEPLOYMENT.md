@@ -6,11 +6,11 @@ This project uses GitHub Actions to automatically deploy to `crrels2s.w3.uvm.edu
 
 ## How It Works
 
-1. **Make changes** in Lovable or push to GitHub
+1. **Make changes** and push to GitHub
 2. **GitHub Actions triggers** automatically on push to main branch
 3. **SSH into server** using stored credentials
 4. **Runs deployment script** (`deploy-crrels2s.sh`)
-5. **Updates live site** at https://crrels2s.w3.uvm.edu
+5. **Updates live site** at the production URL
 
 ## Setup Instructions
 
@@ -64,10 +64,10 @@ chmod +x deploy-crrels2s.sh
 
 ### Step 6: Test the Automation
 
-1. Make a small change in Lovable (or push to GitHub)
+1. Make a small change and push to GitHub
 2. Go to your repository's **Actions** tab
 3. Watch the deployment workflow run
-4. Check https://crrels2s.w3.uvm.edu to see your changes
+4. Check the production site to see your changes
 
 ## Monitoring Deployments
 

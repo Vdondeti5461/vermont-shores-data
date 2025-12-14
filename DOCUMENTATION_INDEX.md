@@ -165,9 +165,8 @@ www-root/              # Deployment target
 
 ## External Resources
 
-- **Lovable Project**: https://lovable.dev/projects/5d5ff90d-8cee-4075-81bd-555a25d8e14f
-- **Testing Site**: https://vdondeti.w3.uvm.edu
 - **Production Site**: https://crrels2s.w3.uvm.edu
+- **Contact**: crrels2s@uvm.edu
 
 ## Need Help?
 
