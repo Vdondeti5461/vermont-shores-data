@@ -4,10 +4,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Loader2, MapPin, TrendingUp, RefreshCw } from 'lucide-react';
+import { Loader2, MapPin, TrendingUp, RefreshCw, Clock } from 'lucide-react';
 import { DatabaseType, TimeSeriesDataPoint, fetchMultiQualityComparison } from '@/services/realTimeAnalyticsService';
-import { MONITORING_LOCATIONS, getLocationOptions } from '@/lib/locationData';
+import { getLocationOptions } from '@/lib/locationData';
 import { useToast } from '@/hooks/use-toast';
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 // Mapping of attributes to display names and units
 const ATTRIBUTES = [
@@ -16,23 +17,30 @@ const ATTRIBUTES = [
   { value: 'relative_humidity_percent', label: 'Relative Humidity', unit: '%' },
 ] as const;
 
-// Three databases for comparison - always fetch from all three for analytics
+// Time range presets for real-time monitoring (10-min data intervals)
+const TIME_RANGES = [
+  { value: '1h', label: '1 Hour', hours: 1 },
+  { value: '6h', label: '6 Hours', hours: 6 },
+  { value: '12h', label: '12 Hours', hours: 12 },
+  { value: '24h', label: '24 Hours', hours: 24 },
+  { value: '1w', label: '1 Week', hours: 24 * 7 },
+  { value: '1m', label: '1 Month', hours: 24 * 30 },
+] as const;
+
+// Only Raw and Clean data for real-time view (QAQC requires manual review)
 const COMPARISON_DATABASES: DatabaseType[] = [
   'CRRELS2S_raw_data_ingestion',
   'CRRELS2S_stage_clean_data',
-  'CRRELS2S_stage_qaqc_data',
 ];
 
 const DATABASE_COLORS = {
   'CRRELS2S_raw_data_ingestion': 'hsl(0, 84%, 60%)',    // Red
   'CRRELS2S_stage_clean_data': 'hsl(217, 91%, 60%)',   // Blue
-  'CRRELS2S_stage_qaqc_data': 'hsl(142, 71%, 45%)',    // Green
 };
 
 const DATABASE_LABELS = {
   'CRRELS2S_raw_data_ingestion': 'Raw Data',
   'CRRELS2S_stage_clean_data': 'Clean Data',
-  'CRRELS2S_stage_qaqc_data': 'QAQC Data',
 };
 
 // LTTB downsampling for performance
@@ -89,12 +97,19 @@ export const RealTimeAnalytics = () => {
   const locations = getLocationOptions();
   const [selectedLocation, setSelectedLocation] = useState<string>('');
   const [selectedAttribute, setSelectedAttribute] = useState<string>('');
+  const [selectedTimeRange, setSelectedTimeRange] = useState<string>('24h');
   const [isLoading, setIsLoading] = useState(false);
   const [comparisonData, setComparisonData] = useState<{ database: DatabaseType; data: TimeSeriesDataPoint[] }[]>([]);
   const [abortController, setAbortController] = useState<AbortController | null>(null);
 
   // Fixed table - using core observations which has all three attributes
   const TABLE = 'raw_env_core_observations';
+
+  // Get time range in hours
+  const getTimeRangeHours = useCallback(() => {
+    const range = TIME_RANGES.find(r => r.value === selectedTimeRange);
+    return range?.hours || 24;
+  }, [selectedTimeRange]);
 
   // Load data function
   const loadData = useCallback(async () => {
@@ -110,9 +125,10 @@ export const RealTimeAnalytics = () => {
     setIsLoading(true);
 
     try {
-      // Set date range to last 30 days for performance
+      // Calculate date range based on selected time range
+      const hours = getTimeRangeHours();
       const endDate = new Date().toISOString().split('T')[0];
-      const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const startDate = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString().split('T')[0];
 
       const data = await fetchMultiQualityComparison(
         COMPARISON_DATABASES,
@@ -126,6 +142,15 @@ export const RealTimeAnalytics = () => {
       
       if (!controller.signal.aborted) {
         setComparisonData(data);
+        
+        // Check if data is available
+        const hasData = data.some(d => d.data.length > 0);
+        if (!hasData) {
+          toast({
+            title: "No Data Available",
+            description: "Real-time data ingestion is not yet active. Data will appear here once sensors start streaming.",
+          });
+        }
       }
     } catch (error) {
       if ((error as Error).name !== 'AbortError') {
@@ -141,9 +166,9 @@ export const RealTimeAnalytics = () => {
         setIsLoading(false);
       }
     }
-  }, [selectedLocation, selectedAttribute, toast, abortController]);
+  }, [selectedLocation, selectedAttribute, selectedTimeRange, toast, abortController, getTimeRangeHours]);
 
-  // Auto-load when both selections are made
+  // Auto-load when selections change
   useEffect(() => {
     if (selectedLocation && selectedAttribute) {
       loadData();
@@ -154,7 +179,7 @@ export const RealTimeAnalytics = () => {
         abortController.abort();
       }
     };
-  }, [selectedLocation, selectedAttribute]);
+  }, [selectedLocation, selectedAttribute, selectedTimeRange]);
 
   // Prepare chart data with LTTB sampling
   const prepareChartData = useCallback(() => {
@@ -167,14 +192,23 @@ export const RealTimeAnalytics = () => {
 
     const sortedTimestamps = Array.from(allTimestamps).sort();
     
+    // Format display time based on time range
+    const hours = getTimeRangeHours();
+    const formatTime = (timestamp: string) => {
+      const date = new Date(timestamp);
+      if (hours <= 24) {
+        return date.toLocaleString('en-US', { hour: '2-digit', minute: '2-digit' });
+      } else if (hours <= 24 * 7) {
+        return date.toLocaleString('en-US', { weekday: 'short', hour: '2-digit' });
+      } else {
+        return date.toLocaleString('en-US', { month: 'short', day: 'numeric' });
+      }
+    };
+
     const rawData = sortedTimestamps.map((timestamp) => {
       const point: any = { 
         timestamp,
-        displayTime: new Date(timestamp).toLocaleString('en-US', { 
-          month: 'short', 
-          day: 'numeric',
-          hour: '2-digit',
-        })
+        displayTime: formatTime(timestamp)
       };
       
       comparisonData.forEach(({ database, data }) => {
@@ -195,15 +229,15 @@ export const RealTimeAnalytics = () => {
 
     // Apply LTTB sampling for performance
     if (rawData.length > MAX_DISPLAY_POINTS) {
-      // Sample using the first database's key as reference
       return lttbDownsample(rawData, MAX_DISPLAY_POINTS, COMPARISON_DATABASES[0]);
     }
     
     return rawData;
-  }, [comparisonData, selectedAttribute]);
+  }, [comparisonData, selectedAttribute, getTimeRangeHours]);
 
   const chartData = prepareChartData();
   const selectedAttributeInfo = ATTRIBUTES.find(a => a.value === selectedAttribute);
+  const selectedTimeRangeInfo = TIME_RANGES.find(r => r.value === selectedTimeRange);
 
   return (
     <div className="space-y-6">
@@ -211,64 +245,98 @@ export const RealTimeAnalytics = () => {
       <div className="flex items-center gap-2">
         <TrendingUp className="h-6 w-6 text-primary" />
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Time Series Analytics</h2>
+          <h2 className="text-3xl font-bold tracking-tight">Real-Time Monitoring</h2>
           <p className="text-muted-foreground">
-            Compare environmental measurements across three data processing stages (last 30 days)
+            Live environmental data from sensors (10-minute intervals)
           </p>
         </div>
       </div>
 
+      {/* Time Range Toggle */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Clock className="h-5 w-5" />
+            Time Range
+          </CardTitle>
+          <CardDescription>
+            Select the time window for real-time data display
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ToggleGroup 
+            type="single" 
+            value={selectedTimeRange}
+            onValueChange={(value) => value && setSelectedTimeRange(value)}
+            className="flex flex-wrap justify-start gap-2"
+          >
+            {TIME_RANGES.map((range) => (
+              <ToggleGroupItem 
+                key={range.value} 
+                value={range.value}
+                variant="outline"
+                className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+              >
+                {range.label}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+        </CardContent>
+      </Card>
+
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>Filter Options</CardTitle>
+          <CardTitle>Data Selection</CardTitle>
           <CardDescription>
-            Select a location and measurement attribute to compare data across all processing stages
+            Select a location and measurement attribute to view real-time data
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Location Selection */}
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2">
-              <MapPin className="h-4 w-4" />
-              Location
-            </Label>
-            <Select
-              value={selectedLocation}
-              onValueChange={setSelectedLocation}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select location" />
-              </SelectTrigger>
-              <SelectContent>
-                {locations.map((loc) => (
-                  <SelectItem key={loc.id} value={loc.id}>
-                    {loc.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Location Selection */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                Location
+              </Label>
+              <Select
+                value={selectedLocation}
+                onValueChange={setSelectedLocation}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select location" />
+                </SelectTrigger>
+                <SelectContent>
+                  {locations.map((loc) => (
+                    <SelectItem key={loc.id} value={loc.id}>
+                      {loc.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-          {/* Attribute Selection */}
-          <div className="space-y-2">
-            <Label>Attribute</Label>
-            <Select
-              value={selectedAttribute}
-              onValueChange={setSelectedAttribute}
-              disabled={!selectedLocation}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select attribute" />
-              </SelectTrigger>
-              <SelectContent>
-                {ATTRIBUTES.map((attr) => (
-                  <SelectItem key={attr.value} value={attr.value}>
-                    {attr.label} ({attr.unit})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* Attribute Selection */}
+            <div className="space-y-2">
+              <Label>Attribute</Label>
+              <Select
+                value={selectedAttribute}
+                onValueChange={setSelectedAttribute}
+                disabled={!selectedLocation}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select attribute" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ATTRIBUTES.map((attr) => (
+                    <SelectItem key={attr.value} value={attr.value}>
+                      {attr.label} ({attr.unit})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Refresh Button */}
@@ -289,8 +357,9 @@ export const RealTimeAnalytics = () => {
           {selectedLocation && selectedAttribute && (
             <div className="mt-4 p-4 bg-muted/50 rounded-lg border border-border">
               <p className="text-sm text-muted-foreground mb-3">
-                Displaying <span className="font-semibold text-foreground">{selectedAttributeInfo?.label}</span> time series for{' '}
+                Displaying <span className="font-semibold text-foreground">{selectedAttributeInfo?.label}</span> for{' '}
                 <span className="font-semibold text-foreground">{locations.find(l => l.id === selectedLocation)?.name}</span>
+                {' '}— <span className="font-semibold text-foreground">{selectedTimeRangeInfo?.label}</span>
               </p>
               <div className="flex flex-wrap gap-4">
                 {COMPARISON_DATABASES.map((db) => (
@@ -314,7 +383,7 @@ export const RealTimeAnalytics = () => {
           <CardContent className="flex items-center justify-center p-12">
             <div className="text-center">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">Loading data...</p>
+              <p className="text-sm text-muted-foreground">Loading real-time data...</p>
             </div>
           </CardContent>
         </Card>
@@ -325,10 +394,10 @@ export const RealTimeAnalytics = () => {
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl">
-              {selectedAttributeInfo?.label} Time Series Comparison
+              {selectedAttributeInfo?.label} — {selectedTimeRangeInfo?.label}
             </CardTitle>
             <CardDescription>
-              {locations.find(l => l.id === selectedLocation)?.name} | Three-stage data comparison
+              {locations.find(l => l.id === selectedLocation)?.name} | Raw vs Clean Data Comparison
               {chartData.length >= MAX_DISPLAY_POINTS && (
                 <span className="ml-2 text-xs text-muted-foreground">
                   (Sampled to {MAX_DISPLAY_POINTS} points)
@@ -371,11 +440,11 @@ export const RealTimeAnalytics = () => {
                   }}
                   formatter={(value: any, name: string) => [
                     `${typeof value === 'number' ? value.toFixed(2) : value} ${selectedAttributeInfo?.unit || ''}`,
-                    DATABASE_LABELS[name as DatabaseType]
+                    DATABASE_LABELS[name as keyof typeof DATABASE_LABELS]
                   ]}
                 />
                 <Legend 
-                  formatter={(value) => DATABASE_LABELS[value as DatabaseType]}
+                  formatter={(value) => DATABASE_LABELS[value as keyof typeof DATABASE_LABELS]}
                   wrapperStyle={{ paddingTop: '20px' }}
                 />
                 {COMPARISON_DATABASES.map((database) => (
@@ -403,7 +472,7 @@ export const RealTimeAnalytics = () => {
           <CardContent className="flex flex-col items-center justify-center p-12">
             <MapPin className="h-12 w-12 text-muted-foreground mb-4" />
             <p className="text-muted-foreground text-center">
-              Select a location and attribute to view time series comparison
+              Select a location and attribute to view real-time data
             </p>
           </CardContent>
         </Card>
@@ -411,11 +480,13 @@ export const RealTimeAnalytics = () => {
 
       {/* No Data State */}
       {!isLoading && selectedLocation && selectedAttribute && chartData.length === 0 && (
-        <Card>
+        <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center p-12">
-            <TrendingUp className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground text-center">
-              No data available for the selected location and attribute
+            <Clock className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Real-Time Data Coming Soon</h3>
+            <p className="text-muted-foreground text-center max-w-md">
+              Real-time data ingestion is not yet active for this location. 
+              Once sensors begin streaming data (every 10 minutes), it will appear here automatically.
             </p>
           </CardContent>
         </Card>

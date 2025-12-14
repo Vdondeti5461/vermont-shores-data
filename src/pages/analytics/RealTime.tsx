@@ -14,16 +14,15 @@ const RealTime = () => {
             <div className="text-center mb-12 sm:mb-16">
               <Badge variant="outline" className="mb-4">
                 <Activity className="w-4 h-4 mr-2" />
-                Live Data Analysis
+                Live Monitoring
               </Badge>
               <h1 className="scientific-heading text-3xl sm:text-4xl md:text-5xl lg:text-6xl mb-6">
                 Real-Time <span className="text-primary">Environmental</span>
-                <br />Data Analytics
+                <br />Monitoring
               </h1>
               <p className="text-base lg:text-lg text-muted-foreground max-w-3xl mx-auto">
-                Compare and analyze environmental monitoring data across all quality levels. 
-                Explore raw sensor measurements, cleaned datasets, and quality-controlled data 
-                from Vermont's Summit-to-Shore monitoring network.
+                Monitor live environmental data from Vermont's Summit-to-Shore sensor network. 
+                Data streams every 10 minutes, comparing raw sensor readings with cleaned datasets.
               </p>
             </div>
           </div>
