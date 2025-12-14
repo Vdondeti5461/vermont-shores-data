@@ -85,9 +85,13 @@ const verifyApiKey = (pool) => async (req, res, next) => {
     }
 
     // Look up API key in database
-    const connection = await pool.getConnection();
+    const dbPool = typeof pool === 'function' ? pool() : pool;
+    const connection = await dbPool.getConnection();
     
     try {
+      // Switch to auth database
+      await connection.query('USE CRRELS2S_auth');
+      
       const [keys] = await connection.execute(
         `SELECT ak.*, u.email, u.is_active as user_active
          FROM api_keys ak
