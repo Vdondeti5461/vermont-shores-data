@@ -6,15 +6,22 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Import auth routes and middleware (optional - only if auth modules exist)
-let authRoutes, apiKeyRoutes, authMiddleware;
+// Import auth routes (optional - only if auth modules exist)
+let authRoutes, apiKeyRoutes;
 try {
   authRoutes = require('./routes/auth.routes');
   apiKeyRoutes = require('./routes/apiKeys.routes');
-  authMiddleware = require('./middleware/auth.middleware');
-  console.log('✅ Authentication modules loaded');
+  console.log('✅ Authentication routes loaded');
 } catch (err) {
-  console.log('⚠️ Authentication modules not found - auth features disabled');
+  console.log('⚠️ Authentication routes not found - auth features disabled');
+}
+
+// bcrypt for API key verification
+let bcrypt;
+try {
+  bcrypt = require('bcryptjs');
+} catch (err) {
+  console.log('⚠️ bcryptjs not found - API key auth disabled');
 }
 
 // CORS configuration - allow all origins for API access
@@ -471,9 +478,10 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// Get available databases - returns all databases for authenticated users, seasonal only for public
-// Check for API key in header OR query parameter
-const optionalApiKeyCheck = async (req, res, next) => {
+// API Key verification middleware - self-contained for production
+const API_KEY_PREFIX = 's2s_';
+
+const verifyApiKeyForAccess = async (req, res, next) => {
   // Check for API key in X-API-Key header OR query parameter
   const apiKey = req.headers['x-api-key'] || req.query['X-API-Key'] || req.query['api_key'];
   
@@ -482,18 +490,96 @@ const optionalApiKeyCheck = async (req, res, next) => {
     return next();
   }
   
-  // If authMiddleware is available, use it to verify
-  if (authMiddleware && authMiddleware.verifyApiKey) {
-    // Set header for middleware to find
-    req.headers['x-api-key'] = apiKey;
-    return authMiddleware.verifyApiKey(() => pool)(req, res, next);
+  // Validate prefix
+  if (!apiKey.startsWith(API_KEY_PREFIX)) {
+    req.accessLevel = 'public';
+    console.log(`⚠️ [API KEY] Invalid prefix: ${apiKey.substring(0, 8)}...`);
+    return next(); // Continue as public instead of erroring
   }
   
-  req.accessLevel = 'public';
-  next();
+  // Verify against database
+  if (!bcrypt) {
+    console.log('⚠️ [API KEY] bcrypt not available, treating as public');
+    req.accessLevel = 'public';
+    return next();
+  }
+  
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    await connection.query('USE CRRELS2S_auth');
+    
+    // Find API key by prefix (first 12 chars)
+    const keyPrefix = apiKey.substring(0, 12);
+    const [keys] = await connection.execute(
+      `SELECT ak.*, u.email, u.is_active as user_active
+       FROM api_keys ak
+       JOIN users u ON ak.user_id = u.id
+       WHERE ak.key_prefix = ? AND ak.is_active = TRUE`,
+      [keyPrefix]
+    );
+    
+    if (keys.length === 0) {
+      console.log(`⚠️ [API KEY] Key not found: ${keyPrefix}...`);
+      req.accessLevel = 'public';
+      connection.release();
+      return next();
+    }
+    
+    const keyRecord = keys[0];
+    
+    // Verify full key hash
+    const isValid = await bcrypt.compare(apiKey, keyRecord.key_hash);
+    if (!isValid) {
+      console.log(`⚠️ [API KEY] Hash mismatch for: ${keyPrefix}...`);
+      req.accessLevel = 'public';
+      connection.release();
+      return next();
+    }
+    
+    // Check if user is active
+    if (!keyRecord.user_active) {
+      console.log(`⚠️ [API KEY] User inactive for: ${keyPrefix}...`);
+      req.accessLevel = 'public';
+      connection.release();
+      return next();
+    }
+    
+    // Check expiration
+    if (keyRecord.expires_at && new Date(keyRecord.expires_at) < new Date()) {
+      console.log(`⚠️ [API KEY] Key expired: ${keyPrefix}...`);
+      req.accessLevel = 'public';
+      connection.release();
+      return next();
+    }
+    
+    // Update last used timestamp
+    await connection.execute(
+      'UPDATE api_keys SET last_used_at = NOW() WHERE id = ?',
+      [keyRecord.id]
+    );
+    
+    connection.release();
+    
+    // Success - authenticated access
+    console.log(`✅ [API KEY] Authenticated: ${keyRecord.email} (${keyRecord.name})`);
+    req.accessLevel = 'authenticated';
+    req.apiKeyAuth = {
+      keyId: keyRecord.id,
+      userId: keyRecord.user_id,
+      email: keyRecord.email,
+      keyName: keyRecord.name
+    };
+    next();
+  } catch (error) {
+    console.error('❌ [API KEY] Verification error:', error.message);
+    if (connection) connection.release();
+    req.accessLevel = 'public';
+    next();
+  }
 };
 
-app.get('/api/databases', optionalApiKeyCheck, async (req, res) => {
+app.get('/api/databases', verifyApiKeyForAccess, async (req, res) => {
   try {
     const isAuthenticated = req.accessLevel === 'authenticated';
     console.log(`📊 [DATABASES] Access level: ${req.accessLevel}, Authenticated: ${isAuthenticated}`);
@@ -795,9 +881,20 @@ app.get('/api/seasonal/download/:table', async (req, res) => {
 });
 
 // Get available tables for a database
-app.get('/api/databases/:database/tables', async (req, res) => {
+app.get('/api/databases/:database/tables', verifyApiKeyForAccess, async (req, res) => {
   try {
     const { database } = req.params;
+    
+    // Check database access rights
+    const isAuthenticated = req.accessLevel === 'authenticated';
+    const restrictedDbs = ['raw_data', 'stage_clean_data', 'stage_qaqc_data'];
+    if (!isAuthenticated && restrictedDbs.includes(database)) {
+      return res.status(403).json({ 
+        error: 'AUTHENTICATION_REQUIRED', 
+        message: 'API key required to access this database. Please include X-API-Key header.' 
+      });
+    }
+    
     const { connection, databaseName } = await getConnectionWithDB(database);
     
     // Fetch tables and approximate row counts from information_schema (fast)
@@ -836,9 +933,20 @@ app.get('/api/databases/:database/tables', async (req, res) => {
 });
 
 // Get table attributes/columns
-app.get('/api/databases/:database/tables/:table/attributes', async (req, res) => {
+app.get('/api/databases/:database/tables/:table/attributes', verifyApiKeyForAccess, async (req, res) => {
   try {
     const { database, table } = req.params;
+    
+    // Check database access rights
+    const isAuthenticated = req.accessLevel === 'authenticated';
+    const restrictedDbs = ['raw_data', 'stage_clean_data', 'stage_qaqc_data'];
+    if (!isAuthenticated && restrictedDbs.includes(database)) {
+      return res.status(403).json({ 
+        error: 'AUTHENTICATION_REQUIRED', 
+        message: 'API key required to access this database. Please include X-API-Key header.' 
+      });
+    }
+    
     const { connection, databaseName } = await getConnectionWithDB(database);
     
     const [columns] = await connection.execute(`
@@ -884,9 +992,19 @@ app.get('/api/databases/:database/tables/:table/attributes', async (req, res) =>
 });
 
 // Get distinct locations for a specific table with location name mapping
-app.get('/api/databases/:database/tables/:table/locations', async (req, res) => {
+app.get('/api/databases/:database/tables/:table/locations', verifyApiKeyForAccess, async (req, res) => {
   const { database, table } = req.params;
   console.log(`\n🔍 [LOCATIONS ENDPOINT] Starting request for ${database}/${table}`);
+  
+  // Check database access rights
+  const isAuthenticated = req.accessLevel === 'authenticated';
+  const restrictedDbs = ['raw_data', 'stage_clean_data', 'stage_qaqc_data'];
+  if (!isAuthenticated && restrictedDbs.includes(database)) {
+    return res.status(403).json({ 
+      error: 'AUTHENTICATION_REQUIRED', 
+      message: 'API key required to access this database. Please include X-API-Key header.' 
+    });
+  }
   
   try {
     console.log(`📋 [DB CONNECTION] Attempting connection to database: ${database}`);
@@ -949,9 +1067,20 @@ app.get('/api/databases/:database/tables/:table/locations', async (req, res) => 
 });
 
 // Get unique locations from specific database and tables
-app.get('/api/databases/:database/locations', async (req, res) => {
+app.get('/api/databases/:database/locations', verifyApiKeyForAccess, async (req, res) => {
   try {
     const { database } = req.params;
+    
+    // Check database access rights
+    const isAuthenticated = req.accessLevel === 'authenticated';
+    const restrictedDbs = ['raw_data', 'stage_clean_data', 'stage_qaqc_data'];
+    if (!isAuthenticated && restrictedDbs.includes(database)) {
+      return res.status(403).json({ 
+        error: 'AUTHENTICATION_REQUIRED', 
+        message: 'API key required to access this database. Please include X-API-Key header.' 
+      });
+    }
+    
     const { tables } = req.query; // comma-separated table names
     const { connection, databaseName } = await getConnectionWithDB(database);
     
@@ -1011,10 +1140,20 @@ app.get('/api/databases/:database/locations', async (req, res) => {
 
 // Statistics endpoint - calculates statistics from FULL dataset (not sampled)
 // Critical for scientific accuracy - stats must be computed server-side
-app.get('/api/databases/:database/statistics/:table', async (req, res) => {
+app.get('/api/databases/:database/statistics/:table', verifyApiKeyForAccess, async (req, res) => {
   try {
     const { database, table } = req.params;
     const { location, start_date, end_date, attribute } = req.query;
+    
+    // Check database access rights
+    const isAuthenticated = req.accessLevel === 'authenticated';
+    const restrictedDbs = ['raw_data', 'stage_clean_data', 'stage_qaqc_data'];
+    if (!isAuthenticated && restrictedDbs.includes(database)) {
+      return res.status(403).json({ 
+        error: 'AUTHENTICATION_REQUIRED', 
+        message: 'API key required to access this database. Please include X-API-Key header.' 
+      });
+    }
     
     if (!location || !attribute) {
       return res.status(400).json({ error: 'Location and attribute are required' });
@@ -1119,10 +1258,20 @@ app.get('/api/databases/:database/statistics/:table', async (req, res) => {
 });
 
 // Analytics endpoint for JSON time series data (used by Real-Time Analytics page)
-app.get('/api/databases/:database/analytics/:table', async (req, res) => {
+app.get('/api/databases/:database/analytics/:table', verifyApiKeyForAccess, async (req, res) => {
   try {
     const { database, table } = req.params;
     const { location, start_date, end_date, attributes, limit } = req.query;
+    
+    // Check database access rights
+    const isAuthenticated = req.accessLevel === 'authenticated';
+    const restrictedDbs = ['raw_data', 'stage_clean_data', 'stage_qaqc_data'];
+    if (!isAuthenticated && restrictedDbs.includes(database)) {
+      return res.status(403).json({ 
+        error: 'AUTHENTICATION_REQUIRED', 
+        message: 'API key required to access this database. Please include X-API-Key header.' 
+      });
+    }
     
     // Default and max limit - increased for comprehensive data with LTTB sampling on frontend
     const rowLimit = Math.min(parseInt(limit) || 50000, 100000);
@@ -1251,10 +1400,21 @@ app.get('/api/databases/:database/analytics/:table', async (req, res) => {
 });
 
 // Download endpoint for CSV export with proper timestamp formatting
-app.get('/api/databases/:database/download/:table', async (req, res) => {
+app.get('/api/databases/:database/download/:table', verifyApiKeyForAccess, async (req, res) => {
   try {
     const { database, table } = req.params;
     const { location, start_date, end_date, attributes } = req.query;
+    
+    // Check database access rights
+    const isAuthenticated = req.accessLevel === 'authenticated';
+    const restrictedDbs = ['raw_data', 'stage_clean_data', 'stage_qaqc_data'];
+    if (!isAuthenticated && restrictedDbs.includes(database)) {
+      return res.status(403).json({ 
+        error: 'AUTHENTICATION_REQUIRED', 
+        message: 'API key required to access this database. Please include X-API-Key header.' 
+      });
+    }
+    
     const { connection, databaseName } = await getConnectionWithDB(database);
 
     // Discover actual column names (preserve case) and identify TIMESTAMP/Location columns
