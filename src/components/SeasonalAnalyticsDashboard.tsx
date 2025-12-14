@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Loader2, MapPin, Snowflake, RefreshCw, Calendar } from 'lucide-react';
@@ -111,6 +112,18 @@ export const SeasonalAnalyticsDashboard = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [seasonData, setSeasonData] = useState<SeasonData[]>([]);
   const [abortController, setAbortController] = useState<AbortController | null>(null);
+  const [selectedSeasons, setSelectedSeasons] = useState<string[]>(SEASONS.map(s => s.id)); // All selected by default
+
+  const toggleSeason = (seasonId: string) => {
+    setSelectedSeasons(prev => {
+      if (prev.includes(seasonId)) {
+        // Don't allow deselecting all - keep at least one
+        if (prev.length === 1) return prev;
+        return prev.filter(id => id !== seasonId);
+      }
+      return [...prev, seasonId];
+    });
+  };
 
   // Load data for all three seasons
   const loadData = useCallback(async () => {
@@ -292,28 +305,63 @@ export const SeasonalAnalyticsDashboard = () => {
             </Button>
           )}
 
-          {/* Season Legend */}
+          {/* Season Filter */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Seasons to Compare
+            </Label>
+            <div className="flex flex-wrap gap-4 p-3 bg-muted/50 rounded-lg border border-border">
+              {SEASONS.map((season) => (
+                <label
+                  key={season.id}
+                  className={`flex items-center gap-2 cursor-pointer p-2 rounded-md transition-colors ${
+                    selectedSeasons.includes(season.id) 
+                      ? 'bg-background shadow-sm' 
+                      : 'opacity-60 hover:opacity-80'
+                  }`}
+                >
+                  <Checkbox
+                    checked={selectedSeasons.includes(season.id)}
+                    onCheckedChange={() => toggleSeason(season.id)}
+                    className="border-2"
+                    style={{ 
+                      borderColor: season.color,
+                      backgroundColor: selectedSeasons.includes(season.id) ? season.color : 'transparent'
+                    }}
+                  />
+                  <div 
+                    className="w-3 h-3 rounded-full" 
+                    style={{ backgroundColor: season.color }}
+                  />
+                  <Badge 
+                    variant={selectedSeasons.includes(season.id) ? "default" : "outline"} 
+                    className="text-xs"
+                    style={{ 
+                      backgroundColor: selectedSeasons.includes(season.id) ? season.color : 'transparent',
+                      color: selectedSeasons.includes(season.id) ? 'white' : undefined
+                    }}
+                  >
+                    {season.label}
+                  </Badge>
+                </label>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Select which seasons to display in the comparison chart
+            </p>
+          </div>
+
+          {/* Selected Info */}
           {selectedLocation && (
-            <div className="mt-4 p-4 bg-muted/50 rounded-lg border border-border">
-              <p className="text-sm text-muted-foreground mb-3">
+            <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
+              <p className="text-sm text-muted-foreground">
                 Comparing <span className="font-semibold text-foreground">Snow Depth</span> for{' '}
                 <span className="font-semibold text-foreground">
                   {locations.find(l => l.id === selectedLocation)?.name}
                 </span>
+                {' '}across {selectedSeasons.length} season{selectedSeasons.length !== 1 ? 's' : ''}
               </p>
-              <div className="flex flex-wrap gap-4">
-                {SEASONS.map((season) => (
-                  <div key={season.id} className="flex items-center gap-2">
-                    <div 
-                      className="w-3 h-3 rounded-full" 
-                      style={{ backgroundColor: season.color }}
-                    />
-                    <Badge variant="outline" className="text-xs">
-                      {season.label}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
             </div>
           )}
         </CardContent>
@@ -390,7 +438,7 @@ export const SeasonalAnalyticsDashboard = () => {
                   formatter={(value) => SEASONS.find(s => s.id === value)?.label || value}
                   wrapperStyle={{ paddingTop: '20px' }}
                 />
-                {SEASONS.map((season) => (
+                {SEASONS.filter(season => selectedSeasons.includes(season.id)).map((season) => (
                   <Line
                     key={season.id}
                     type="monotone"
