@@ -91,7 +91,7 @@ const AboutProject = () => {
                 <div 
                   className="h-80 bg-cover bg-center relative"
                   style={{
-                    backgroundImage: `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('/lovable-uploads/5d861d7c-499d-4cd9-8407-96f99934b2b1.png')`
+                    backgroundImage: `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('/images/monitoring-equipment.png')`
                   }}
                 >
                   <div className="absolute inset-0 flex items-center justify-center">
@@ -127,7 +127,7 @@ const AboutProject = () => {
                     </div>
                     <div className="bg-gradient-to-br from-background to-muted/20 p-6 rounded-lg border">
                       <img 
-                        src="/lovable-uploads/d237cd6e-cadf-4b6d-9006-bd432196c042.png" 
+                        src="/images/field-site.png" 
                         alt="Research team conducting field work at a Summit-to-Shore monitoring station"
                         className="w-full h-64 object-cover rounded-lg shadow-lg"
                       />
