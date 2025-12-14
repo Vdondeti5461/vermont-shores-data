@@ -94,7 +94,7 @@ const Header = () => {
           >
             <div className="w-8 h-8 xs:w-7 xs:h-7 md:w-10 md:h-10 bg-gradient-to-br from-primary to-primary/80 rounded-lg flex items-center justify-center">
               <img 
-                src="/lovable-uploads/d19c9c85-6a6b-4115-bc8e-2ed5fd432891.png" 
+                src="/images/favicon.png" 
                 alt="University of Vermont" 
                 className="w-6 h-6 xs:w-5 xs:h-5 md:w-8 md:h-8 object-contain filter brightness-0 invert"
               />
