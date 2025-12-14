@@ -138,7 +138,7 @@ const Footer = () => {
         <div className="border-t border-primary-foreground/20 mt-12 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <div className="text-sm text-primary-foreground/80">
-              © 2024 University of Vermont Summit 2 Shore Project. All rights reserved.
+              © 2025 University of Vermont Summit 2 Shore Project. All rights reserved.
             </div>
             <div className="flex items-center space-x-6 text-sm text-primary-foreground/80">
               <a href="/documentation" className="hover:text-secondary transition-colors">

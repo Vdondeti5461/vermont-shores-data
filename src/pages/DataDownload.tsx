@@ -160,8 +160,13 @@ const DataDownloadPage = () => {
                   <p className="text-xs xs:text-sm text-muted-foreground mb-3 xs:mb-4">
                     <strong>Data Age:</strong> 3 Years of comprehensive environmental monitoring data available.
                   </p>
-                  <Button asChild className="w-full xs:w-auto">
-                    <Link to="#download">Start Browsing Data</Link>
+                  <Button 
+                    className="w-full xs:w-auto"
+                    onClick={() => {
+                      document.getElementById('download')?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                  >
+                    Start Browsing Data
                   </Button>
                 </CardContent>
               </Card>
