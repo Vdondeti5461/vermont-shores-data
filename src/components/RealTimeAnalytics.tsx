@@ -1,14 +1,16 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Loader2, MapPin, TrendingUp, RefreshCw, Clock } from 'lucide-react';
+import { Loader2, MapPin, TrendingUp, RefreshCw, Clock, Radio } from 'lucide-react';
 import { DatabaseType, TimeSeriesDataPoint, fetchMultiQualityComparison } from '@/services/realTimeAnalyticsService';
 import { getLocationOptions } from '@/lib/locationData';
 import { useToast } from '@/hooks/use-toast';
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 
 // Mapping of attributes to display names and units
 const ATTRIBUTES = [
@@ -26,6 +28,9 @@ const TIME_RANGES = [
   { value: '1w', label: '1 Week', hours: 24 * 7 },
   { value: '1m', label: '1 Month', hours: 24 * 30 },
 ] as const;
+
+// Auto-refresh interval (10 minutes = 600000ms to match data collection)
+const AUTO_REFRESH_INTERVAL = 10 * 60 * 1000;
 
 // Only Raw and Clean data for real-time view (QAQC requires manual review)
 const COMPARISON_DATABASES: DatabaseType[] = [
@@ -91,9 +96,31 @@ function lttbDownsample<T>(data: T[], threshold: number, valueKey: string): T[] 
   return sampled;
 }
 
+// Format EST timestamp for display
+function formatESTTime(date: Date): string {
+  return date.toLocaleString('en-US', {
+    timeZone: 'America/New_York',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
+}
+
+// Get current time in EST
+function getCurrentEST(): Date {
+  return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+}
+
+// Calculate time range dates (in EST, returns ISO strings for API)
+function getTimeRangeDates(hours: number): { startDate: string; endDate: string } {
+  const now = new Date();
+  const endDate = now.toISOString();
+  const startDate = new Date(now.getTime() - hours * 60 * 60 * 1000).toISOString();
+  return { startDate, endDate };
+}
+
 export const RealTimeAnalytics = () => {
   const { toast } = useToast();
-  // Use hardcoded locations for instant loading
   const locations = getLocationOptions();
   const [selectedLocation, setSelectedLocation] = useState<string>('');
   const [selectedAttribute, setSelectedAttribute] = useState<string>('');
@@ -101,8 +128,10 @@ export const RealTimeAnalytics = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [comparisonData, setComparisonData] = useState<{ database: DatabaseType; data: TimeSeriesDataPoint[] }[]>([]);
   const [abortController, setAbortController] = useState<AbortController | null>(null);
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+  const autoRefreshTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Fixed table - using core observations which has all three attributes
   const TABLE = 'raw_env_core_observations';
 
   // Get time range in hours
@@ -112,7 +141,7 @@ export const RealTimeAnalytics = () => {
   }, [selectedTimeRange]);
 
   // Load data function
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (showToast = true) => {
     if (!selectedLocation || !selectedAttribute) return;
 
     // Cancel any pending request
@@ -125,10 +154,11 @@ export const RealTimeAnalytics = () => {
     setIsLoading(true);
 
     try {
-      // Calculate date range based on selected time range
+      // Calculate exact time range using full ISO timestamps
       const hours = getTimeRangeHours();
-      const endDate = new Date().toISOString().split('T')[0];
-      const startDate = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString().split('T')[0];
+      const { startDate, endDate } = getTimeRangeDates(hours);
+
+      console.log(`[RealTime] Fetching data from ${startDate} to ${endDate} (${hours}h range)`);
 
       const data = await fetchMultiQualityComparison(
         COMPARISON_DATABASES,
@@ -142,10 +172,11 @@ export const RealTimeAnalytics = () => {
       
       if (!controller.signal.aborted) {
         setComparisonData(data);
+        setLastRefresh(new Date());
         
         // Check if data is available
         const hasData = data.some(d => d.data.length > 0);
-        if (!hasData) {
+        if (!hasData && showToast) {
           toast({
             title: "No Data Available",
             description: "Real-time data ingestion is not yet active. Data will appear here once sensors start streaming.",
@@ -155,11 +186,13 @@ export const RealTimeAnalytics = () => {
     } catch (error) {
       if ((error as Error).name !== 'AbortError') {
         console.error('Error loading comparison data:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load time series data. Please try again.",
-          variant: "destructive",
-        });
+        if (showToast) {
+          toast({
+            title: "Error",
+            description: "Failed to load time series data. Please try again.",
+            variant: "destructive",
+          });
+        }
       }
     } finally {
       if (!controller.signal.aborted) {
@@ -173,13 +206,32 @@ export const RealTimeAnalytics = () => {
     if (selectedLocation && selectedAttribute) {
       loadData();
     }
-    // Cleanup on unmount
     return () => {
       if (abortController) {
         abortController.abort();
       }
     };
   }, [selectedLocation, selectedAttribute, selectedTimeRange]);
+
+  // Auto-refresh timer
+  useEffect(() => {
+    if (autoRefreshTimerRef.current) {
+      clearInterval(autoRefreshTimerRef.current);
+    }
+
+    if (autoRefresh && selectedLocation && selectedAttribute) {
+      autoRefreshTimerRef.current = setInterval(() => {
+        console.log('[RealTime] Auto-refreshing data...');
+        loadData(false); // Don't show toast on auto-refresh
+      }, AUTO_REFRESH_INTERVAL);
+    }
+
+    return () => {
+      if (autoRefreshTimerRef.current) {
+        clearInterval(autoRefreshTimerRef.current);
+      }
+    };
+  }, [autoRefresh, selectedLocation, selectedAttribute, loadData]);
 
   // Prepare chart data with LTTB sampling
   const prepareChartData = useCallback(() => {
@@ -192,16 +244,33 @@ export const RealTimeAnalytics = () => {
 
     const sortedTimestamps = Array.from(allTimestamps).sort();
     
-    // Format display time based on time range
+    // Format display time based on time range (EST timezone)
     const hours = getTimeRangeHours();
     const formatTime = (timestamp: string) => {
       const date = new Date(timestamp);
       if (hours <= 24) {
-        return date.toLocaleString('en-US', { hour: '2-digit', minute: '2-digit' });
+        // For short ranges, show time only (EST)
+        return date.toLocaleString('en-US', { 
+          timeZone: 'America/New_York',
+          hour: '2-digit', 
+          minute: '2-digit',
+          hour12: false 
+        });
       } else if (hours <= 24 * 7) {
-        return date.toLocaleString('en-US', { weekday: 'short', hour: '2-digit' });
+        // For week, show day + time (EST)
+        return date.toLocaleString('en-US', { 
+          timeZone: 'America/New_York',
+          weekday: 'short', 
+          hour: '2-digit',
+          hour12: false
+        });
       } else {
-        return date.toLocaleString('en-US', { month: 'short', day: 'numeric' });
+        // For month, show date (EST)
+        return date.toLocaleString('en-US', { 
+          timeZone: 'America/New_York',
+          month: 'short', 
+          day: 'numeric' 
+        });
       }
     };
 
@@ -213,7 +282,6 @@ export const RealTimeAnalytics = () => {
       
       comparisonData.forEach(({ database, data }) => {
         const dataPoint = data.find((d) => d.timestamp === timestamp);
-        // Case-insensitive attribute matching
         if (dataPoint) {
           const attrKey = Object.keys(dataPoint).find(
             k => k.toLowerCase() === selectedAttribute.toLowerCase()
@@ -227,7 +295,6 @@ export const RealTimeAnalytics = () => {
       return point;
     });
 
-    // Apply LTTB sampling for performance
     if (rawData.length > MAX_DISPLAY_POINTS) {
       return lttbDownsample(rawData, MAX_DISPLAY_POINTS, COMPARISON_DATABASES[0]);
     }
@@ -242,13 +309,35 @@ export const RealTimeAnalytics = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-2">
-        <TrendingUp className="h-6 w-6 text-primary" />
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Real-Time Monitoring</h2>
-          <p className="text-muted-foreground">
-            Live environmental data from sensors (10-minute intervals)
-          </p>
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="flex items-center gap-2">
+          <TrendingUp className="h-6 w-6 text-primary" />
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">Real-Time Monitoring</h2>
+            <p className="text-muted-foreground">
+              Live environmental data from sensors (10-minute intervals, EST)
+            </p>
+          </div>
+        </div>
+        
+        {/* Auto-refresh toggle & status */}
+        <div className="flex items-center gap-4">
+          {lastRefresh && (
+            <span className="text-xs text-muted-foreground">
+              Last updated: {formatESTTime(lastRefresh)} EST
+            </span>
+          )}
+          <div className="flex items-center gap-2">
+            <Switch
+              id="auto-refresh"
+              checked={autoRefresh}
+              onCheckedChange={setAutoRefresh}
+            />
+            <Label htmlFor="auto-refresh" className="text-sm flex items-center gap-1">
+              <Radio className={`h-3 w-3 ${autoRefresh ? 'text-green-500 animate-pulse' : 'text-muted-foreground'}`} />
+              Auto-refresh
+            </Label>
+          </div>
         </div>
       </div>
 
@@ -260,7 +349,7 @@ export const RealTimeAnalytics = () => {
             Time Range
           </CardTitle>
           <CardDescription>
-            Select the time window for real-time data display
+            Select the time window for real-time data (from current time going back)
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -281,6 +370,9 @@ export const RealTimeAnalytics = () => {
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
+          <p className="text-xs text-muted-foreground mt-2">
+            All times are in Eastern Standard Time (EST)
+          </p>
         </CardContent>
       </Card>
 
@@ -342,7 +434,7 @@ export const RealTimeAnalytics = () => {
           {/* Refresh Button */}
           {selectedLocation && selectedAttribute && (
             <Button 
-              onClick={loadData} 
+              onClick={() => loadData(true)} 
               variant="outline" 
               size="sm"
               disabled={isLoading}
@@ -372,6 +464,12 @@ export const RealTimeAnalytics = () => {
                   </div>
                 ))}
               </div>
+              {autoRefresh && (
+                <Badge variant="outline" className="mt-3 text-xs">
+                  <Radio className="h-2 w-2 mr-1 text-green-500 animate-pulse" />
+                  Auto-refreshes every 10 minutes
+                </Badge>
+              )}
             </div>
           )}
         </CardContent>
@@ -397,7 +495,7 @@ export const RealTimeAnalytics = () => {
               {selectedAttributeInfo?.label} — {selectedTimeRangeInfo?.label}
             </CardTitle>
             <CardDescription>
-              {locations.find(l => l.id === selectedLocation)?.name} | Raw vs Clean Data Comparison
+              {locations.find(l => l.id === selectedLocation)?.name} | Raw vs Clean Data Comparison (EST)
               {chartData.length >= MAX_DISPLAY_POINTS && (
                 <span className="ml-2 text-xs text-muted-foreground">
                   (Sampled to {MAX_DISPLAY_POINTS} points)
@@ -437,6 +535,23 @@ export const RealTimeAnalytics = () => {
                     border: '1px solid hsl(var(--border))',
                     borderRadius: '8px',
                     padding: '12px'
+                  }}
+                  labelFormatter={(label, payload) => {
+                    if (payload && payload.length > 0) {
+                      const timestamp = payload[0]?.payload?.timestamp;
+                      if (timestamp) {
+                        return new Date(timestamp).toLocaleString('en-US', {
+                          timeZone: 'America/New_York',
+                          weekday: 'short',
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          hour12: true
+                        }) + ' EST';
+                      }
+                    }
+                    return label;
                   }}
                   formatter={(value: any, name: string) => [
                     `${typeof value === 'number' ? value.toFixed(2) : value} ${selectedAttributeInfo?.unit || ''}`,
@@ -488,6 +603,12 @@ export const RealTimeAnalytics = () => {
               Real-time data ingestion is not yet active for this location. 
               Once sensors begin streaming data (every 10 minutes), it will appear here automatically.
             </p>
+            {autoRefresh && (
+              <Badge variant="outline" className="mt-4">
+                <Radio className="h-2 w-2 mr-1 text-green-500 animate-pulse" />
+                Monitoring for new data...
+              </Badge>
+            )}
           </CardContent>
         </Card>
       )}
