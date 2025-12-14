@@ -381,9 +381,14 @@ Content-Disposition: attachment`
       description: 'Returns seasonal QAQC database only (public access)'
     },
     {
-      title: 'Get All Databases (Authenticated)',
+      title: 'Get All Databases (API Key in Header)',
       url: `curl -H "X-API-Key: s2s_YOUR_KEY" https://crrels2s.w3.uvm.edu/api/databases`,
-      description: 'Returns all 4 databases: raw_data, stage_clean_data, stage_qaqc_data, seasonal_qaqc_data'
+      description: 'Returns all 4 databases using X-API-Key header (recommended)'
+    },
+    {
+      title: 'Get All Databases (API Key in URL)',
+      url: `https://crrels2s.w3.uvm.edu/api/databases?X-API-Key=s2s_YOUR_KEY`,
+      description: 'Returns all 4 databases using query parameter (browser testing)'
     },
     {
       title: 'Get Seasonal Tables',

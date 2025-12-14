@@ -6,11 +6,12 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Import auth routes (optional - only if auth modules exist)
-let authRoutes, apiKeyRoutes;
+// Import auth routes and middleware (optional - only if auth modules exist)
+let authRoutes, apiKeyRoutes, authMiddleware;
 try {
   authRoutes = require('./routes/auth.routes');
   apiKeyRoutes = require('./routes/apiKeys.routes');
+  authMiddleware = require('./middleware/auth.middleware');
   console.log('✅ Authentication modules loaded');
 } catch (err) {
   console.log('⚠️ Authentication modules not found - auth features disabled');
@@ -470,10 +471,54 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// Get available databases - RESTRICTED to seasonal QAQC only for public download access
-app.get('/api/databases', async (req, res) => {
+// Get available databases - returns all databases for authenticated users, seasonal only for public
+// Check for API key in header OR query parameter
+const optionalApiKeyCheck = async (req, res, next) => {
+  // Check for API key in X-API-Key header OR query parameter
+  const apiKey = req.headers['x-api-key'] || req.query['X-API-Key'] || req.query['api_key'];
+  
+  if (!apiKey) {
+    req.accessLevel = 'public';
+    return next();
+  }
+  
+  // If authMiddleware is available, use it to verify
+  if (authMiddleware && authMiddleware.verifyApiKey) {
+    // Set header for middleware to find
+    req.headers['x-api-key'] = apiKey;
+    return authMiddleware.verifyApiKey(() => pool)(req, res, next);
+  }
+  
+  req.accessLevel = 'public';
+  next();
+};
+
+app.get('/api/databases', optionalApiKeyCheck, async (req, res) => {
   try {
-    // Only return seasonal_qaqc_data database for public download access
+    const isAuthenticated = req.accessLevel === 'authenticated';
+    console.log(`📊 [DATABASES] Access level: ${req.accessLevel}, Authenticated: ${isAuthenticated}`);
+    
+    if (isAuthenticated) {
+      // Return all 4 databases for authenticated users
+      const allDatabases = ['raw_data', 'stage_clean_data', 'stage_qaqc_data', 'seasonal_qaqc_data'];
+      const databases = allDatabases.map(key => {
+        const metadata = DATABASE_METADATA[key] || {};
+        return {
+          id: DATABASES[key],
+          key: key,
+          name: DATABASES[key],
+          displayName: key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+          description: metadata.description || 'Environmental monitoring database',
+          category: metadata.category || 'data',
+          order: metadata.order || 99,
+          tables: []
+        };
+      });
+      
+      return res.json(databases);
+    }
+    
+    // Public access - only seasonal_qaqc_data
     const metadata = DATABASE_METADATA['seasonal_qaqc_data'];
     const databases = [{
       id: DATABASES['seasonal_qaqc_data'],
