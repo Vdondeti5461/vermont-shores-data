@@ -126,10 +126,13 @@ export const RealTimeAnalytics = () => {
   const { toast } = useToast();
   const locations = getLocationOptions();
   const [selectedLocation, setSelectedLocation] = useState<string>('');
+  const [selectedLocation2, setSelectedLocation2] = useState<string>('');
+  const [compareLocations, setCompareLocations] = useState(false);
   const [selectedAttribute, setSelectedAttribute] = useState<string>('');
   const [selectedTimeRange, setSelectedTimeRange] = useState<string>('24h');
   const [isLoading, setIsLoading] = useState(false);
   const [comparisonData, setComparisonData] = useState<{ database: DatabaseType; data: TimeSeriesDataPoint[] }[]>([]);
+  const [comparisonData2, setComparisonData2] = useState<{ database: DatabaseType; data: TimeSeriesDataPoint[] }[]>([]);
   const [abortController, setAbortController] = useState<AbortController | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
@@ -142,6 +145,31 @@ export const RealTimeAnalytics = () => {
     const range = TIME_RANGES.find(r => r.value === selectedTimeRange);
     return range?.hours || 24;
   }, [selectedTimeRange]);
+
+  // Load data function for a single location
+  const loadLocationData = useCallback(async (
+    location: string,
+    setData: (data: { database: DatabaseType; data: TimeSeriesDataPoint[] }[]) => void,
+    signal: AbortSignal
+  ) => {
+    const hours = getTimeRangeHours();
+    const { startDate, endDate } = getTimeRangeDates(hours);
+
+    console.log(`[RealTime] Fetching data for ${location} from ${startDate} to ${endDate}`);
+
+    const data = await fetchMultiQualityComparison(
+      COMPARISON_DATABASES,
+      TABLE,
+      location,
+      [selectedAttribute],
+      startDate,
+      endDate,
+      signal
+    );
+    
+    setData(data);
+    return data;
+  }, [selectedAttribute, getTimeRangeHours]);
 
   // Load data function
   const loadData = useCallback(async (showToast = true) => {
@@ -157,28 +185,28 @@ export const RealTimeAnalytics = () => {
     setIsLoading(true);
 
     try {
-      // Calculate exact time range using full ISO timestamps
-      const hours = getTimeRangeHours();
-      const { startDate, endDate } = getTimeRangeDates(hours);
+      // Fetch location 1 data
+      const data1Promise = loadLocationData(selectedLocation, setComparisonData, controller.signal);
+      
+      // Fetch location 2 data if comparing
+      let data2Promise: Promise<any> | null = null;
+      if (compareLocations && selectedLocation2) {
+        data2Promise = loadLocationData(selectedLocation2, setComparisonData2, controller.signal);
+      } else {
+        setComparisonData2([]);
+      }
 
-      console.log(`[RealTime] Fetching data from ${startDate} to ${endDate} (${hours}h range)`);
-
-      const data = await fetchMultiQualityComparison(
-        COMPARISON_DATABASES,
-        TABLE,
-        selectedLocation,
-        [selectedAttribute],
-        startDate,
-        endDate,
-        controller.signal
-      );
+      const [data1, data2] = await Promise.all([
+        data1Promise,
+        data2Promise || Promise.resolve(null)
+      ]);
       
       if (!controller.signal.aborted) {
-        setComparisonData(data);
         setLastRefresh(new Date());
         
         // Check if data is available
-        const hasData = data.some(d => d.data.length > 0);
+        const hasData = data1.some((d: any) => d.data.length > 0) || 
+                        (data2 && data2.some((d: any) => d.data.length > 0));
         if (!hasData && showToast) {
           toast({
             title: "No Data Available",
@@ -202,7 +230,7 @@ export const RealTimeAnalytics = () => {
         setIsLoading(false);
       }
     }
-  }, [selectedLocation, selectedAttribute, selectedTimeRange, toast, abortController, getTimeRangeHours]);
+  }, [selectedLocation, selectedLocation2, selectedAttribute, selectedTimeRange, compareLocations, toast, abortController, loadLocationData]);
 
   // Auto-load when selections change
   useEffect(() => {
@@ -214,7 +242,7 @@ export const RealTimeAnalytics = () => {
         abortController.abort();
       }
     };
-  }, [selectedLocation, selectedAttribute, selectedTimeRange]);
+  }, [selectedLocation, selectedLocation2, selectedAttribute, selectedTimeRange, compareLocations]);
 
   // Auto-refresh timer
   useEffect(() => {
@@ -307,6 +335,72 @@ export const RealTimeAnalytics = () => {
 
   const chartData = prepareChartData();
   
+  // Prepare chart data for location 2 (when comparing)
+  const prepareChartData2 = useCallback(() => {
+    if (!comparisonData2 || comparisonData2.length === 0) return [];
+
+    const allTimestamps = new Set<string>();
+    comparisonData2.forEach(({ data }) => {
+      data.forEach((point) => allTimestamps.add(point.timestamp));
+    });
+
+    const sortedTimestamps = Array.from(allTimestamps).sort();
+    const hours = getTimeRangeHours();
+    const formatTime = (timestamp: string) => {
+      const date = new Date(timestamp);
+      if (hours <= 24) {
+        return date.toLocaleString('en-US', { 
+          timeZone: 'America/New_York',
+          hour: '2-digit', 
+          minute: '2-digit',
+          hour12: false 
+        });
+      } else if (hours <= 24 * 7) {
+        return date.toLocaleString('en-US', { 
+          timeZone: 'America/New_York',
+          weekday: 'short', 
+          hour: '2-digit',
+          hour12: false
+        });
+      } else {
+        return date.toLocaleString('en-US', { 
+          timeZone: 'America/New_York',
+          month: 'short', 
+          day: 'numeric' 
+        });
+      }
+    };
+
+    const rawData = sortedTimestamps.map((timestamp) => {
+      const point: any = { 
+        timestamp,
+        displayTime: formatTime(timestamp)
+      };
+      
+      comparisonData2.forEach(({ database, data }) => {
+        const dataPoint = data.find((d) => d.timestamp === timestamp);
+        if (dataPoint) {
+          const attrKey = Object.keys(dataPoint).find(
+            k => k.toLowerCase() === selectedAttribute.toLowerCase()
+          );
+          point[database] = attrKey ? dataPoint[attrKey] : null;
+        } else {
+          point[database] = null;
+        }
+      });
+      
+      return point;
+    });
+
+    if (rawData.length > MAX_DISPLAY_POINTS) {
+      return lttbDownsample(rawData, MAX_DISPLAY_POINTS, COMPARISON_DATABASES[0]);
+    }
+    
+    return rawData;
+  }, [comparisonData2, selectedAttribute, getTimeRangeHours]);
+
+  const chartData2 = prepareChartData2();
+  
   // Prepare comparison data showing difference (Raw - Clean)
   const comparisonChartData = chartData.map((point: any) => {
     const rawVal = point['CRRELS2S_raw_data_ingestion'];
@@ -322,6 +416,8 @@ export const RealTimeAnalytics = () => {
 
   const selectedAttributeInfo = ATTRIBUTES.find(a => a.value === selectedAttribute);
   const selectedTimeRangeInfo = TIME_RANGES.find(r => r.value === selectedTimeRange);
+  const location1Name = locations.find(l => l.id === selectedLocation)?.name || selectedLocation;
+  const location2Name = locations.find(l => l.id === selectedLocation2)?.name || selectedLocation2;
 
   return (
     <div className="space-y-6">
@@ -402,12 +498,31 @@ export const RealTimeAnalytics = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Location Selection */}
+          {/* Compare Locations Toggle */}
+          <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border border-border">
+            <Switch
+              id="compare-locations"
+              checked={compareLocations}
+              onCheckedChange={(checked) => {
+                setCompareLocations(checked);
+                if (!checked) {
+                  setSelectedLocation2('');
+                  setComparisonData2([]);
+                }
+              }}
+            />
+            <Label htmlFor="compare-locations" className="text-sm flex items-center gap-2 cursor-pointer">
+              <GitCompare className="h-4 w-4" />
+              Compare Two Locations
+            </Label>
+          </div>
+
+          <div className={`grid gap-4 ${compareLocations ? 'grid-cols-1 md:grid-cols-3' : 'grid-cols-1 md:grid-cols-2'}`}>
+            {/* Location 1 Selection */}
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <MapPin className="h-4 w-4" />
-                Location
+                {compareLocations ? 'Location 1' : 'Location'}
               </Label>
               <Select
                 value={selectedLocation}
@@ -425,6 +540,33 @@ export const RealTimeAnalytics = () => {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Location 2 Selection (when comparing) */}
+            {compareLocations && (
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  Location 2
+                </Label>
+                <Select
+                  value={selectedLocation2}
+                  onValueChange={setSelectedLocation2}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select second location" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {locations
+                      .filter(loc => loc.id !== selectedLocation)
+                      .map((loc) => (
+                        <SelectItem key={loc.id} value={loc.id}>
+                          {loc.name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {/* Attribute Selection */}
             <div className="space-y-2">
@@ -468,6 +610,12 @@ export const RealTimeAnalytics = () => {
               <p className="text-sm text-muted-foreground mb-3">
                 Displaying <span className="font-semibold text-foreground">{selectedAttributeInfo?.label}</span> for{' '}
                 <span className="font-semibold text-foreground">{locations.find(l => l.id === selectedLocation)?.name}</span>
+                {compareLocations && selectedLocation2 && (
+                  <>
+                    {' vs '}
+                    <span className="font-semibold text-foreground">{locations.find(l => l.id === selectedLocation2)?.name}</span>
+                  </>
+                )}
                 {' '}— <span className="font-semibold text-foreground">{selectedTimeRangeInfo?.label}</span>
               </p>
               <div className="flex flex-wrap gap-4">
@@ -491,7 +639,6 @@ export const RealTimeAnalytics = () => {
           )}
         </CardContent>
       </Card>
-
       {/* Loading State */}
       {isLoading && (
         <Card>
@@ -504,14 +651,146 @@ export const RealTimeAnalytics = () => {
         </Card>
       )}
 
-      {!isLoading && selectedLocation && selectedAttribute && chartData.length > 0 && (
+      {/* Side-by-side Location Comparison */}
+      {!isLoading && compareLocations && selectedLocation && selectedLocation2 && selectedAttribute && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Location 1 Chart */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-primary" />
+                {location1Name}
+              </CardTitle>
+              <CardDescription>
+                {selectedAttributeInfo?.label} — {selectedTimeRangeInfo?.label}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {chartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={350}>
+                  <LineChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 60 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                    <XAxis
+                      dataKey="displayTime"
+                      angle={-45}
+                      textAnchor="end"
+                      height={70}
+                      stroke="hsl(var(--muted-foreground))"
+                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
+                    />
+                    <YAxis
+                      stroke="hsl(var(--muted-foreground))"
+                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px',
+                        padding: '8px'
+                      }}
+                      formatter={(value: any, name: string) => [
+                        `${typeof value === 'number' ? value.toFixed(2) : value} ${selectedAttributeInfo?.unit || ''}`,
+                        DATABASE_LABELS[name]
+                      ]}
+                    />
+                    <Legend formatter={(value) => DATABASE_LABELS[value]} />
+                    {COMPARISON_DATABASES.map((database) => (
+                      <Line
+                        key={database}
+                        type="monotone"
+                        dataKey={database}
+                        stroke={DATABASE_COLORS[database]}
+                        strokeWidth={2}
+                        dot={false}
+                        isAnimationActive={false}
+                        connectNulls
+                      />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-[350px]">
+                  <p className="text-muted-foreground text-sm">No data available</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Location 2 Chart */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-primary" />
+                {location2Name}
+              </CardTitle>
+              <CardDescription>
+                {selectedAttributeInfo?.label} — {selectedTimeRangeInfo?.label}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {chartData2.length > 0 ? (
+                <ResponsiveContainer width="100%" height={350}>
+                  <LineChart data={chartData2} margin={{ top: 10, right: 20, left: 10, bottom: 60 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                    <XAxis
+                      dataKey="displayTime"
+                      angle={-45}
+                      textAnchor="end"
+                      height={70}
+                      stroke="hsl(var(--muted-foreground))"
+                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
+                    />
+                    <YAxis
+                      stroke="hsl(var(--muted-foreground))"
+                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px',
+                        padding: '8px'
+                      }}
+                      formatter={(value: any, name: string) => [
+                        `${typeof value === 'number' ? value.toFixed(2) : value} ${selectedAttributeInfo?.unit || ''}`,
+                        DATABASE_LABELS[name]
+                      ]}
+                    />
+                    <Legend formatter={(value) => DATABASE_LABELS[value]} />
+                    {COMPARISON_DATABASES.map((database) => (
+                      <Line
+                        key={database}
+                        type="monotone"
+                        dataKey={database}
+                        stroke={DATABASE_COLORS[database]}
+                        strokeWidth={2}
+                        dot={false}
+                        isAnimationActive={false}
+                        connectNulls
+                      />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-[350px]">
+                  <p className="text-muted-foreground text-sm">No data available</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Single Location View */}
+      {!isLoading && !compareLocations && selectedLocation && selectedAttribute && chartData.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl">
               {selectedAttributeInfo?.label} — {selectedTimeRangeInfo?.label}
             </CardTitle>
             <CardDescription>
-              {locations.find(l => l.id === selectedLocation)?.name} | Real-Time Monitoring (EST)
+              {location1Name} | Real-Time Monitoring (EST)
               {chartData.length >= MAX_DISPLAY_POINTS && (
                 <span className="ml-2 text-xs text-muted-foreground">
                   (Sampled to {MAX_DISPLAY_POINTS} points)
@@ -732,14 +1011,34 @@ export const RealTimeAnalytics = () => {
         </Card>
       )}
 
-      {/* No Data State */}
-      {!isLoading && selectedLocation && selectedAttribute && chartData.length === 0 && (
+      {/* No Data State - Single Location */}
+      {!isLoading && !compareLocations && selectedLocation && selectedAttribute && chartData.length === 0 && (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center p-12">
             <Clock className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">Real-Time Data Coming Soon</h3>
             <p className="text-muted-foreground text-center max-w-md">
               Real-time data ingestion is not yet active for this location. 
+              Once sensors begin streaming data (every 10 minutes), it will appear here automatically.
+            </p>
+            {autoRefresh && (
+              <Badge variant="outline" className="mt-4">
+                <Radio className="h-2 w-2 mr-1 text-green-500 animate-pulse" />
+                Monitoring for new data...
+              </Badge>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* No Data State - Comparing Locations */}
+      {!isLoading && compareLocations && selectedLocation && selectedLocation2 && selectedAttribute && chartData.length === 0 && chartData2.length === 0 && (
+        <Card className="border-dashed">
+          <CardContent className="flex flex-col items-center justify-center p-12">
+            <Clock className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Real-Time Data Coming Soon</h3>
+            <p className="text-muted-foreground text-center max-w-md">
+              Real-time data ingestion is not yet active for these locations. 
               Once sensors begin streaming data (every 10 minutes), it will appear here automatically.
             </p>
             {autoRefresh && (
