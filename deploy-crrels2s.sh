@@ -7,17 +7,8 @@ set -e
 # Usage: ./deploy-crrels2s.sh
 
 # Load Node.js for non-interactive shells (required for GitHub Actions SSH)
-# Try mise first, then nvm, then check PATH
-if [ -f "$HOME/.local/bin/mise" ]; then
-  eval "$("$HOME/.local/bin/mise" activate bash 2>/dev/null)" || true
-  eval "$("$HOME/.local/bin/mise" env 2>/dev/null)" || true
-elif command -v mise &>/dev/null; then
-  eval "$(mise activate bash 2>/dev/null)" || true
-fi
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-# Also check common local paths
-export PATH="$HOME/.local/bin:$HOME/.npm-global/bin:$HOME/bin:$PATH"
+# mise installs node at /opt/mise on this server
+export PATH="/opt/mise/installs/node/22/bin:$HOME/.npm-global/bin:$HOME/.local/bin:$HOME/bin:$PATH"
 
 echo "🚀 Starting deployment to crrels2s.w3.uvm.edu..."
 cd ~/vermont-shores-data
