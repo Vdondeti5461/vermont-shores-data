@@ -174,29 +174,30 @@ function normalizeLocationCode(code) {
 
 // Location metadata with complete information (survey-accurate coordinates)
 // Uses standardized location codes matching the database (SR01, SR11, SR25 for Sleepers)
+// Fields: name (internal), publicName (display), network, zone, color (hex), elevation
 const LOCATION_METADATA = {
-  'SUMM': { name: 'Mansfield Summit', latitude: 44.52796261, longitude: -72.81496117, elevation: 1169 },
-  'RB01': { name: 'Ranch Brook #1', latitude: 44.52322238, longitude: -72.80863215, elevation: 1075 },
-  'RB02': { name: 'Ranch Brook #2', latitude: 44.51775982, longitude: -72.81039188, elevation: 910 },
-  'RB12': { name: 'Ranch Brook #12', latitude: 44.51880228, longitude: -72.79785548, elevation: 884 },
-  'RB09': { name: 'Ranch Brook #9', latitude: 44.48905, longitude: -72.79285, elevation: 847 },
-  'RB03': { name: 'Ranch Brook #3', latitude: 44.51481829, longitude: -72.80905263, elevation: 795 },
-  'UNDR': { name: 'Mansfield West SCAN', latitude: 44.53511455, longitude: -72.83462236, elevation: 698 },
-  'RB04': { name: 'Ranch Brook #4', latitude: 44.51097861, longitude: -72.80281519, elevation: 640 },
-  'RB07': { name: 'Ranch Brook #7', latitude: 44.51528492, longitude: -72.78513705, elevation: 613 },
-  'SR01': { name: 'Sleepers R3/Main', latitude: 44.48296257, longitude: -72.16464901, elevation: 553 },
-  'RB05': { name: 'Ranch Brook #5', latitude: 44.5044967, longitude: -72.79947434, elevation: 505 },
-  'RB08': { name: 'Ranch Brook #8', latitude: 44.50953955, longitude: -72.78220384, elevation: 472 },
-  'PROC': { name: 'Mansfield West Proctor', latitude: 44.5285819, longitude: -72.866737, elevation: 418 },
-  'RB06': { name: 'Ranch Brook #6', latitude: 44.50370285, longitude: -72.78352521, elevation: 414 },
-  'RB11': { name: 'Ranch Brook #11', latitude: 44.50545202, longitude: -72.7713791, elevation: 388 },
-  'SR25': { name: 'Sleepers R25', latitude: 44.47682346, longitude: -72.12582909, elevation: 357 },
-  'RB10': { name: 'Ranch Brook #10', latitude: 44.49505, longitude: -72.78639, elevation: 624 },
-  'SR11': { name: 'Sleepers W1/R11', latitude: 44.45002119, longitude: -72.06714939, elevation: 225 },
-  'JRCL': { name: 'Jericho clearing', latitude: 44.447694, longitude: -73.00228357, elevation: 199 },
-  'JRFO': { name: 'Jericho forest', latitude: 44.44780437, longitude: -73.00270872, elevation: 196 },
-  'SPST': { name: 'Spear St', latitude: 44.45258109, longitude: -73.19181715, elevation: 87 },
-  'PTSH': { name: 'Potash Brook', latitude: 44.44489861, longitude: -73.21425398, elevation: 45 }
+  'SUMM': { name: 'Mansfield Summit', publicName: 'Mt. Mansfield Summit', latitude: 44.52796261, longitude: -72.81496117, elevation: 1169, network: 'distributed', zone: 'alpine', color: '#e11d48' },
+  'RB01': { name: 'Ranch Brook #1', publicName: 'Ranch Brook Site 1 (1075m)', latitude: 44.52322238, longitude: -72.80863215, elevation: 1075, network: 'ranch_brook', zone: 'alpine', color: '#dc2626' },
+  'RB02': { name: 'Ranch Brook #2', publicName: 'Ranch Brook Site 2 (910m)', latitude: 44.51775982, longitude: -72.81039188, elevation: 910, network: 'ranch_brook', zone: 'alpine', color: '#ea580c' },
+  'RB12': { name: 'Ranch Brook #12', publicName: 'Ranch Brook Site 12 (884m)', latitude: 44.51880228, longitude: -72.79785548, elevation: 884, network: 'ranch_brook', zone: 'alpine', color: '#d97706' },
+  'RB09': { name: 'Ranch Brook #9', publicName: 'Ranch Brook Site 9 (847m)', latitude: 44.48905, longitude: -72.79285, elevation: 847, network: 'ranch_brook', zone: 'alpine', color: '#ca8a04' },
+  'RB03': { name: 'Ranch Brook #3', publicName: 'Ranch Brook Site 3 (795m)', latitude: 44.51481829, longitude: -72.80905263, elevation: 795, network: 'ranch_brook', zone: 'montane', color: '#65a30d' },
+  'UNDR': { name: 'Mansfield West SCAN', publicName: 'Mansfield West SCAN (698m)', latitude: 44.53511455, longitude: -72.83462236, elevation: 698, network: 'distributed', zone: 'montane', color: '#16a34a' },
+  'RB04': { name: 'Ranch Brook #4', publicName: 'Ranch Brook Site 4 (640m)', latitude: 44.51097861, longitude: -72.80281519, elevation: 640, network: 'ranch_brook', zone: 'montane', color: '#059669' },
+  'RB07': { name: 'Ranch Brook #7', publicName: 'Ranch Brook Site 7 (613m)', latitude: 44.51528492, longitude: -72.78513705, elevation: 613, network: 'ranch_brook', zone: 'montane', color: '#0d9488' },
+  'SR01': { name: 'Sleepers R3/Main', publicName: 'Sleepers River Main (553m)', latitude: 44.48296257, longitude: -72.16464901, elevation: 553, network: 'distributed', zone: 'montane', color: '#0891b2' },
+  'RB05': { name: 'Ranch Brook #5', publicName: 'Ranch Brook Site 5 (505m)', latitude: 44.5044967, longitude: -72.79947434, elevation: 505, network: 'ranch_brook', zone: 'montane', color: '#0284c7' },
+  'RB08': { name: 'Ranch Brook #8', publicName: 'Ranch Brook Site 8 (472m)', latitude: 44.50953955, longitude: -72.78220384, elevation: 472, network: 'ranch_brook', zone: 'montane', color: '#2563eb' },
+  'PROC': { name: 'Mansfield West Proctor', publicName: 'Proctor Maple Research (418m)', latitude: 44.5285819, longitude: -72.866737, elevation: 418, network: 'distributed', zone: 'montane', color: '#4f46e5' },
+  'RB06': { name: 'Ranch Brook #6', publicName: 'Ranch Brook Site 6 (414m)', latitude: 44.50370285, longitude: -72.78352521, elevation: 414, network: 'ranch_brook', zone: 'montane', color: '#7c3aed' },
+  'RB11': { name: 'Ranch Brook #11', publicName: 'Ranch Brook Site 11 (388m)', latitude: 44.50545202, longitude: -72.7713791, elevation: 388, network: 'ranch_brook', zone: 'valley', color: '#9333ea' },
+  'SR25': { name: 'Sleepers R25', publicName: 'Sleepers River R25 (357m)', latitude: 44.47682346, longitude: -72.12582909, elevation: 357, network: 'distributed', zone: 'valley', color: '#c026d3' },
+  'RB10': { name: 'Ranch Brook #10', publicName: 'Ranch Brook Site 10 (624m)', latitude: 44.49505, longitude: -72.78639, elevation: 624, network: 'ranch_brook', zone: 'montane', color: '#db2777' },
+  'SR11': { name: 'Sleepers W1/R11', publicName: 'Sleepers River W1 (225m)', latitude: 44.45002119, longitude: -72.06714939, elevation: 225, network: 'distributed', zone: 'valley', color: '#f43f5e' },
+  'JRCL': { name: 'Jericho Clearing', publicName: 'Jericho Clearing (199m)', latitude: 44.447694, longitude: -73.00228357, elevation: 199, network: 'distributed', zone: 'valley', color: '#f59e0b' },
+  'JRFO': { name: 'Jericho Forest', publicName: 'Jericho Forest (196m)', latitude: 44.44780437, longitude: -73.00270872, elevation: 196, network: 'distributed', zone: 'valley', color: '#10b981' },
+  'SPST': { name: 'Spear St', publicName: 'Spear Street (87m)', latitude: 44.45258109, longitude: -73.19181715, elevation: 87, network: 'distributed', zone: 'valley', color: '#3b82f6' },
+  'PTSH': { name: 'Potash Brook', publicName: 'Potash Brook (45m)', latitude: 44.44489861, longitude: -73.21425398, elevation: 45, network: 'distributed', zone: 'valley', color: '#8b5cf6' }
 };
 
 // Table metadata with detailed descriptions
@@ -1693,9 +1694,13 @@ app.get('/api/metadata/stations', (req, res) => {
   const stations = Object.entries(LOCATION_METADATA).map(([code, meta]) => ({
     code,
     name: meta.name,
+    publicName: meta.publicName || meta.name,
     latitude: meta.latitude,
     longitude: meta.longitude,
-    elevation: meta.elevation
+    elevation: meta.elevation,
+    network: meta.network || 'unknown',
+    zone: meta.zone || (meta.elevation >= 800 ? 'alpine' : meta.elevation >= 400 ? 'montane' : 'valley'),
+    color: meta.color || '#6b7280'
   }));
   res.json({ success: true, version: API_VERSION, stations });
 });
