@@ -85,7 +85,7 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
         const map = L.map(mapRef.current, {
           scrollWheelZoom: false,
           tap: true,
-        }).setView([44.5, -72.7], 9); // Better center for Vermont S2S sites
+        }).setView([44.51, -72.81], 12); // Default zoom to Mansfield/Ranch Brook cluster
 
         // Ensure proper sizing on iOS Safari and after layout changes
         setTimeout(() => map.invalidateSize(), 0);
@@ -93,13 +93,19 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
         window.addEventListener('resize', handleResize);
         map.on('popupopen', () => setTimeout(() => map.invalidateSize(), 0));
 
-        // Add OpenStreetMap tiles
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© OpenStreetMap contributors',
+        // Light clean base map (default) — easier to read station markers
+        const lightLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+          attribution: '© OpenStreetMap contributors, © CARTO',
           maxZoom: 19,
         }).addTo(map);
 
-        // Add topographic layer as an option
+        // Standard OpenStreetMap
+        const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors',
+          maxZoom: 19,
+        });
+
+        // Terrain/Topographic layer
         const topoLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
           attribution: 'Map data: © OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)',
           maxZoom: 17,
@@ -181,10 +187,11 @@ const InteractiveMap = ({ sites = [], onSiteClick }: InteractiveMapProps) => {
           });
         });
 
-        // Layer control
+        // Layer control with light, standard, and terrain options
         const baseLayers = {
-          'OpenStreetMap': map._layers[Object.keys(map._layers)[0]],
-          'Topographic': topoLayer,
+          'Light': lightLayer,
+          'OpenStreetMap': osmLayer,
+          'Terrain': topoLayer,
         };
 
         L.control.layers(baseLayers).addTo(map);
