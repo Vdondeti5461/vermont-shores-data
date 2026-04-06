@@ -2,9 +2,13 @@ require('dotenv').config();
 const express = require('express');
 const mysql = require('mysql2/promise');
 const cors = require('cors');
+const helmet = require('helmet');
 const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// API Version
+const API_VERSION = '3.0.0';
 
 // Import auth routes (optional - only if auth modules exist)
 let authRoutes, apiKeyRoutes;
@@ -24,7 +28,13 @@ try {
   console.log('⚠️ bcryptjs not found - API key auth disabled');
 }
 
-// CORS configuration - allow all origins for API access
+// Security headers
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false
+}));
+
+// CORS configuration
 app.use(cors({
   origin: [
     'https://www.uvm.edu',
@@ -40,30 +50,46 @@ app.use(cors({
 
 app.use(express.json());
 
-// Enhanced API request logger with comprehensive debugging
-app.use('/api', (req, _res, next) => {
-  const timestamp = new Date().toISOString();
-  console.log(`\n=== [${timestamp}] API REQUEST ===`);
-  console.log(`Method: ${req.method}`);
-  console.log(`URL: ${req.originalUrl}`);
-  console.log(`Params:`, req.params);
-  console.log(`Query:`, req.query);
-  console.log(`Headers:`, {
-    'content-type': req.headers['content-type'],
-    'user-agent': req.headers['user-agent']?.substring(0, 50) + '...',
-    'origin': req.headers.origin
-  });
-  console.log('=====================================\n');
-  next();
-});
+// Trust proxy for accurate IP detection behind Apache
+app.set('trust proxy', true);
 
-// Route debugging middleware
-app.use('/api/databases/:database/tables/:table/locations', (req, res, next) => {
-  console.log('🎯 [LOCATIONS ROUTE MATCHED]', {
-    database: req.params.database,
-    table: req.params.table,
-    timestamp: new Date().toISOString()
-  });
+// ============================================
+// READ-ONLY SQL GUARD
+// ============================================
+// Ensures only SELECT queries can be executed through the API.
+// This protects against accidental or malicious data modification.
+function validateReadOnlyQuery(sql) {
+  const trimmed = sql.trim().replace(/^\/\*.*?\*\/\s*/s, '').trim();
+  const firstWord = trimmed.split(/\s+/)[0].toUpperCase();
+  const allowed = ['SELECT', 'SHOW', 'DESCRIBE', 'DESC', 'EXPLAIN', 'USE'];
+  if (!allowed.includes(firstWord)) {
+    throw new Error(`READ_ONLY_VIOLATION: Only SELECT queries are allowed. Got: ${firstWord}`);
+  }
+}
+
+// Wrapped query executor that enforces read-only
+async function safeExecute(connection, sql, params = []) {
+  validateReadOnlyQuery(sql);
+  return connection.execute(sql, params);
+}
+
+async function safeQuery(connection, sql, params = []) {
+  validateReadOnlyQuery(sql);
+  return connection.query(sql, params);
+}
+
+// ============================================
+// QUERY PARAMETER HELPERS
+// ============================================
+// Standardizes param names: accepts both 'location' and 'locations'
+function getLocationsParam(query) {
+  const raw = query.locations || query.location || '';
+  return raw.split(',').map(l => l.trim()).filter(Boolean);
+}
+
+// Request logger
+app.use('/api', (req, _res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
   next();
 });
 
@@ -459,7 +485,7 @@ app.get('/health', async (req, res) => {
     const connection = await pool.getConnection();
     await connection.ping();
     connection.release(); 
-    res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+    res.json({ status: 'healthy', version: API_VERSION, timestamp: new Date().toISOString() });
   } catch (error) {
     console.error('Health check failed:', error);
     res.status(500).json({ status: 'unhealthy', error: error.message });
@@ -471,7 +497,13 @@ app.get('/api/health', async (req, res) => {
     const connection = await pool.getConnection();
     await connection.ping();
     connection.release();
-    res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+    res.json({
+      status: 'healthy',
+      version: API_VERSION,
+      timestamp: new Date().toISOString(),
+      database: { connected: true, host: process.env.MYSQL_HOST || 'webdb5.uvm.edu' },
+      authentication: { jwt: !!authRoutes, apiKey: !!bcrypt }
+    });
   } catch (error) {
     console.error('Health check failed:', error);
     res.status(500).json({ status: 'unhealthy', error: error.message });
@@ -907,24 +939,20 @@ app.get('/api/seasonal/tables/:table/locations', async (req, res) => {
 // Download seasonal data with filters
 app.get('/api/seasonal/download/:table', async (req, res) => {
   const { table } = req.params;
-  const { locations, start_date, end_date, attributes } = req.query;
-  
-  console.log(`📥 [SEASONAL DOWNLOAD] Starting download for ${table}`);
-  console.log(`   Locations: ${locations || 'all'}`);
-  console.log(`   Date range: ${start_date} to ${end_date}`);
-  console.log(`   Attributes: ${attributes || 'all'}`);
-  
+  const { start_date, end_date, attributes } = req.query;
+  const locationList = getLocationsParam(req.query);
+
+  console.log(`[DOWNLOAD] ${table} | locations=${locationList.join(',') || 'all'} | ${start_date || '*'} to ${end_date || '*'}`);
+
   try {
     const { connection, databaseName } = await getConnectionWithDB('seasonal_qaqc_data');
 
-    // Discover actual column names
-    const [colRows] = await connection.query(`SHOW COLUMNS FROM \`${table}\``);
+    const [colRows] = await safeQuery(connection, `SHOW COLUMNS FROM \`${table}\``);
     const allCols = colRows.map(c => c.Field);
     const colMap = new Map(allCols.map(c => [c.toLowerCase(), c]));
     const tsCol = colMap.get('timestamp') || 'TIMESTAMP';
     const locCol = colMap.get('location') || 'Location';
 
-    // Determine selected columns
     let selected;
     if (attributes) {
       const requested = String(attributes).split(',').map(a => a.trim()).filter(Boolean);
@@ -934,7 +962,6 @@ app.get('/api/seasonal/download/:table', async (req, res) => {
       selected = allCols;
     }
 
-    // Build SELECT with formatted timestamp
     const selectList = selected.map(c => {
       if (c.toLowerCase() === 'timestamp') {
         return `DATE_FORMAT(\`${tsCol}\`, '%Y-%m-%d %H:%i:%s') AS \`TIMESTAMP\``;
@@ -942,25 +969,14 @@ app.get('/api/seasonal/download/:table', async (req, res) => {
       return `\`${c}\``;
     }).join(', ');
 
-    // Build query with filters
     let query = `SELECT ${selectList} FROM \`${table}\` WHERE 1=1`;
     const params = [];
 
-    // Location filter
-    if (locations) {
-      const locationList = locations.split(',').map(l => l.trim()).filter(Boolean);
-      console.log(`📍 [SEASONAL DOWNLOAD] Location filter - received codes:`, locationList);
-      if (locationList.length > 0) {
-        query += ` AND \`${locCol}\` IN (${locationList.map(() => '?').join(',')})`;
-        params.push(...locationList);
-      }
+    if (locationList.length > 0) {
+      query += ` AND \`${locCol}\` IN (${locationList.map(() => '?').join(',')})`;
+      params.push(...locationList);
     }
-    
-    // Log the full query for debugging
-    console.log(`🔍 [SEASONAL DOWNLOAD] Query: ${query}`);
-    console.log(`🔍 [SEASONAL DOWNLOAD] Params:`, params);
 
-    // Date range filters
     if (start_date) {
       query += ` AND \`${tsCol}\` >= ?`;
       params.push(start_date);
@@ -972,9 +988,8 @@ app.get('/api/seasonal/download/:table', async (req, res) => {
 
     query += ` ORDER BY \`${tsCol}\` ASC`;
 
-    console.log(`🔍 [SEASONAL DOWNLOAD] Executing query with ${params.length} parameters`);
-    const [rows] = await connection.execute(query, params);
-    console.log(`📊 [SEASONAL DOWNLOAD] Retrieved ${rows.length} rows`);
+    const [rows] = await safeExecute(connection, query, params);
+    console.log(`[DOWNLOAD] Retrieved ${rows.length} rows`);
 
     // Set CSV headers
     const filename = `seasonal_qaqc_${table}_${new Date().toISOString().split('T')[0]}.csv`;
@@ -1303,14 +1318,11 @@ app.get('/api/databases/:database/statistics/:table', verifyApiKeyForAccess, asy
       return res.status(400).json({ error: 'Location and attribute are required' });
     }
     
-    console.log(`\n📊 [STATISTICS] Computing stats for ${database}/${table}`);
-    console.log(`   Location: ${location}, Attribute: ${attribute}`);
-    console.log(`   Date range: ${start_date || 'all'} to ${end_date || 'all'}`);
-    
+    console.log(`[STATISTICS] ${database}/${table} | loc=${location} attr=${attribute}`);
+
     const { connection, databaseName } = await getConnectionWithDB(database);
-    
-    // Discover actual column names
-    const [colRows] = await connection.query(`SHOW COLUMNS FROM \`${table}\``);
+
+    const [colRows] = await safeQuery(connection, `SHOW COLUMNS FROM \`${table}\``);
     const allCols = colRows.map((c) => c.Field);
     const colMap = new Map(allCols.map((c) => [c.toLowerCase(), c]));
     const tsCol = colMap.get('timestamp') || 'TIMESTAMP';
@@ -1368,15 +1380,15 @@ app.get('/api/databases/:database/statistics/:table', verifyApiKeyForAccess, asy
     }
     
     const startTime = Date.now();
-    const [rows] = await connection.execute(query, params);
+    const [rows] = await safeExecute(connection, query, params);
     const duration = Date.now() - startTime;
-    
+
     const result = rows[0];
     const totalRows = Number(result.total_rows) || 0;
     const validCount = Number(result.valid_count) || 0;
     const completeness = totalRows > 0 ? (validCount / totalRows) * 100 : 0;
-    
-    console.log(`✅ [STATISTICS] Computed from ${totalRows} total rows (${validCount} valid) in ${duration}ms`);
+
+    console.log(`[STATISTICS] ${totalRows} rows (${validCount} valid) in ${duration}ms`);
     
     connection.release();
     
@@ -1417,54 +1429,41 @@ app.get('/api/databases/:database/analytics/:table', verifyApiKeyForAccess, asyn
       });
     }
     
-    // Default and max limit - increased for comprehensive data with LTTB sampling on frontend
+    // Default and max limit
     const rowLimit = Math.min(parseInt(limit) || 50000, 100000);
-    
-    console.log(`\n📊 [ANALYTICS] Fetching time series for ${database}/${table}`);
-    console.log(`   Location: ${location}`);
-    console.log(`   Attributes: ${attributes}`);
-    console.log(`   Date range: ${start_date} to ${end_date}`);
-    console.log(`   Row limit: ${rowLimit}`);
-    
+    const locationList = getLocationsParam(req.query);
+    // Support 'since' param for incremental fetching (real-time use case)
+    const since = req.query.since;
+    // Support 'window' param (e.g., '1h', '6h', '24h', '7d') for time-window queries
+    const window = req.query.window;
+    // Support 'group_by' param: 'station' or 'date'
+    const group_by = req.query.group_by;
+
+    console.log(`[ANALYTICS] ${database}/${table} | loc=${locationList.join(',') || 'all'} | ${start_date || '*'} to ${end_date || '*'} | limit=${rowLimit}`);
+
     const { connection, databaseName } = await getConnectionWithDB(database);
 
-    // Check if table exists
-    const [tableCheck] = await connection.query(`SHOW TABLES LIKE ?`, [table]);
+    const [tableCheck] = await safeQuery(connection, `SHOW TABLES LIKE ?`, [table]);
     if (tableCheck.length === 0) {
-      console.log(`❌ [ANALYTICS] Table '${table}' does not exist in database '${databaseName}'`);
       connection.release();
-      return res.json([]); // Return empty array instead of error
+      return res.json({ success: true, data: [], meta: { count: 0 } });
     }
 
-    // Discover actual column names
-    const [colRows] = await connection.query(`SHOW COLUMNS FROM \`${table}\``);
+    const [colRows] = await safeQuery(connection, `SHOW COLUMNS FROM \`${table}\``);
     const allCols = colRows.map((c) => c.Field);
     const colMap = new Map(allCols.map((c) => [c.toLowerCase(), c]));
     const tsCol = colMap.get('timestamp') || 'TIMESTAMP';
     const locCol = colMap.get('location') || 'Location';
 
-    // Log available locations in this database for debugging
-    if (location) {
-      const [availableLocations] = await connection.query(
-        `SELECT DISTINCT \`${locCol}\` as loc FROM \`${table}\` LIMIT 50`
-      );
-      console.log(`📍 [ANALYTICS] Available locations in ${databaseName}/${table}: ${availableLocations.map(r => r.loc).join(', ')}`);
-    }
-
-    // Determine selected columns
     let selected;
     if (attributes) {
-      const requested = String(attributes)
-        .split(',')
-        .map((a) => a.trim())
-        .filter(Boolean);
+      const requested = String(attributes).split(',').map((a) => a.trim()).filter(Boolean);
       const mapped = requested.map((a) => colMap.get(a.toLowerCase()) || a);
       selected = Array.from(new Set([tsCol, locCol, ...mapped])).filter((c) => allCols.includes(c));
     } else {
       selected = allCols;
     }
 
-    // Build SELECT with formatted timestamp for JSON
     const selectList = selected
       .map((c) => {
         if (c.toLowerCase() === 'timestamp') {
@@ -1474,42 +1473,47 @@ app.get('/api/databases/:database/analytics/:table', verifyApiKeyForAccess, asyn
       })
       .join(', ');
 
-    // Build query with filters
     let query = `SELECT ${selectList} FROM \`${table}\` WHERE 1=1`;
     const params = [];
 
-    // Location filter - try both with and without dash for better matching
-    if (location) {
-      const locations = location.split(',').map(l => l.trim()).filter(Boolean);
-      if (locations.length > 0) {
-        // Add variations of location codes for flexible matching
-        const expandedLocations = [];
-        locations.forEach(loc => {
-          expandedLocations.push(loc);
-          // Add with-dash version if doesn't have dash
-          if (!loc.includes('-')) {
-            const withDash = loc.replace(/^([A-Z]{2,4})(\d+)$/, '$1-$2');
-            if (withDash !== loc) expandedLocations.push(withDash);
-          }
-          // Add without-dash version if has dash
-          if (loc.includes('-')) {
-            expandedLocations.push(loc.replace('-', ''));
-          }
-        });
-        const uniqueLocations = [...new Set(expandedLocations)];
-        console.log(`📍 [ANALYTICS] Searching for locations: ${uniqueLocations.join(', ')}`);
-        const locationPlaceholders = uniqueLocations.map(() => '?').join(',');
-        query += ` AND \`${locCol}\` IN (${locationPlaceholders})`;
-        params.push(...uniqueLocations);
+    // Location filter with dash-insensitive matching
+    if (locationList.length > 0) {
+      const expandedLocations = [];
+      locationList.forEach(loc => {
+        expandedLocations.push(loc);
+        if (!loc.includes('-')) {
+          const withDash = loc.replace(/^([A-Z]{2,4})(\d+)$/, '$1-$2');
+          if (withDash !== loc) expandedLocations.push(withDash);
+        }
+        if (loc.includes('-')) {
+          expandedLocations.push(loc.replace('-', ''));
+        }
+      });
+      const uniqueLocations = [...new Set(expandedLocations)];
+      query += ` AND \`${locCol}\` IN (${uniqueLocations.map(() => '?').join(',')})`;
+      params.push(...uniqueLocations);
+    }
+
+    // 'since' param for incremental real-time fetching
+    if (since) {
+      query += ` AND \`${tsCol}\` > ?`;
+      params.push(since);
+    }
+
+    // 'window' param: e.g., '1h', '6h', '24h', '7d'
+    if (window && !start_date && !since) {
+      const windowMatch = window.match(/^(\d+)(m|h|d)$/);
+      if (windowMatch) {
+        const amount = parseInt(windowMatch[1]);
+        const unit = { m: 'MINUTE', h: 'HOUR', d: 'DAY' }[windowMatch[2]];
+        query += ` AND \`${tsCol}\` >= DATE_SUB(NOW(), INTERVAL ${amount} ${unit})`;
       }
     }
 
-    // Date range filters
     if (start_date) {
       query += ` AND \`${tsCol}\` >= ?`;
       params.push(start_date);
     }
-
     if (end_date) {
       query += ` AND \`${tsCol}\` <= ?`;
       params.push(end_date);
@@ -1517,19 +1521,49 @@ app.get('/api/databases/:database/analytics/:table', verifyApiKeyForAccess, asyn
 
     query += ` ORDER BY \`${tsCol}\` ASC LIMIT ${rowLimit}`;
 
-    console.log(`🔍 [ANALYTICS] Executing query with ${params.length} parameters, limit ${rowLimit}`);
     const startTime = Date.now();
-    const [rows] = await connection.execute(query, params);
+    const [rows] = await safeExecute(connection, query, params);
     const duration = Date.now() - startTime;
-    console.log(`✅ [ANALYTICS] Retrieved ${rows.length} rows from ${databaseName}/${table} in ${duration}ms`);
-    
-    if (rows.length === 0 && location) {
-      console.log(`⚠️ [ANALYTICS] No data found for location '${location}' in ${databaseName}/${table}`);
-    }
+    console.log(`[ANALYTICS] ${rows.length} rows in ${duration}ms`);
 
     connection.release();
-    
-    // Return JSON format for charting
+
+    // Group results if requested
+    if (group_by === 'station' && rows.length > 0) {
+      const grouped = {};
+      rows.forEach(row => {
+        const station = row[locCol] || row.Location || row.location;
+        if (!grouped[station]) {
+          const meta = LOCATION_METADATA[normalizeLocationCode(station)];
+          grouped[station] = { station, name: meta?.name || station, data: [] };
+        }
+        grouped[station].data.push(row);
+      });
+      return res.json({
+        success: true,
+        group_by: 'station',
+        data: grouped,
+        meta: { count: rows.length, stations: Object.keys(grouped).length, query_time_ms: duration }
+      });
+    }
+
+    if (group_by === 'date' && rows.length > 0) {
+      const grouped = {};
+      rows.forEach(row => {
+        const ts = row.timestamp || row.TIMESTAMP;
+        const dateKey = ts ? ts.split(' ')[0] : 'unknown';
+        if (!grouped[dateKey]) grouped[dateKey] = [];
+        grouped[dateKey].push(row);
+      });
+      return res.json({
+        success: true,
+        group_by: 'date',
+        data: grouped,
+        meta: { count: rows.length, dates: Object.keys(grouped).length, query_time_ms: duration }
+      });
+    }
+
+    // Default: flat array (backwards compatible)
     res.json(rows);
     
   } catch (error) {
@@ -1547,42 +1581,35 @@ app.get('/api/databases/:database/analytics/:table', verifyApiKeyForAccess, asyn
 app.get('/api/databases/:database/download/:table', verifyApiKeyForAccess, async (req, res) => {
   try {
     const { database, table } = req.params;
-    const { location, start_date, end_date, attributes } = req.query;
-    
-    // Check database access rights
+    const { start_date, end_date, attributes } = req.query;
+    const locationList = getLocationsParam(req.query);
+
     const isAuthenticated = req.accessLevel === 'authenticated';
     const restrictedDbs = ['raw_data', 'stage_clean_data', 'stage_qaqc_data'];
     if (!isAuthenticated && restrictedDbs.includes(database)) {
-      return res.status(403).json({ 
-        error: 'AUTHENTICATION_REQUIRED', 
-        message: 'API key required to access this database. Please include X-API-Key header.' 
+      return res.status(403).json({
+        error: 'AUTHENTICATION_REQUIRED',
+        message: 'API key required to access this database. Please include X-API-Key header.'
       });
     }
-    
+
     const { connection, databaseName } = await getConnectionWithDB(database);
 
-    // Discover actual column names (preserve case) and identify TIMESTAMP/Location columns
-    const [colRows] = await connection.query(`SHOW COLUMNS FROM \`${table}\``);
+    const [colRows] = await safeQuery(connection, `SHOW COLUMNS FROM \`${table}\``);
     const allCols = colRows.map((c) => c.Field);
     const colMap = new Map(allCols.map((c) => [c.toLowerCase(), c]));
     const tsCol = colMap.get('timestamp') || 'TIMESTAMP';
     const locCol = colMap.get('location') || 'Location';
 
-    // Determine selected columns
     let selected;
     if (attributes) {
-      const requested = String(attributes)
-        .split(',')
-        .map((a) => a.trim())
-        .filter(Boolean);
-      // Map requested to actual case from DB
+      const requested = String(attributes).split(',').map((a) => a.trim()).filter(Boolean);
       const mapped = requested.map((a) => colMap.get(a.toLowerCase()) || a);
       selected = Array.from(new Set([tsCol, locCol, ...mapped])).filter((c) => allCols.includes(c));
     } else {
       selected = allCols;
     }
 
-    // Build SELECT list with SQL-side TIMESTAMP formatting
     const selectList = selected
       .map((c) => {
         if (c.toLowerCase() === 'timestamp') {
@@ -1592,33 +1619,26 @@ app.get('/api/databases/:database/download/:table', verifyApiKeyForAccess, async
       })
       .join(', ');
 
-    // Build query with filters
     let query = `SELECT ${selectList} FROM \`${table}\` WHERE 1=1`;
     const params = [];
 
-    // Handle location filter (multiple locations)
-    if (location) {
-      const locations = location.split(',').map(l => l.trim()).filter(Boolean);
-      if (locations.length > 0) {
-        const locationPlaceholders = locations.map(() => '?').join(',');
-        query += ` AND \`${locCol}\` IN (${locationPlaceholders})`;
-        params.push(...locations);
-      }
+    if (locationList.length > 0) {
+      query += ` AND \`${locCol}\` IN (${locationList.map(() => '?').join(',')})`;
+      params.push(...locationList);
     }
 
     if (start_date) {
       query += ` AND \`${tsCol}\` >= ?`;
       params.push(start_date);
     }
-
     if (end_date) {
       query += ` AND \`${tsCol}\` <= ?`;
       params.push(end_date);
     }
 
-    query += ` ORDER BY \`${tsCol}\` DESC`;
+    query += ` ORDER BY \`${tsCol}\` ASC`;
 
-    const [rows] = await connection.execute(query, params);
+    const [rows] = await safeExecute(connection, query, params);
 
     // Set headers for CSV download
     const stamp = new Date().toISOString().split('T')[0];
@@ -1663,6 +1683,228 @@ function mountAuthRoutes() {
   }
 }
 
+// ============================================
+// STATION METADATA ENDPOINT (public)
+// ============================================
+// Returns all station metadata so frontends/external teams don't hardcode station info
+app.get('/api/metadata/stations', (req, res) => {
+  const stations = Object.entries(LOCATION_METADATA).map(([code, meta]) => ({
+    code,
+    name: meta.name,
+    latitude: meta.latitude,
+    longitude: meta.longitude,
+    elevation: meta.elevation
+  }));
+  res.json({ success: true, version: API_VERSION, stations });
+});
+
+// ============================================
+// REAL-TIME LATEST DATA ENDPOINT
+// ============================================
+// Returns the most recent record per station from a given table.
+// Use ?locations=RB01,SUMM to filter stations.
+// Use ?window=1h to get data from the last hour.
+app.get('/api/realtime/latest/:database/:table', verifyApiKeyForAccess, async (req, res) => {
+  try {
+    const { database, table } = req.params;
+    const locationList = getLocationsParam(req.query);
+    const window = req.query.window || '24h';
+
+    const isAuthenticated = req.accessLevel === 'authenticated';
+    const restrictedDbs = ['raw_data', 'stage_clean_data', 'stage_qaqc_data'];
+    if (!isAuthenticated && restrictedDbs.includes(database)) {
+      return res.status(403).json({
+        error: 'AUTHENTICATION_REQUIRED',
+        message: 'API key required. Include X-API-Key header.'
+      });
+    }
+
+    const { connection, databaseName } = await getConnectionWithDB(database);
+
+    const [colRows] = await safeQuery(connection, `SHOW COLUMNS FROM \`${table}\``);
+    const colMap = new Map(colRows.map(c => [c.Field.toLowerCase(), c.Field]));
+    const tsCol = colMap.get('timestamp') || 'TIMESTAMP';
+    const locCol = colMap.get('location') || 'Location';
+
+    // Parse window
+    const windowMatch = window.match(/^(\d+)(m|h|d)$/);
+    let intervalClause = 'INTERVAL 24 HOUR';
+    if (windowMatch) {
+      const amount = parseInt(windowMatch[1]);
+      const unit = { m: 'MINUTE', h: 'HOUR', d: 'DAY' }[windowMatch[2]];
+      intervalClause = `INTERVAL ${amount} ${unit}`;
+    }
+
+    // Get the latest record per station within the window
+    let query = `
+      SELECT t1.* FROM \`${table}\` t1
+      INNER JOIN (
+        SELECT \`${locCol}\`, MAX(\`${tsCol}\`) AS max_ts
+        FROM \`${table}\`
+        WHERE \`${tsCol}\` >= DATE_SUB(NOW(), ${intervalClause})
+    `;
+    const params = [];
+
+    if (locationList.length > 0) {
+      query += ` AND \`${locCol}\` IN (${locationList.map(() => '?').join(',')})`;
+      params.push(...locationList);
+    }
+
+    query += `
+        GROUP BY \`${locCol}\`
+      ) t2 ON t1.\`${locCol}\` = t2.\`${locCol}\` AND t1.\`${tsCol}\` = t2.max_ts
+      ORDER BY t1.\`${locCol}\`
+    `;
+
+    const [rows] = await safeExecute(connection, query, params);
+    connection.release();
+
+    // Enrich with station metadata and stale detection
+    const now = new Date();
+    const results = rows.map(row => {
+      const code = row[locCol] || row.Location || row.location;
+      const normalizedCode = normalizeLocationCode(code);
+      const meta = LOCATION_METADATA[normalizedCode];
+      const ts = row[tsCol] || row.TIMESTAMP || row.timestamp;
+      const lastReported = ts ? new Date(ts) : null;
+      const minutesAgo = lastReported ? Math.floor((now - lastReported) / 60000) : null;
+
+      return {
+        station: code,
+        name: meta?.name || code,
+        latitude: meta?.latitude || null,
+        longitude: meta?.longitude || null,
+        elevation: meta?.elevation || null,
+        last_reported_at: ts,
+        minutes_since_report: minutesAgo,
+        is_stale: minutesAgo !== null ? minutesAgo > 120 : true,
+        data: row
+      };
+    });
+
+    res.json({
+      success: true,
+      version: API_VERSION,
+      window,
+      stations: results,
+      meta: { count: results.length, fetched_at: now.toISOString() }
+    });
+
+  } catch (error) {
+    console.error('[REALTIME LATEST] Error:', error);
+    res.status(500).json({ error: 'Failed to fetch latest data', details: error.message });
+  }
+});
+
+// ============================================
+// COMPARE STATIONS ENDPOINT
+// ============================================
+// GET /api/compare/:database/:table?locations=RB01,SUMM&attributes=air_temperature_avg_c&start_date=...&end_date=...
+// Returns data grouped by station for easy comparison charting
+app.get('/api/compare/:database/:table', verifyApiKeyForAccess, async (req, res) => {
+  try {
+    const { database, table } = req.params;
+    const { start_date, end_date, attributes } = req.query;
+    const locationList = getLocationsParam(req.query);
+    const limit = Math.min(parseInt(req.query.limit) || 50000, 100000);
+
+    if (locationList.length < 2) {
+      return res.status(400).json({
+        error: 'INVALID_PARAMS',
+        message: 'At least 2 locations required for comparison. Use ?locations=RB01,SUMM'
+      });
+    }
+
+    const isAuthenticated = req.accessLevel === 'authenticated';
+    const restrictedDbs = ['raw_data', 'stage_clean_data', 'stage_qaqc_data'];
+    if (!isAuthenticated && restrictedDbs.includes(database)) {
+      return res.status(403).json({
+        error: 'AUTHENTICATION_REQUIRED',
+        message: 'API key required. Include X-API-Key header.'
+      });
+    }
+
+    const { connection, databaseName } = await getConnectionWithDB(database);
+
+    const [colRows] = await safeQuery(connection, `SHOW COLUMNS FROM \`${table}\``);
+    const allCols = colRows.map(c => c.Field);
+    const colMap = new Map(allCols.map(c => [c.toLowerCase(), c]));
+    const tsCol = colMap.get('timestamp') || 'TIMESTAMP';
+    const locCol = colMap.get('location') || 'Location';
+
+    let selected;
+    if (attributes) {
+      const requested = String(attributes).split(',').map(a => a.trim()).filter(Boolean);
+      const mapped = requested.map(a => colMap.get(a.toLowerCase()) || a);
+      selected = Array.from(new Set([tsCol, locCol, ...mapped])).filter(c => allCols.includes(c));
+    } else {
+      selected = allCols;
+    }
+
+    const selectList = selected.map(c => {
+      if (c.toLowerCase() === 'timestamp') {
+        return `DATE_FORMAT(\`${tsCol}\`, '%Y-%m-%d %H:%i:%s') AS timestamp`;
+      }
+      return `\`${c}\``;
+    }).join(', ');
+
+    // Expand location codes with dash variants
+    const expandedLocations = [];
+    locationList.forEach(loc => {
+      expandedLocations.push(loc);
+      if (!loc.includes('-')) {
+        const withDash = loc.replace(/^([A-Z]{2,4})(\d+)$/, '$1-$2');
+        if (withDash !== loc) expandedLocations.push(withDash);
+      }
+      if (loc.includes('-')) expandedLocations.push(loc.replace('-', ''));
+    });
+    const uniqueLocations = [...new Set(expandedLocations)];
+
+    let query = `SELECT ${selectList} FROM \`${table}\` WHERE \`${locCol}\` IN (${uniqueLocations.map(() => '?').join(',')})`;
+    const params = [...uniqueLocations];
+
+    if (start_date) { query += ` AND \`${tsCol}\` >= ?`; params.push(start_date); }
+    if (end_date) { query += ` AND \`${tsCol}\` <= ?`; params.push(end_date); }
+    query += ` ORDER BY \`${tsCol}\` ASC LIMIT ${limit}`;
+
+    const startTime = Date.now();
+    const [rows] = await safeExecute(connection, query, params);
+    const duration = Date.now() - startTime;
+    connection.release();
+
+    // Group by station
+    const grouped = {};
+    rows.forEach(row => {
+      const station = row[locCol] || row.Location || row.location;
+      if (!grouped[station]) {
+        const meta = LOCATION_METADATA[normalizeLocationCode(station)];
+        grouped[station] = {
+          station, name: meta?.name || station,
+          latitude: meta?.latitude, longitude: meta?.longitude,
+          elevation: meta?.elevation, data: []
+        };
+      }
+      grouped[station].data.push(row);
+    });
+
+    res.json({
+      success: true,
+      version: API_VERSION,
+      stations: grouped,
+      meta: {
+        total_records: rows.length,
+        station_count: Object.keys(grouped).length,
+        query_time_ms: duration,
+        date_range: { start: start_date || null, end: end_date || null }
+      }
+    });
+
+  } catch (error) {
+    console.error('[COMPARE] Error:', error);
+    res.status(500).json({ error: 'Failed to compare stations', details: error.message });
+  }
+});
+
 // Error handling middleware
 app.use((error, req, res, next) => {
   console.error('Server error:', error);
@@ -1673,12 +1915,11 @@ app.use((error, req, res, next) => {
 async function startServer() {
   try {
     await connectDB();
-    // Mount auth routes after DB is connected
     mountAuthRoutes();
     app.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
-      console.log(`📊 Database host: webdb5.uvm.edu`);
-      console.log(`🔐 Auth routes: ${authRoutes ? 'ENABLED' : 'DISABLED'}`);
+      console.log(`Summit2Shore API v${API_VERSION} running on port ${PORT}`);
+      console.log(`Database: ${process.env.MYSQL_HOST || 'webdb5.uvm.edu'}`);
+      console.log(`Auth: ${authRoutes ? 'enabled' : 'disabled'}`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);
