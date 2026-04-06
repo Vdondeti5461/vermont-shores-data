@@ -8,7 +8,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // API Version
-const API_VERSION = '3.0.0';
+const API_VERSION = '3.0.1';
 
 // Import auth routes (optional - only if auth modules exist)
 let authRoutes, apiKeyRoutes;
