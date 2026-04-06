@@ -8,7 +8,9 @@ set -e
 
 # Load Node.js for non-interactive shells (required for GitHub Actions SSH)
 # mise installs node at /opt/mise on this server
-export PATH="/opt/mise/installs/node/22/bin:$HOME/.npm-global/bin:$HOME/.local/bin:$HOME/bin:$PATH"
+export PATH="/opt/mise/installs/node/22/bin:$HOME/.npm-global/bin:$HOME/.local/bin:$HOME/bin:/usr/local/bin:/usr/bin:$PATH"
+# Source bashrc to pick up full environment
+[ -f "$HOME/.bashrc" ] && source "$HOME/.bashrc" 2>/dev/null || true
 
 echo "🚀 Starting deployment to crrels2s.w3.uvm.edu..."
 cd ~/vermont-shores-data
