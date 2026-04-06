@@ -46,8 +46,10 @@ const APIDocumentation = () => {
       description: 'Check API server health and availability',
       response: `{
   "status": "healthy",
-  "timestamp": "2024-01-15T10:30:00Z",
-  "version": "1.0.0"
+  "version": "3.1.0",
+  "timestamp": "2026-04-06T07:54:40Z",
+  "database": { "connected": true, "host": "webdb5.uvm.edu" },
+  "authentication": { "jwt": true, "apiKey": true }
 }`
     },
     {
@@ -359,13 +361,178 @@ Content-Disposition: attachment`
         { name: 'season', description: 'Filter by season: spring, summer, fall, winter (optional)' }
       ],
       response: `CSV file download with headers:
-TIMESTAMP,Location,AirTC_Avg,RH,SWE
-2024-01-15T12:00:00Z,Mansfield_Ridge,-5.2,78.5,245.7
+TIMESTAMP,Location,air_temperature_avg_c,relative_humidity_percent
+2025-01-15 12:00:00,SUMM,-5.2,78.5
 ...
 
-Filename format: {database}_{table}_{locations}_{timestamp}.csv
+Filename format: {database}_{table}_{date}.csv
 Content-Type: text/csv
 Content-Disposition: attachment`
+    },
+    {
+      method: 'GET',
+      path: '/metadata/stations',
+      description: 'Get all monitoring station metadata including coordinates and elevation. Public endpoint — no authentication required. Use this instead of hardcoding station data in your application.',
+      response: `{
+  "success": true,
+  "version": "3.1.0",
+  "stations": [
+    {
+      "code": "SUMM",
+      "name": "Mansfield Summit",
+      "latitude": 44.52796261,
+      "longitude": -72.81496117,
+      "elevation": 1169
+    },
+    {
+      "code": "RB01",
+      "name": "Ranch Brook #1",
+      "latitude": 44.52322238,
+      "longitude": -72.80863215,
+      "elevation": 1075
+    }
+  ]
+}`
+    },
+    {
+      method: 'GET',
+      path: '/databases/:database/analytics/:table',
+      description: 'Fetch time series data as JSON for charting and analysis. Supports grouping, time windows, and incremental fetching for real-time use cases.',
+      authRequired: 'API key required for non-seasonal databases',
+      parameters: [
+        { name: 'database', description: 'Database key (required)' },
+        { name: 'table', description: 'Table name (required)' },
+        { name: 'locations', description: 'Comma-separated location codes (optional). Also accepts "location".' },
+        { name: 'start_date', description: 'Start date YYYY-MM-DD or YYYY-MM-DD HH:mm:ss (optional)' },
+        { name: 'end_date', description: 'End date YYYY-MM-DD or YYYY-MM-DD HH:mm:ss (optional)' },
+        { name: 'attributes', description: 'Comma-separated attribute names (optional)' },
+        { name: 'limit', description: 'Max rows to return (default: 50000, max: 100000)' },
+        { name: 'group_by', description: '"station" or "date" — groups results for easier processing (optional)' },
+        { name: 'window', description: 'Time window: "1h", "6h", "24h", "7d" — fetches data from last N hours/days (optional)' },
+        { name: 'since', description: 'Timestamp — returns only records after this time, for incremental real-time fetching (optional)' }
+      ],
+      response: `// Default (flat array):
+[
+  { "timestamp": "2025-01-01 00:00:00", "location": "RB01", "snow_depth_cm": 53.86 },
+  { "timestamp": "2025-01-01 00:10:00", "location": "RB01", "snow_depth_cm": 54.01 }
+]
+
+// With ?group_by=station:
+{
+  "success": true,
+  "group_by": "station",
+  "data": {
+    "RB01": {
+      "station": "RB01",
+      "name": "Ranch Brook #1",
+      "data": [ { "timestamp": "2025-01-01 00:00:00", "snow_depth_cm": 53.86 }, ... ]
+    }
+  },
+  "meta": { "count": 288, "stations": 1, "query_time_ms": 45 }
+}`
+    },
+    {
+      method: 'GET',
+      path: '/databases/:database/statistics/:table',
+      description: 'Compute statistics (mean, min, max, stddev, completeness) from the full dataset server-side. Critical for scientific accuracy.',
+      authRequired: 'API key required for non-seasonal databases',
+      parameters: [
+        { name: 'database', description: 'Database key (required)' },
+        { name: 'table', description: 'Table name (required)' },
+        { name: 'location', description: 'Location code (required)' },
+        { name: 'attribute', description: 'Attribute name to compute stats for (required)' },
+        { name: 'start_date', description: 'Start date (optional)' },
+        { name: 'end_date', description: 'End date (optional)' }
+      ],
+      response: `{
+  "count": 8640,
+  "total": 8784,
+  "mean": -4.523,
+  "min": -22.1,
+  "max": 5.8,
+  "stdDev": 6.234,
+  "completeness": 98.36,
+  "dateRange": { "start": "2025-01-01 00:00:00", "end": "2025-01-31 23:50:00" },
+  "computedAt": "2026-04-06T08:00:00Z"
+}`
+    },
+    {
+      method: 'GET',
+      path: '/realtime/latest/:database/:table',
+      description: 'Get the most recent record per station within a time window. Includes stale detection — stations that haven\'t reported recently are flagged.',
+      authRequired: 'API key required for non-seasonal databases',
+      parameters: [
+        { name: 'database', description: 'Database key (required)' },
+        { name: 'table', description: 'Table name (required)' },
+        { name: 'locations', description: 'Comma-separated location codes to filter (optional)' },
+        { name: 'window', description: 'Time window: "1h", "6h", "24h", "7d" (default: "24h")' }
+      ],
+      response: `{
+  "success": true,
+  "version": "3.1.0",
+  "window": "24h",
+  "stations": [
+    {
+      "station": "RB01",
+      "name": "Ranch Brook #1",
+      "latitude": 44.52322238,
+      "longitude": -72.80863215,
+      "elevation": 1075,
+      "last_reported_at": "2025-03-15 14:30:00",
+      "minutes_since_report": 10,
+      "is_stale": false,
+      "data": { "timestamp": "2025-03-15 14:30:00", "location": "RB01", "snow_depth_cm": 85.2, ... }
+    }
+  ],
+  "meta": { "count": 1, "fetched_at": "2025-03-15T14:40:00Z" }
+}`
+    },
+    {
+      method: 'GET',
+      path: '/compare/:database/:table',
+      description: 'Compare multiple stations side-by-side. Returns data grouped by station with metadata for easy charting. Requires at least 2 locations.',
+      authRequired: 'API key required for non-seasonal databases',
+      parameters: [
+        { name: 'database', description: 'Database key (required)' },
+        { name: 'table', description: 'Table name (required)' },
+        { name: 'locations', description: 'Comma-separated location codes — minimum 2 required' },
+        { name: 'attributes', description: 'Comma-separated attribute names (optional)' },
+        { name: 'start_date', description: 'Start date (optional)' },
+        { name: 'end_date', description: 'End date (optional)' },
+        { name: 'limit', description: 'Max rows (default: 50000)' }
+      ],
+      response: `{
+  "success": true,
+  "version": "3.1.0",
+  "stations": {
+    "RB01": {
+      "station": "RB01",
+      "name": "Ranch Brook #1",
+      "latitude": 44.5232,
+      "longitude": -72.8086,
+      "elevation": 1075,
+      "data": [
+        { "timestamp": "2025-01-01 00:00:00", "location": "RB01", "air_temperature_avg_c": -2.03 }
+      ]
+    },
+    "SUMM": {
+      "station": "SUMM",
+      "name": "Mansfield Summit",
+      "latitude": 44.5280,
+      "longitude": -72.8150,
+      "elevation": 1169,
+      "data": [
+        { "timestamp": "2025-01-01 00:00:00", "location": "SUMM", "air_temperature_avg_c": -8.15 }
+      ]
+    }
+  },
+  "meta": {
+    "total_records": 864,
+    "station_count": 2,
+    "query_time_ms": 120,
+    "date_range": { "start": "2025-01-01", "end": "2025-01-03" }
+  }
+}`
     }
   ];
 
@@ -396,19 +563,44 @@ Content-Disposition: attachment`
       description: 'List all available seasonal periods in the QAQC database'
     },
     {
+      title: 'Get Station Metadata (Public)',
+      url: `https://crrels2s.w3.uvm.edu/api/metadata/stations`,
+      description: 'Get all 22 station locations with coordinates and elevation — no auth required'
+    },
+    {
       title: 'Get Table Attributes with Units',
-      url: `https://crrels2s.w3.uvm.edu/api/seasonal/tables/season_2023_2024_qaqc/attributes`,
+      url: `https://crrels2s.w3.uvm.edu/api/seasonal/tables/core_observations_2024_2025_qaqc/attributes`,
       description: 'Retrieve complete attribute information including units and measurement types'
     },
     {
       title: 'Get Table Locations',
-      url: `https://crrels2s.w3.uvm.edu/api/seasonal/tables/season_2023_2024_qaqc/locations`,
+      url: `https://crrels2s.w3.uvm.edu/api/seasonal/tables/core_observations_2024_2025_qaqc/locations`,
       description: 'Fetch all monitoring station locations with geographic coordinates'
     },
     {
       title: 'Download Seasonal Data (Public)',
-      url: `https://crrels2s.w3.uvm.edu/api/seasonal/download/season_2023_2024_qaqc?locations=SUMM,RB01&start_date=2024-01-01 00:00:00&end_date=2024-03-31 23:59:59`,
+      url: `https://crrels2s.w3.uvm.edu/api/seasonal/download/core_observations_2024_2025_qaqc?locations=SUMM,RB01&start_date=2025-01-01&end_date=2025-03-31`,
       description: 'Download winter data from seasonal QAQC (no auth required)'
+    },
+    {
+      title: 'Analytics with Group By',
+      url: `https://crrels2s.w3.uvm.edu/api/databases/seasonal_qaqc_data/analytics/core_observations_2024_2025_qaqc?locations=RB01&attributes=snow_depth_cm&start_date=2025-01-01&end_date=2025-01-07&group_by=station`,
+      description: 'Fetch time series grouped by station for easy charting (public for seasonal data)'
+    },
+    {
+      title: 'Compare Two Stations',
+      url: `https://crrels2s.w3.uvm.edu/api/compare/seasonal_qaqc_data/core_observations_2024_2025_qaqc?locations=RB01,SUMM&attributes=air_temperature_avg_c&start_date=2025-01-01&end_date=2025-01-07`,
+      description: 'Compare temperature data between Ranch Brook #1 and Mansfield Summit'
+    },
+    {
+      title: 'Real-Time Latest Data',
+      url: `https://crrels2s.w3.uvm.edu/api/realtime/latest/seasonal_qaqc_data/core_observations_2024_2025_qaqc?window=7d&locations=RB01`,
+      description: 'Get the most recent record for RB01 within the last 7 days, with stale detection'
+    },
+    {
+      title: 'Analytics with Time Window',
+      url: `https://crrels2s.w3.uvm.edu/api/databases/seasonal_qaqc_data/analytics/core_observations_2024_2025_qaqc?locations=SUMM&attributes=air_temperature_avg_c&window=24h`,
+      description: 'Fetch last 24 hours of data using the window parameter'
     },
     {
       title: 'Get Raw Data Tables (Authenticated)',
@@ -416,14 +608,9 @@ Content-Disposition: attachment`
       description: 'List tables in raw data ingestion database (requires API key)'
     },
     {
-      title: 'Download Raw Data (Authenticated)',
-      url: `curl -H "X-API-Key: s2s_YOUR_KEY" "https://crrels2s.w3.uvm.edu/api/databases/raw_data/download/raw_env_core_observations?locations=SUMM&start_date=2024-01-01"`,
-      description: 'Download raw environmental data (requires API key)'
-    },
-    {
-      title: 'Download Clean Data (Authenticated)',
-      url: `curl -H "X-API-Key: s2s_YOUR_KEY" "https://crrels2s.w3.uvm.edu/api/databases/stage_clean_data/download/clean_env_core_observations?locations=RB01,RB02"`,
-      description: 'Download cleaned/processed data (requires API key)'
+      title: 'Server-Side Statistics',
+      url: `curl -H "X-API-Key: s2s_YOUR_KEY" "https://crrels2s.w3.uvm.edu/api/databases/raw_data/statistics/raw_env_core_observations?location=RB01&attribute=air_temperature_avg_c&start_date=2025-01-01&end_date=2025-01-31"`,
+      description: 'Compute mean, min, max, stddev from the full dataset server-side (requires API key)'
     }
   ];
 
