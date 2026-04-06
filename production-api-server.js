@@ -1003,8 +1003,7 @@ app.get('/api/seasonal/download/:table', async (req, res) => {
       res.write(`# Dataset: ${table}\n`);
       res.write(`# Generated: ${new Date().toISOString()}\n`);
       res.write(`# Date Range: ${start_date || 'All'} to ${end_date || 'All'}\n`);
-      if (locations) {
-        const locationList = locations.split(',').map(l => l.trim());
+      if (locationList.length > 0) {
         const locationNames = locationList.map(code => {
           const meta = LOCATION_METADATA[code];
           return meta ? `${meta.name} (${code})` : code;
@@ -1031,11 +1030,14 @@ app.get('/api/seasonal/download/:table', async (req, res) => {
     }
 
     connection.release();
-    console.log(`✅ [SEASONAL DOWNLOAD] Download complete`);
     res.end();
   } catch (error) {
-    console.error('❌ [SEASONAL DOWNLOAD] Error:', error);
-    res.status(500).json({ error: 'Failed to download seasonal data', details: error.message });
+    console.error('[SEASONAL DOWNLOAD] Error:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to download seasonal data', details: error.message });
+    } else {
+      res.end();
+    }
   }
 });
 
