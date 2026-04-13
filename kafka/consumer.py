@@ -54,10 +54,10 @@ def get_table_columns(cursor, table_name):
 def insert_record(cursor, table_name, record, valid_columns):
     """
     Insert a single record into the database.
-    Uses INSERT IGNORE to skip duplicates (timestamp + location).
-    Only inserts columns that exist in the table.
+    Checks for existing record with same timestamp+location before inserting
+    to prevent duplicates (since tables don't have unique constraints due to
+    historical data with different data_quality_flag values).
     """
-    # Filter record to only include columns that exist in the DB table
     filtered = {}
     for col, val in record.items():
         if col in valid_columns:
@@ -66,19 +66,31 @@ def insert_record(cursor, table_name, record, valid_columns):
     if 'timestamp' not in filtered or 'location' not in filtered:
         return False
 
+    # Check if record already exists
+    try:
+        cursor.execute(
+            f"SELECT COUNT(*) FROM `{table_name}` WHERE `timestamp` = %s AND `location` = %s",
+            (filtered['timestamp'], filtered['location'])
+        )
+        count = cursor.fetchone()[0]
+        if count > 0:
+            return False  # Already exists, skip
+    except mysql.connector.Error:
+        pass  # If check fails, try to insert anyway
+
     columns = list(filtered.keys())
     placeholders = ', '.join(['%s'] * len(columns))
     col_str = ', '.join([f'`{c}`' for c in columns])
 
-    # Use INSERT IGNORE to skip if timestamp+location already exists
-    query = f"INSERT IGNORE INTO `{table_name}` ({col_str}) VALUES ({placeholders})"
+    query = f"INSERT INTO `{table_name}` ({col_str}) VALUES ({placeholders})"
     values = [filtered[c] for c in columns]
 
     try:
         cursor.execute(query, values)
-        return cursor.rowcount > 0  # True if actually inserted (not duplicate)
+        return cursor.rowcount > 0
     except mysql.connector.Error as e:
-        print(f"  DB Error: {e}")
+        if 'Duplicate' not in str(e):
+            print(f"  DB Error: {e}")
         return False
 
 
