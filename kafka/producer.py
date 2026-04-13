@@ -122,9 +122,8 @@ def map_columns(headers, row, location):
         db_col = COLUMN_MAP.get(header)
 
         if db_col is None and header not in SKIP_COLUMNS:
-            # For snowpack temp profile columns (T107_C_0cm_Avg, etc.)
-            # Keep as-is with lowercase
-            db_col = header.lower()
+            # Column not in map — skip it (don't guess, only insert known columns)
+            continue
 
         if db_col:
             value = row[i]
