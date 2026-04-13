@@ -74,15 +74,33 @@ def parse_dat_file(filepath):
 def get_table_from_filename(filename):
     """
     Extract table name from .dat filename.
-    Filenames are like: PROC_table1.dat, RB01_Wind.dat, etc.
-    Also handles: PROC_Snowpk_Temp_Profile.dat
+    Handles two formats:
+      - Table1.dat, Wind.dat, Precipitation.dat, Snowpk_Temp_Profile.dat
+        (location comes from parent folder name)
+      - PROC_Table1.dat, RB01_Wind.dat
+        (location prefix in filename)
     """
     name = filename.replace('.dat', '').replace('.csv', '')
-    # Split on first underscore to get location_table
+
+    # Check if the name itself (without extension) matches a known table
+    if name in TABLE_MAP:
+        return name
+    # Check case-insensitive
+    for key in TABLE_MAP:
+        if key.lower() == name.lower():
+            return key
+
+    # If not a direct match, try splitting on first underscore (PROC_Table1 format)
     parts = name.split('_', 1)
     if len(parts) >= 2:
-        return parts[1]  # Everything after first underscore is the table name
-    return None
+        table_part = parts[1]
+        if table_part in TABLE_MAP:
+            return table_part
+        for key in TABLE_MAP:
+            if key.lower() == table_part.lower():
+                return key
+
+    return name  # Return as-is, let the caller handle unknown tables
 
 
 def map_columns(headers, row, location):
