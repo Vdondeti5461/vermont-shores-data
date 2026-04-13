@@ -92,6 +92,7 @@ def run_consumer(test_mode=False):
     print(f"  Group: {KAFKA_CONSUMER_GROUP}")
     print(f"{'='*60}\n")
 
+    # Use poll-based consumption (more reliable than iterator with kafka-python-ng)
     consumer = KafkaConsumer(
         *ALL_TOPICS,
         bootstrap_servers=KAFKA_BROKER,
@@ -99,7 +100,6 @@ def run_consumer(test_mode=False):
         auto_offset_reset='earliest',
         enable_auto_commit=True,
         group_id=KAFKA_CONSUMER_GROUP,
-        consumer_timeout_ms=5000 if test_mode else -1,  # Timeout in test mode
     )
 
     conn = get_db_connection()
@@ -121,46 +121,58 @@ def run_consumer(test_mode=False):
     inserted_count = 0
     skipped_count = 0
     total_processed = 0
+    empty_polls = 0
+    max_empty_polls = 3 if test_mode else 0  # In test mode, stop after 3 empty polls
 
     try:
-        for message in consumer:
-            if not running:
-                break
+        while running:
+            # Poll for messages (timeout 5 seconds)
+            raw_messages = consumer.poll(timeout_ms=5000, max_records=500)
 
-            topic = message.topic
-            record = message.value
-            db_table = TOPIC_TO_TABLE.get(topic)
-
-            if not db_table:
-                print(f"  Unknown topic: {topic}, skipping")
+            if not raw_messages:
+                empty_polls += 1
+                if test_mode and empty_polls >= max_empty_polls:
+                    print(f"  No more messages after {empty_polls} polls, stopping...")
+                    break
+                if not test_mode:
+                    # In continuous mode, just keep polling
+                    continue
                 continue
 
-            valid_columns = column_cache.get(db_table, [])
-            if not valid_columns:
-                print(f"  No column info for {db_table}, skipping")
-                continue
+            empty_polls = 0  # Reset on successful poll
 
-            success = insert_record(cursor, db_table, record, valid_columns)
-            if success:
-                inserted_count += 1
-            else:
-                skipped_count += 1
+            for topic_partition, messages in raw_messages.items():
+                topic = topic_partition.topic
+                db_table = TOPIC_TO_TABLE.get(topic)
 
-            batch_count += 1
-            total_processed += 1
+                if not db_table:
+                    print(f"  Unknown topic: {topic}, skipping")
+                    continue
 
-            # Commit every 100 records
-            if batch_count >= 100:
+                valid_columns = column_cache.get(db_table, [])
+                if not valid_columns:
+                    print(f"  No column info for {db_table}, skipping")
+                    continue
+
+                for message in messages:
+                    record = message.value
+                    success = insert_record(cursor, db_table, record, valid_columns)
+                    if success:
+                        inserted_count += 1
+                    else:
+                        skipped_count += 1
+
+                    batch_count += 1
+                    total_processed += 1
+
+            # Commit after each poll batch
+            if batch_count > 0:
                 conn.commit()
                 ts = datetime.now().strftime('%H:%M:%S')
-                print(f"  [{ts}] Committed batch: {inserted_count} inserted, {skipped_count} skipped (total: {total_processed})")
+                print(f"  [{ts}] Committed: {inserted_count} inserted, {skipped_count} skipped (total: {total_processed})")
                 batch_count = 0
                 inserted_count = 0
                 skipped_count = 0
-
-            # Test mode: stop after 10 messages
-            if test_mode and total_processed >= 10:
-                break
 
     except Exception as e:
         print(f"Consumer error: {e}")
