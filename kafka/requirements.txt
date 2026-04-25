@@ -1,2 +1,2 @@
-kafka-python-ng==2.2.2
+confluent-kafka==2.6.1
 mysql-connector-python==8.4.0

@@ -1,19 +1,19 @@
 """
 Summit2Shore Kafka Consumer
 Reads messages from Kafka topics and inserts into MySQL raw_data database.
-Handles duplicates via INSERT IGNORE (timestamp + location is unique).
+Handles duplicates by checking timestamp+location before inserting.
+
+Uses confluent-kafka (librdkafka) for reliable Windows support.
 
 Usage:
     python consumer.py          # Run consumer (listens forever)
-    python consumer.py --test   # Process 10 messages and stop (for testing)
+    python consumer.py --test   # Process available messages and stop
 """
 
-import os
 import sys
 import json
-import signal
 from datetime import datetime
-from kafka import KafkaConsumer
+from confluent_kafka import Consumer, KafkaException
 import mysql.connector
 from config import KAFKA_BROKER, KAFKA_CONSUMER_GROUP, DB_CONFIG, RAW_DATABASE, TABLE_MAP
 
@@ -24,17 +24,6 @@ for dat_name, info in TABLE_MAP.items():
 
 # All topics to subscribe to
 ALL_TOPICS = list(set(info['topic'] for info in TABLE_MAP.values()))
-
-# Graceful shutdown
-running = True
-def signal_handler(sig, frame):
-    global running
-    print("\nShutting down consumer...")
-    running = False
-
-signal.signal(signal.SIGINT, signal_handler)
-if os.name != 'nt':  # SIGTERM not supported on Windows
-    signal.signal(signal.SIGTERM, signal_handler)
 
 
 def get_db_connection():
@@ -56,9 +45,7 @@ def get_table_columns(cursor, table_name):
 def insert_record(cursor, table_name, record, valid_columns):
     """
     Insert a single record into the database.
-    Checks for existing record with same timestamp+location before inserting
-    to prevent duplicates (since tables don't have unique constraints due to
-    historical data with different data_quality_flag values).
+    Checks for existing record with same timestamp+location before inserting.
     """
     filtered = {}
     for col, val in record.items():
@@ -106,15 +93,15 @@ def run_consumer(test_mode=False):
     print(f"  Group: {KAFKA_CONSUMER_GROUP}")
     print(f"{'='*60}\n")
 
-    # Use poll-based consumption (more reliable than iterator with kafka-python-ng)
-    consumer = KafkaConsumer(
-        *ALL_TOPICS,
-        bootstrap_servers=KAFKA_BROKER,
-        value_deserializer=lambda m: json.loads(m.decode('utf-8')),
-        auto_offset_reset='earliest',
-        enable_auto_commit=True,
-        group_id=KAFKA_CONSUMER_GROUP,
-    )
+    # confluent-kafka consumer config
+    conf = {
+        'bootstrap.servers': KAFKA_BROKER,
+        'group.id': KAFKA_CONSUMER_GROUP,
+        'auto.offset.reset': 'earliest',
+        'enable.auto.commit': True,
+    }
+    consumer = Consumer(conf)
+    consumer.subscribe(ALL_TOPICS)
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -136,66 +123,56 @@ def run_consumer(test_mode=False):
     skipped_count = 0
     total_processed = 0
     empty_polls = 0
-    max_empty_polls = 3 if test_mode else 0  # In test mode, stop after 3 empty polls
+    max_empty_polls = 6 if test_mode else 0  # In test mode, stop after 6 empty polls (30s)
 
     try:
-        while running:
-            # Poll for messages (timeout 5 seconds)
-            try:
-                raw_messages = consumer.poll(timeout_ms=5000, max_records=500)
-            except OSError as e:
-                # Windows: select() can fail with "Invalid file descriptor"
-                # Reconnect the consumer
-                print(f"  Poll error (reconnecting): {e}")
-                consumer.close()
-                consumer = KafkaConsumer(
-                    *ALL_TOPICS,
-                    bootstrap_servers=KAFKA_BROKER,
-                    value_deserializer=lambda m: json.loads(m.decode('utf-8')),
-                    auto_offset_reset='earliest',
-                    enable_auto_commit=True,
-                    group_id=KAFKA_CONSUMER_GROUP,
-                )
-                continue
+        while True:
+            # Poll for a single message (5 second timeout)
+            msg = consumer.poll(timeout=5.0)
 
-            if not raw_messages:
+            if msg is None:
                 empty_polls += 1
                 if test_mode and empty_polls >= max_empty_polls:
                     print(f"  No more messages after {empty_polls} polls, stopping...")
                     break
-                if not test_mode:
-                    # In continuous mode, just keep polling
-                    continue
                 continue
 
-            empty_polls = 0  # Reset on successful poll
+            if msg.error():
+                print(f"  Kafka error: {msg.error()}")
+                continue
 
-            for topic_partition, messages in raw_messages.items():
-                topic = topic_partition.topic
-                db_table = TOPIC_TO_TABLE.get(topic)
+            empty_polls = 0
 
-                if not db_table:
-                    print(f"  Unknown topic: {topic}, skipping")
-                    continue
+            # Parse message
+            topic = msg.topic()
+            db_table = TOPIC_TO_TABLE.get(topic)
 
-                valid_columns = column_cache.get(db_table, [])
-                if not valid_columns:
-                    print(f"  No column info for {db_table}, skipping")
-                    continue
+            if not db_table:
+                print(f"  Unknown topic: {topic}, skipping")
+                continue
 
-                for message in messages:
-                    record = message.value
-                    success = insert_record(cursor, db_table, record, valid_columns)
-                    if success:
-                        inserted_count += 1
-                    else:
-                        skipped_count += 1
+            valid_columns = column_cache.get(db_table, [])
+            if not valid_columns:
+                print(f"  No column info for {db_table}, skipping")
+                continue
 
-                    batch_count += 1
-                    total_processed += 1
+            try:
+                record = json.loads(msg.value().decode('utf-8'))
+            except (json.JSONDecodeError, UnicodeDecodeError) as e:
+                print(f"  Bad message: {e}")
+                continue
 
-            # Commit after each poll batch
-            if batch_count > 0:
+            success = insert_record(cursor, db_table, record, valid_columns)
+            if success:
+                inserted_count += 1
+            else:
+                skipped_count += 1
+
+            batch_count += 1
+            total_processed += 1
+
+            # Commit to DB every 500 records
+            if batch_count >= 500:
                 conn.commit()
                 ts = datetime.now().strftime('%H:%M:%S')
                 print(f"  [{ts}] Committed: {inserted_count} inserted, {skipped_count} skipped (total: {total_processed})")
@@ -203,13 +180,16 @@ def run_consumer(test_mode=False):
                 inserted_count = 0
                 skipped_count = 0
 
+    except KeyboardInterrupt:
+        print("\nShutting down consumer...")
     except Exception as e:
         print(f"Consumer error: {e}")
     finally:
         # Commit any remaining records
         if batch_count > 0:
             conn.commit()
-            print(f"  Final commit: {inserted_count} inserted, {skipped_count} skipped")
+            ts = datetime.now().strftime('%H:%M:%S')
+            print(f"  [{ts}] Final commit: {inserted_count} inserted, {skipped_count} skipped")
 
         print(f"\nTotal processed: {total_processed}")
         cursor.close()
