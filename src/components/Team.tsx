@@ -31,7 +31,7 @@ const Team = () => {
       role: "Data Architect & Manager",
       affiliation: "UVM Civil & Environmental Engineering",
       expertise: "Data Management, System Architecture",
-      image: "/images/team/vamsi-dondeti.jpg",
+      image: "/images/team/vamsi-dondeti.png",
       email: "vdondeti@uvm.edu",
       linkedin: "https://www.linkedin.com/in/vamsi-naidu-d/"
     },
