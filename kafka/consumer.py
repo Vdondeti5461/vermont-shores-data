@@ -8,6 +8,7 @@ Usage:
     python consumer.py --test   # Process 10 messages and stop (for testing)
 """
 
+import os
 import sys
 import json
 import signal
@@ -32,7 +33,8 @@ def signal_handler(sig, frame):
     running = False
 
 signal.signal(signal.SIGINT, signal_handler)
-signal.signal(signal.SIGTERM, signal_handler)
+if os.name != 'nt':  # SIGTERM not supported on Windows
+    signal.signal(signal.SIGTERM, signal_handler)
 
 
 def get_db_connection():
@@ -139,7 +141,22 @@ def run_consumer(test_mode=False):
     try:
         while running:
             # Poll for messages (timeout 5 seconds)
-            raw_messages = consumer.poll(timeout_ms=5000, max_records=500)
+            try:
+                raw_messages = consumer.poll(timeout_ms=5000, max_records=500)
+            except OSError as e:
+                # Windows: select() can fail with "Invalid file descriptor"
+                # Reconnect the consumer
+                print(f"  Poll error (reconnecting): {e}")
+                consumer.close()
+                consumer = KafkaConsumer(
+                    *ALL_TOPICS,
+                    bootstrap_servers=KAFKA_BROKER,
+                    value_deserializer=lambda m: json.loads(m.decode('utf-8')),
+                    auto_offset_reset='earliest',
+                    enable_auto_commit=True,
+                    group_id=KAFKA_CONSUMER_GROUP,
+                )
+                continue
 
             if not raw_messages:
                 empty_polls += 1
