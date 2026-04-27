@@ -28,7 +28,7 @@ const Team = () => {
     },
     {
       name: "Vamsi Dondeti",
-      role: "Data Architect & Manager",
+      role: "Web Developer & Data Manager",
       affiliation: "UVM Civil & Environmental Engineering",
       expertise: "Data Management, System Architecture",
       image: "/images/team/vamsi-dondeti.png",

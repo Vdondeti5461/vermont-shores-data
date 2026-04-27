@@ -102,7 +102,7 @@ async function connectDB() {
     pool = mysql.createPool({
       host: dbHost,
       user: process.env.MYSQL_USER || 'crrels2s_admin',
-      password: process.env.MYSQL_PASSWORD || 'y0m5dxldXSLP',
+      password: process.env.MYSQL_PASSWORD,
       port: Number(process.env.MYSQL_PORT) || 3306,
       waitForConnections: true,
       connectionLimit: 10,
@@ -614,40 +614,28 @@ app.get('/api/auth/verify-key', async (req, res) => {
 });
 
 const verifyApiKeyForAccess = async (req, res, next) => {
-  // Debug: Log all incoming headers and query params for API key
-  console.log(`🔍 [API KEY DEBUG] All headers:`, JSON.stringify(req.headers, null, 2));
-  console.log(`🔍 [API KEY DEBUG] All query params:`, JSON.stringify(req.query, null, 2));
-  
   // Check for API key in X-API-Key header (Express lowercases all headers)
   // Also check query parameters with multiple casing
   let apiKey = req.headers['x-api-key'];  // Express ALWAYS lowercases headers
-  
+
   // Fallback to query params
   if (!apiKey) {
     apiKey = req.query['X-API-Key'] || req.query['x-api-key'] || req.query['api_key'];
-    console.log(`🔑 [API KEY] Key from query param: ${apiKey ? 'found' : 'not found'}`);
-  } else {
-    console.log(`🔑 [API KEY] Key from header: found`);
   }
-  
-  console.log(`🔑 [API KEY CHECK] Final key: ${apiKey ? apiKey.substring(0, 12) + '...' : 'none'}`);
-  
+
   if (!apiKey) {
-    console.log('🔓 [API KEY] No key provided - public access');
     req.accessLevel = 'public';
     return next();
   }
-  
+
   // Validate prefix
   if (!apiKey.startsWith(API_KEY_PREFIX)) {
-    console.log(`⚠️ [API KEY] Invalid prefix: ${apiKey.substring(0, 8)}...`);
     req.accessLevel = 'public';
     return next();
   }
   
   // Verify against database
   if (!bcrypt) {
-    console.log('⚠️ [API KEY] bcrypt not available, treating as public');
     req.accessLevel = 'public';
     return next();
   }
@@ -659,8 +647,7 @@ const verifyApiKeyForAccess = async (req, res, next) => {
     
     // Find API key by prefix (first 12 chars)
     const keyPrefix = apiKey.substring(0, 12);
-    console.log(`🔍 [API KEY] Looking for key_prefix: "${keyPrefix}"`);
-    
+
     // Fetch all keys with this prefix
     const [allKeys] = await connection.execute(
       `SELECT ak.id, ak.key_prefix, ak.is_active, ak.key_hash, ak.user_id,
@@ -671,10 +658,7 @@ const verifyApiKeyForAccess = async (req, res, next) => {
       [keyPrefix]
     );
     
-    console.log(`🔍 [API KEY] Found ${allKeys.length} keys with prefix "${keyPrefix}"`);
-    
     if (allKeys.length === 0) {
-      console.log(`⚠️ [API KEY] No keys found for prefix: ${keyPrefix}`);
       req.accessLevel = 'public';
       connection.release();
       return next();
@@ -683,10 +667,7 @@ const verifyApiKeyForAccess = async (req, res, next) => {
     // Filter for active keys - handle both boolean and integer (1/0) formats
     const activeKeys = allKeys.filter(k => k.is_active === 1 || k.is_active === true);
     
-    console.log(`🔍 [API KEY] Active keys: ${activeKeys.length} (types: ${allKeys.map(k => typeof k.is_active).join(', ')})`);
-    
     if (activeKeys.length === 0) {
-      console.log(`⚠️ [API KEY] No ACTIVE keys found for prefix: ${keyPrefix}`);
       req.accessLevel = 'public';
       connection.release();
       return next();
@@ -695,21 +676,18 @@ const verifyApiKeyForAccess = async (req, res, next) => {
     // Try to verify against each active key using bcrypt
     let matchedKey = null;
     for (const keyRecord of activeKeys) {
-      console.log(`🔐 [API KEY] Comparing hash for key id ${keyRecord.id}...`);
       try {
         const isValid = await bcrypt.compare(apiKey, keyRecord.key_hash);
-        console.log(`🔐 [API KEY] Hash comparison result for key id ${keyRecord.id}: ${isValid}`);
         if (isValid) {
           matchedKey = keyRecord;
           break;
         }
       } catch (hashError) {
-        console.error(`❌ [API KEY] Hash comparison error for key ${keyRecord.id}:`, hashError.message);
+        // Skip keys with hash comparison errors
       }
     }
-    
+
     if (!matchedKey) {
-      console.log(`⚠️ [API KEY] No matching hash found for any active keys with prefix: ${keyPrefix}`);
       req.accessLevel = 'public';
       connection.release();
       return next();
@@ -718,7 +696,6 @@ const verifyApiKeyForAccess = async (req, res, next) => {
     // Check if user is active - handle both boolean and integer formats
     const userIsActive = matchedKey.user_active === 1 || matchedKey.user_active === true;
     if (!userIsActive) {
-      console.log(`⚠️ [API KEY] User inactive for key: ${keyPrefix}...`);
       req.accessLevel = 'public';
       connection.release();
       return next();
@@ -733,7 +710,6 @@ const verifyApiKeyForAccess = async (req, res, next) => {
     connection.release();
     
     // Success - authenticated access
-    console.log(`✅ [API KEY] AUTHENTICATED: ${matchedKey.email} (key id: ${matchedKey.id})`);
     req.accessLevel = 'authenticated';
     req.apiKeyAuth = {
       keyId: matchedKey.id,

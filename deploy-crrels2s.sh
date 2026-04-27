@@ -65,8 +65,8 @@ RedirectMatch 302 ^/favicon\.ico$ /images/favicon.png
 RedirectMatch 302 ^/api/favicon\.ico$ /images/favicon.png
 RedirectMatch 302 ^/health/favicon\.ico$ /images/favicon.png
 
-# Proxy auth API endpoints to Node.js backend (only paths like /auth/login, /auth/forgot-password)
-RewriteCond %{REQUEST_URI} ^/auth/.+
+# Proxy auth endpoints to Node.js backend (specific endpoints only)
+RewriteCond %{REQUEST_URI} ^/auth/(login|signup|verify|logout|profile)
 RewriteRule ^(.*)$ http://127.0.0.1:3001/$1 [P,L]
 
 # Proxy API requests to Node.js backend (includes /api-keys)
@@ -77,7 +77,7 @@ RewriteRule ^(.*)$ http://127.0.0.1:3001/$1 [P,L]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_URI} !^/(health|api|api-keys)
-RewriteCond %{REQUEST_URI} !^/auth/.+
+RewriteCond %{REQUEST_URI} !^/auth/(login|signup|verify|logout|profile)
 RewriteRule . /index.html [L]
 EOF
 
